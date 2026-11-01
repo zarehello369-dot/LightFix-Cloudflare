@@ -266,7 +266,9 @@ async function workspace(request, env, expectedRole) {
   const jobs = await all(env.DB, `SELECT j.*,u.display_name AS technician_name FROM jobs j LEFT JOIN users u ON u.id=j.technician_id ${admin ? '' : 'WHERE j.technician_id=? OR j.assigned_user_id=?'} ORDER BY j.started_at DESC LIMIT 500`, ...(admin ? [] : [user.id, user.id]));
   const poles = await all(env.DB, `SELECT p.*,(SELECT COUNT(*) FROM reports r WHERE r.pole=p.pole AND r.status<>3) AS report_count,
     (SELECT COUNT(*) FROM reports r WHERE r.pole=p.pole AND r.status<2) AS open_count,
-    (SELECT COUNT(*) FROM jobs j WHERE j.pole=p.pole AND j.status=2) AS repair_count
+    (SELECT COUNT(*) FROM jobs j WHERE j.pole=p.pole AND j.status=2) AS repair_count,
+    (SELECT COUNT(*) FROM reports r WHERE r.pole=p.pole) AS total_report_count,
+    (SELECT COUNT(*) FROM jobs j WHERE j.pole=p.pole) AS job_count
     FROM poles p ORDER BY p.pole LIMIT 1000`);
   const notifications = await all(env.DB, `SELECT id,title,body,report_ids,created_at,read_at FROM notifications WHERE user_id=? ORDER BY created_at DESC LIMIT 100`, user.id);
   const result = {
@@ -276,7 +278,10 @@ async function workspace(request, env, expectedRole) {
     jobs, poles, notifications, causes: CAUSES
   };
   if (admin) {
-    result.users = await all(env.DB, 'SELECT id,username,display_name,role,active,created_at FROM users ORDER BY created_at DESC LIMIT 500');
+    result.users = await all(env.DB, `SELECT u.id,u.username,u.display_name,u.role,u.active,u.created_at,
+      (SELECT COUNT(*) FROM reports r WHERE r.assigned_user_id=u.id) AS report_count,
+      (SELECT COUNT(*) FROM jobs j WHERE j.technician_id=u.id OR j.assigned_user_id=u.id) AS job_count
+      FROM users u ORDER BY u.created_at DESC LIMIT 500`);
     result.registrations = await all(env.DB, `SELECT r.*,u.username,u.display_name FROM registrations r JOIN users u ON u.id=r.user_id ORDER BY r.requested_at DESC LIMIT 500`);
   }
   return result;
@@ -325,6 +330,24 @@ async function upsertPole(request, env, data) {
     model=excluded.model,installed_at=excluded.installed_at,notes=excluded.notes,active=excluded.active,updated_at=excluded.updated_at`,
     pole, location, lat, lng, model, installedAt, notes, active, time, time);
   await audit(env.DB, user.username, 'save_pole', pole);
+  return { pole };
+}
+
+async function deletePole(request, env, poleValue, data) {
+  const admin = await actor(request, env, true);
+  const pole = poleNumber(poleValue);
+  if (clean(data.confirm, 20).toUpperCase() !== pole) throw new HttpError(400, 'CONFIRM_REQUIRED', 'พิมพ์หมายเลขเสาให้ตรงก่อนลบ');
+  const found = await one(env.DB, `SELECT p.pole,
+    (SELECT COUNT(*) FROM reports WHERE pole=p.pole) AS report_count,
+    (SELECT COUNT(*) FROM jobs WHERE pole=p.pole) AS job_count
+    FROM poles p WHERE p.pole=?`, pole);
+  if (!found) throw new HttpError(404, 'NOT_FOUND', 'ไม่พบเสานี้');
+  if (found.report_count || found.job_count) throw new HttpError(409, 'POLE_HAS_HISTORY', 'เสานี้มีเรื่องแจ้งหรือประวัติซ่อม กรุณาปิดใช้งานแทนการลบ');
+  const result = await run(env.DB, `DELETE FROM poles WHERE pole=?
+    AND NOT EXISTS(SELECT 1 FROM reports WHERE pole=?)
+    AND NOT EXISTS(SELECT 1 FROM jobs WHERE pole=?)`, pole, pole, pole);
+  if (!result.meta.changes) throw new HttpError(409, 'STATUS_CHANGED', 'ข้อมูลเสาเปลี่ยนไป กรุณารีเฟรช');
+  await audit(env.DB, admin.username, 'delete_pole', pole);
   return { pole };
 }
 
@@ -464,6 +487,51 @@ async function updateUser(request, env, userId, data) {
   return true;
 }
 
+async function createUser(request, env, data) {
+  const admin = await actor(request, env, true);
+  const username = clean(data.username, 80).toLowerCase();
+  const name = clean(data.name, 100);
+  const role = clean(data.role, 20);
+  if (!/^[a-z0-9._-]{3,40}$/.test(username) || !name || !['admin', 'technician'].includes(role)) {
+    throw new HttpError(400, 'INVALID_ACCOUNT', 'กรอกชื่อผู้ใช้ 3–40 ตัวอักษร ชื่อที่แสดง และบทบาท');
+  }
+  const temporaryPassword = bytesToBase64(crypto.getRandomValues(new Uint8Array(20))).replaceAll('+', '-').replaceAll('/', '_').replaceAll('=', '');
+  const salt = bytesToBase64(crypto.getRandomValues(new Uint8Array(16)));
+  const hash = await passwordHash(temporaryPassword, salt);
+  const userId = id();
+  const result = await run(env.DB, `INSERT INTO users(id,username,display_name,role,password_hash,salt,iterations,must_change_password,active,created_at)
+    VALUES(?,?,?,?,?,?,?,?,?,?) ON CONFLICT(username) DO NOTHING`, userId, username, name, role, hash, salt, PASSWORD_ITERATIONS, 1, 1, now());
+  if (!result.meta.changes) throw new HttpError(409, 'USERNAME_EXISTS', 'ชื่อผู้ใช้นี้ถูกใช้แล้ว');
+  await audit(env.DB, admin.username, 'create_account', userId);
+  return { id: userId, username, temporaryPassword };
+}
+
+async function deleteUser(request, env, userId, data) {
+  const admin = await actor(request, env, true);
+  if (userId === admin.id) throw new HttpError(400, 'SELF_DELETE', 'ไม่สามารถลบบัญชีที่กำลังใช้งาน');
+  const target = await one(env.DB, `SELECT u.id,u.username,
+    (SELECT COUNT(*) FROM reports WHERE assigned_user_id=u.id) AS report_count,
+    (SELECT COUNT(*) FROM jobs WHERE technician_id=u.id OR assigned_user_id=u.id) AS job_count
+    FROM users u WHERE u.id=?`, userId);
+  if (!target) throw new HttpError(404, 'NOT_FOUND', 'ไม่พบบัญชีนี้');
+  if (clean(data.confirm, 80).toLowerCase() !== target.username.toLowerCase()) throw new HttpError(400, 'CONFIRM_REQUIRED', 'พิมพ์ชื่อผู้ใช้ให้ตรงก่อนลบ');
+  if (target.report_count || target.job_count) throw new HttpError(409, 'USER_HAS_HISTORY', 'บัญชีนี้เกี่ยวข้องกับงานหรือเรื่องแจ้ง กรุณาปิดใช้งานแทนการลบ');
+  try {
+    const results = await env.DB.batch([
+      env.DB.prepare('DELETE FROM registrations WHERE user_id=?').bind(userId),
+      env.DB.prepare('DELETE FROM users WHERE id=?').bind(userId)
+    ]);
+    if (!results[1].meta.changes) throw new HttpError(409, 'STATUS_CHANGED', 'ข้อมูลบัญชีเปลี่ยนไป กรุณารีเฟรช');
+  } catch (error) {
+    if (error instanceof HttpError) throw error;
+    if (/foreign key constraint failed/i.test(String(error.message))) throw new HttpError(409, 'USER_HAS_HISTORY', 'บัญชีนี้เกี่ยวข้องกับข้อมูลอื่น กรุณาปิดใช้งานแทนการลบ');
+    throw error;
+  }
+  await run(env.DB, 'DELETE FROM login_attempts WHERE username=?', target.username);
+  await audit(env.DB, admin.username, 'delete_account', userId);
+  return { username: target.username };
+}
+
 async function resetPassword(request, env, userId) {
   const admin = await actor(request, env, true);
   const target = await one(env.DB, 'SELECT id FROM users WHERE id=?', userId);
@@ -569,9 +637,12 @@ export default {
       if (request.method === 'POST' && /^\/api\/notifications\/[a-f0-9]{32}\/read$/.test(url.pathname)) return ok(await readNotification(request, env, url.pathname.split('/')[3]));
       if (request.method === 'POST' && /^\/api\/admin\/notifications\/[a-f0-9]{32}\/read$/.test(url.pathname)) return ok(await readNotification(request, env, url.pathname.split('/')[4]));
       if (request.method === 'POST' && url.pathname === '/api/admin/poles') return ok(await upsertPole(request, env, await body(request)));
+      if (request.method === 'DELETE' && /^\/api\/admin\/poles\/T\d{4}$/.test(url.pathname)) return ok(await deletePole(request, env, url.pathname.split('/')[4], await body(request)));
       if (request.method === 'POST' && url.pathname === '/api/admin/assign') return ok(await assign(request, env, await body(request)));
       if (request.method === 'POST' && /^\/api\/admin\/registrations\/[a-f0-9]{32}\/review$/.test(url.pathname)) return ok(await reviewRegistration(request, env, url.pathname.split('/')[4], await body(request)));
       if (request.method === 'POST' && /^\/api\/admin\/users\/[a-f0-9]{32}$/.test(url.pathname)) return ok(await updateUser(request, env, url.pathname.split('/')[4], await body(request)));
+      if (request.method === 'POST' && url.pathname === '/api/admin/users') return ok(await createUser(request, env, await body(request)), 201);
+      if (request.method === 'DELETE' && /^\/api\/admin\/users\/[a-f0-9]{32}$/.test(url.pathname)) return ok(await deleteUser(request, env, url.pathname.split('/')[4], await body(request)));
       if (request.method === 'POST' && /^\/api\/admin\/users\/[a-f0-9]{32}\/reset-password$/.test(url.pathname)) return ok(await resetPassword(request, env, url.pathname.split('/')[4]));
       if (request.method === 'POST' && url.pathname === '/api/admin/notifications') return ok(await notify(request, env, await body(request)));
       if (request.method === 'POST' && url.pathname === '/api/admin/cancel') return ok(await cancelReports(request, env, await body(request)));

@@ -39,7 +39,8 @@ The workflow centers on the pole number: a resident enters it when reporting, an
 
 - Public reporting supports pole numbers, symptoms, one of name/phone/email/LINE ID, and an optional before photo. The UI says symptoms and photos are public while reporter information is visible to staff.
 - The public board shows report status, date, and photo availability. Individual report pages show repair progress and available before and after photos.
-- The live technician area has a dashboard, jobs, pole history, and messages. The live administrator area additionally has assignment, user management, and an audit log. These screens were inspected read-only after the user signed in on 31 October 2026.
+- The live technician area has a dashboard, jobs, pole history, and messages. The administrator area additionally manages assignments, poles, account approvals, roles, activation, and temporary passwords. The previous audit table has been removed; do not promise an activity log in the UI.
+- Administrators may permanently delete poles and accounts only when no report or repair history references them. Otherwise, they deactivate the pole or account to preserve work history. New staff accounts can be created with a one-time temporary password that must be changed at first sign-in.
 - The source includes a clearly marked fictional demo mode. Demo records must remain distinguishable from real reports.
 - The confirmed migration scope is the 50 pole records in `LinghtFix 3 - Poles.csv` and usernames with roles from the three accounts in `LinghtFix 3 - Accounts.csv`. Repair history, reports, photos, display names, and all old password hashes stay behind. Staff set new passwords before using the replacement. The CSV exports were provided on 31 October 2026.
 - Open decision: whether reporter information must permit a reply. The current form accepts a name alone, while its copy says staff may follow up.
