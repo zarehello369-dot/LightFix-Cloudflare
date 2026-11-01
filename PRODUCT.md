@@ -1,0 +1,67 @@
+# LightFix
+
+<!-- impeccable:product-schema 1 -->
+
+## Platform
+
+web
+
+## Stack
+
+- The existing published system at `https://linghtfix.netlify.app/` uses a static HTML/CSS/JavaScript frontend, a Netlify function at `/api`, and a Google Apps Script backend with Sheets records and Drive photos.
+- The replacement system is to use Cloudflare for hosting, application code, domain routing, records, and photos. The planned implementation uses a Worker with static assets, D1 for structured records, and R2 for photos. The final domain has not been chosen; a `workers.dev` address can be used for initial validation.
+- Both administrators and electricians use the LightFix username/password login. The user removed the planned Cloudflare Access requirement on 31 October 2026.
+
+## Users
+
+- People in the community report streetlight problems and check repair progress.
+- Electricians receive assigned work and update repairs.
+- Administrators approve staff accounts and manage work.
+
+These roles were confirmed by the user on 31 October 2026.
+
+## Product Purpose
+
+LightFix lets residents report a problem at a numbered streetlight without creating an account, then follow that report through repair. Staff use authenticated areas to process reports and record repair outcomes.
+
+## Positioning
+
+The workflow centers on the pole number: a resident enters it when reporting, and the public progress board and individual tracking link show the resulting repair status and before and after photos. No broader market claim has been confirmed.
+
+## Operating Context
+
+- A resident finds the pole number on its label or QR code, selects or describes the symptom, supplies one reporter information field, and may attach a photo.
+- The public site offers a community progress board and a link to an individual report.
+- Technician and administrator areas require sign-in. New staff registrations require administrator approval.
+- The backend stores reports, jobs, poles, accounts, registrations, notifications, and audit records in Sheets; it stores photos in Drive.
+
+## Capabilities and Constraints
+
+- Public reporting supports pole numbers, symptoms, one of name/phone/email/LINE ID, and an optional before photo. The UI says symptoms and photos are public while reporter information is visible to staff.
+- The public board shows report status, date, and photo availability. Individual report pages show repair progress and available before and after photos.
+- The live technician area has a dashboard, jobs, pole history, and messages. The live administrator area additionally has assignment, user management, and an audit log. These screens were inspected read-only after the user signed in on 31 October 2026.
+- The source includes a clearly marked fictional demo mode. Demo records must remain distinguishable from real reports.
+- The confirmed migration scope is the 50 pole records in `LinghtFix 3 - Poles.csv` and usernames with roles from the three accounts in `LinghtFix 3 - Accounts.csv`. Repair history, reports, photos, display names, and all old password hashes stay behind. Staff set new passwords before using the replacement. The CSV exports were provided on 31 October 2026.
+- Open decision: whether reporter information must permit a reply. The current form accepts a name alone, while its copy says staff may follow up.
+- Open decision: the official emergency advice and contact channel for damaged or hanging electrical wires.
+- The supplied frontend archive does not include the Netlify function referenced by its `/api` redirect, even though that function is running on the published site. The function's source and its connection to Apps Script remain unverified, so this copy is not a complete deployable project.
+
+## Brand Commitments
+
+- Product name: LightFix. The existing public interface uses Thai as its default language and has an English option in source code.
+- The replacement keeps the lightbulb symbol and yellow as recognizable brand cues, while redesigning the rest of the interface. The first priority on the public landing surface is completing a report quickly.
+- Preserve the public promise that reporting does not require an account, unless the user explicitly changes it.
+
+## Evidence on Hand
+
+- User-supplied `deploy-nelify 3.zip` (frontend and Netlify configuration) and `Code.gs.txt` (Apps Script backend), received 31 October 2026.
+- Live public interface at `https://linghtfix.netlify.app/`, inspected 31 October 2026. The live version and supplied source both identify themselves as LightFix 3.1.
+- The user signed in to the live technician and administrator areas for a read-only inspection on 31 October 2026. No confirmed service-level target, official emergency contact, or customer quote has been provided.
+
+## Product Principles
+
+1. Make it quick for a resident to report a specific streetlight without an account.
+2. Keep repair status understandable through a report-specific link and public progress view.
+3. Keep reporter contact information out of public views.
+4. Give staff role-appropriate access to assign, complete, and document repairs.
+5. Keep fictional demonstration data clearly separated from live records.

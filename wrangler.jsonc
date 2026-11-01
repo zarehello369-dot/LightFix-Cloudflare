@@ -1,0 +1,27 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "lightfix",
+  "main": "./src/worker.js",
+  "compatibility_date": "2026-10-30",
+  "workers_dev": true,
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/admin", "/admin/*", "/api/*", "/media/*"]
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "lightfix-db",
+      "database_id": "486ee41d-4771-41cc-b472-fd9fd290fe4d",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "PHOTOS",
+      "bucket_name": "lightfix-photos"
+    }
+  ]
+}
