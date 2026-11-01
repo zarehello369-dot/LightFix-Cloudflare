@@ -2,7 +2,7 @@ export const $ = selector => document.querySelector(selector);
 export const control = (form, name) => form.elements.namedItem(name);
 export const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 export const date = value => value ? new Intl.DateTimeFormat('th-TH', { dateStyle: 'medium', timeStyle: 'short' }).format(Number(value)) : 'ยังไม่ระบุ';
-export const icon = `<svg viewBox="0 0 64 64" aria-hidden="true" focusable="false"><path d="M32 9a18 18 0 0 0-10 33v5h20v-5A18 18 0 0 0 32 9Z" fill="#f4c928"/><path d="M24 53h16M27 59h10" stroke="#f4c928" stroke-width="4" stroke-linecap="round"/><path d="M32 18v5m-10 5 4 3m16-3-4 3" stroke="#17252b" stroke-width="3" stroke-linecap="round"/></svg>`;
+export const icon = `<svg viewBox="0 0 48 48" aria-hidden="true" focusable="false"><g fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 31.5c0-3.1-1.4-4.5-3-6.6a11.5 11.5 0 1 1 19 0c-1.6 2.1-3 3.5-3 6.6H17.5Z"/><path d="M18 36h12M20 40h8M24 3v3M8.5 9.5l2.2 2.2M39.5 9.5l-2.2 2.2M4 23h3M44 23h-3"/></g></svg>`;
 export const badge = status => `<span class="badge ${['wait','doing','done','cancel'][status] || 'wait'}">${['รอรับเรื่อง','กำลังซ่อม','ซ่อมเสร็จ','ยกเลิก'][status] || 'รอรับเรื่อง'}</span>`;
 
 export async function api(path, options = {}) {
@@ -27,8 +27,10 @@ export function toast(message) {
 
 export function shell(content, current = '') {
   $('#app').innerHTML = `<header class="site-header"><div class="shell">
-    <a class="brand" href="/" aria-label="LightFix หน้าแรก">${icon}<span>LightFix</span></a>
-    <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="site-nav">เมนู</button>
+    <a class="brand" href="/" aria-label="LightFix หน้าแรก">${icon}</a>
+    <span class="site-name">LightFix</span>
+    <a class="header-track" href="/track">ติดตามเรื่อง</a>
+    <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="site-nav" aria-label="เปิดเมนู">เมนู</button>
     <nav id="site-nav" class="site-nav" aria-label="เมนูหลัก">
       <a href="/" ${current === 'report' ? 'aria-current="page"' : ''}>แจ้งไฟเสีย</a>
       <a href="/board" ${current === 'board' ? 'aria-current="page"' : ''}>ความคืบหน้า</a>
@@ -40,6 +42,7 @@ export function shell(content, current = '') {
   $('.menu-toggle')?.addEventListener('click', event => {
     const open = $('#site-nav').classList.toggle('open');
     event.currentTarget.setAttribute('aria-expanded', String(open));
+    event.currentTarget.setAttribute('aria-label', open ? 'ปิดเมนู' : 'เปิดเมนู');
   });
 }
 export function showError(target, error) {

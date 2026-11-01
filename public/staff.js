@@ -76,8 +76,17 @@ async function loadWorkspace() {
 function renderWorkspace() {
   const data = state.data;
   const tabs = state.role === 'admin' ? [['overview','ภาพรวม'],['reports','เรื่องแจ้ง'],['jobs','งานซ่อม'],['poles','ข้อมูลเสา'],['users','บัญชีผู้ใช้'],['messages','ข้อความ'],['history','ประวัติซ่อม']] : [['overview','ภาพรวม'],['reports','เรื่องแจ้ง'],['jobs','งานซ่อม'],['poles','ข้อมูลเสา'],['messages','ข้อความ'],['history','ประวัติซ่อม']];
-  $('#staff-root').innerHTML = `<div class="staff-layout"><aside class="staff-rail"><h2>${roleLabel(state.role)} · ${esc(data.user.name)}</h2><nav aria-label="เมนูพื้นที่ทำงาน">${tabs.map(([key,label]) => `<button type="button" data-tab="${key}" ${state.tab === key ? 'aria-current="page"' : ''}>${label}</button>`).join('')}</nav><button id="logout" class="button ghost small" style="margin-top:18px">ออกจากระบบ</button></aside><div class="staff-main"><div id="staff-content"></div></div></div><dialog class="dialog" id="task-dialog" aria-labelledby="dialog-title"></dialog>`;
-  document.querySelectorAll('[data-tab]').forEach(button => button.addEventListener('click', () => { state.tab = button.dataset.tab; renderWorkspace(); }));
+  $('#staff-root').innerHTML = `<div class="staff-layout"><aside class="staff-rail"><div class="staff-identity"><h2>${roleLabel(state.role)}<span>${esc(data.user.name)}</span></h2><button id="logout" class="button ghost small" type="button">ออกจากระบบ</button></div><label class="staff-nav-label" for="staff-view">หน้าทำงาน</label><select id="staff-view" class="staff-view-select" aria-label="เลือกหน้าทำงาน">${tabs.map(([key,label]) => `<option value="${key}" ${state.tab === key ? 'selected' : ''}>${label}</option>`).join('')}</select><nav aria-label="เมนูพื้นที่ทำงาน">${tabs.map(([key,label]) => `<button type="button" data-tab="${key}" ${state.tab === key ? 'aria-current="page"' : ''}>${label}</button>`).join('')}</nav></aside><div class="staff-main"><div id="staff-content"></div></div></div><dialog class="dialog" id="task-dialog" aria-labelledby="dialog-title"></dialog>`;
+  document.querySelectorAll('[data-tab]').forEach(button => button.addEventListener('click', () => {
+    state.tab = button.dataset.tab;
+    renderWorkspace();
+    document.querySelector(`[data-tab="${state.tab}"]`)?.focus();
+  }));
+  $('#staff-view').addEventListener('change', event => {
+    state.tab = event.currentTarget.value;
+    renderWorkspace();
+    $('#staff-view').focus();
+  });
   $('#logout').addEventListener('click', async () => { await post(`${base()}/auth/logout`); loginPage(); });
   renderTab();
 }
@@ -86,7 +95,15 @@ function renderTab() {
   const views = { overview, reports, jobs, poles, users, messages, history };
   views[state.tab]?.();
 }
-function content(html) { $('#staff-content').innerHTML = html; }
+function enhanceTables(root = $('#staff-content')) {
+  root.querySelectorAll('.data-table').forEach(table => {
+    const headers = [...table.querySelectorAll('thead th')].map(th => th.textContent.trim());
+    table.querySelectorAll('tbody tr').forEach(row => [...row.children].forEach((cell, index) => {
+      if (cell.tagName === 'TD') cell.dataset.label = headers[index] || '';
+    }));
+  });
+}
+function content(html) { $('#staff-content').innerHTML = html; enhanceTables(); }
 function dialog(html) {
   const target = $('#task-dialog'); target.innerHTML = html; target.showModal();
   target.querySelector('[data-close]')?.addEventListener('click', () => target.close());
@@ -110,7 +127,7 @@ function reports() {
   const d = state.data, rows = d.reports;
   content(`<h1>เรื่องแจ้ง</h1><p class="muted">เลือกเรื่องของเสาเดียวกันได้สูงสุด 3 เรื่องเพื่อเริ่มงาน${state.role === 'admin' ? 'หรือมอบหมาย' : ''}</p>
     <div class="toolbar"><button class="button dark" id="start-job">เริ่มงานจากที่เลือก</button>${state.role === 'admin' ? '<button class="button outline" id="assign-job">มอบหมาย</button><button class="button ghost" id="cancel-job">ยกเลิกเรื่องของเสา</button>' : ''}<span class="small muted" id="selected-count">เลือก ${state.selected.size} เรื่อง</span></div>
-    ${rows.length ? `<div class="panel table-wrap"><table class="data-table"><thead><tr><th>เลือก</th><th>เสา / อาการ</th><th>สถานะ</th><th>วันที่</th><th>ผู้รับงาน</th></tr></thead><tbody>${rows.map(r => `<tr><td>${r.status === 0 ? `<input type="checkbox" aria-label="เลือกเรื่องเสา ${esc(r.pole)}" data-report="${esc(r.id)}" ${state.selected.has(r.id) ? 'checked' : ''}>` : ''}</td><td><strong class="number">${esc(r.pole)}</strong><br>${esc(r.symptom)}<br><span class="small muted">${contactLabel(r.contactType)}: ${esc(r.contactValue)}</span></td><td>${badge(r.status)}</td><td class="small number">${date(r.at)}</td><td class="small">${r.assignedId ? 'มอบหมายแล้ว' : 'ยังไม่มอบหมาย'}</td></tr>`).join('')}</tbody></table></div>` : '<div class="empty">ยังไม่มีเรื่องแจ้งในพื้นที่ของคุณ</div>'}`);
+    ${rows.length ? `<div class="panel table-wrap"><table class="data-table reports-table"><thead><tr><th>เลือก</th><th>เสา / อาการ</th><th>สถานะ</th><th>วันที่</th><th>ผู้รับงาน</th></tr></thead><tbody>${rows.map(r => `<tr><td>${r.status === 0 ? `<input type="checkbox" aria-label="เลือกเรื่องเสา ${esc(r.pole)}" data-report="${esc(r.id)}" ${state.selected.has(r.id) ? 'checked' : ''}>` : ''}</td><td><strong class="number">${esc(r.pole)}</strong><br>${esc(r.symptom)}<br><span class="small muted">${contactLabel(r.contactType)}: ${esc(r.contactValue)}</span></td><td>${badge(r.status)}</td><td class="small number">${date(r.at)}</td><td class="small">${r.assignedId ? 'มอบหมายแล้ว' : 'ยังไม่มอบหมาย'}</td></tr>`).join('')}</tbody></table></div>` : '<div class="empty">ยังไม่มีเรื่องแจ้งในพื้นที่ของคุณ</div>'}`);
   document.querySelectorAll('[data-report]').forEach(input => input.addEventListener('change', () => { input.checked ? state.selected.add(input.dataset.report) : state.selected.delete(input.dataset.report); $('#selected-count').textContent = `เลือก ${state.selected.size} เรื่อง`; }));
   $('#start-job').addEventListener('click', startSelected);
   $('#assign-job')?.addEventListener('click', assignSelected);
@@ -167,6 +184,7 @@ function poles() {
   const draw = () => {
     const filter = $('#pole-filter').value.trim().toUpperCase();
     $('#pole-rows').innerHTML = rows.filter(p => !filter || p.pole.includes(filter) || p.location?.includes(filter)).map(p => `<tr><td class="number"><strong>${esc(p.pole)}</strong>${p.active ? '' : '<br><span class="small muted">ปิดใช้</span>'}</td><td>${esc(p.location || 'ไม่ระบุตำแหน่ง')}</td><td class="number">${p.open_count}</td><td class="number">${p.repair_count}</td>${state.role === 'admin' ? `<td><button class="button outline small" data-edit-pole="${esc(p.pole)}">แก้ไข</button></td>` : ''}</tr>`).join('') || '<tr><td colspan="5" class="muted">ไม่พบเสาที่ค้นหา</td></tr>';
+    enhanceTables();
     document.querySelectorAll('[data-edit-pole]').forEach(b => b.addEventListener('click', () => poleForm(rows.find(p => p.pole === b.dataset.editPole))));
   };
   $('#pole-filter').addEventListener('input', draw); draw();
@@ -181,9 +199,9 @@ function poleForm(p = {}) {
 function users() {
   if (state.role !== 'admin') return;
   const d = state.data;
-  content(`<h1>บัญชีผู้ใช้</h1><p class="muted">บัญชีที่ย้ายมาใช้ชื่อผู้ใช้เดิม แต่ต้องตั้งรหัสผ่านใหม่ก่อนเปิดใช้งาน</p>
+  content(`<h1>บัญชีผู้ใช้</h1><p class="muted">จัดการบทบาท การเปิดใช้งาน และรหัสผ่านของแต่ละบัญชี</p>
     <section class="staff-section"><h2>คำขอสมัคร ${d.registrations.filter(r => r.status === 'pending').length} รายการ</h2>${d.registrations.filter(r => r.status === 'pending').length ? `<div class="panel">${d.registrations.filter(r => r.status === 'pending').map(r => `<div class="staff-row"><strong>${esc(r.username)}</strong><div>${esc(r.display_name)} · ${esc(r.requested_role)}<p>ติดต่อ: ${esc(r.contact)} · ${date(r.requested_at)}</p></div><div class="actions"><button class="button primary small" data-approve="${esc(r.id)}">อนุมัติ</button><button class="button outline small" data-reject="${esc(r.id)}">ปฏิเสธ</button></div></div>`).join('')}</div>` : '<div class="empty">ไม่มีคำขอใหม่</div>'}</section>
-    <section class="staff-section"><h2>บัญชีทั้งหมด</h2><div class="panel table-wrap"><table class="data-table"><thead><tr><th>ชื่อผู้ใช้</th><th>บทบาท</th><th>สถานะ</th><th>จัดการ</th></tr></thead><tbody>${d.users.map(u => `<tr><td><strong>${esc(u.username)}</strong><br><span class="small muted">${esc(u.display_name)}</span></td><td>${u.role === 'admin' ? 'ผู้ดูแล' : 'ช่าง'}</td><td>${u.active ? '<span class="status-note">ใช้งานได้</span>' : '<span class="danger-note">ยังไม่เปิดใช้</span>'}</td><td><div class="actions"><button class="button outline small" data-edit-user="${esc(u.id)}">แก้ไข</button>${u.id !== d.user.id ? `<button class="button ghost small" data-reset="${esc(u.id)}">ตั้งรหัสใหม่</button>` : ''}</div></td></tr>`).join('')}</tbody></table></div><button class="button ghost" id="self-password" style="margin-top:16px">เปลี่ยนรหัสผ่านของฉัน</button></section>`);
+    <section class="staff-section"><h2>บัญชีทั้งหมด</h2><div class="panel table-wrap"><table class="data-table"><thead><tr><th>ชื่อผู้ใช้</th><th>บทบาท</th><th>สถานะ</th><th>จัดการ</th></tr></thead><tbody>${d.users.map(u => `<tr><td><span class="user-identity"><strong>${esc(u.username)}</strong>${u.display_name && u.display_name !== u.username ? `<span class="small muted">${esc(u.display_name)}</span>` : ''}</span></td><td>${u.role === 'admin' ? 'ผู้ดูแล' : 'ช่าง'}</td><td>${u.active ? '<span class="status-note">ใช้งานได้</span>' : '<span class="danger-note">ยังไม่เปิดใช้</span>'}</td><td><div class="actions"><button class="button outline small" data-edit-user="${esc(u.id)}">แก้ไข</button>${u.id !== d.user.id ? `<button class="button ghost small" data-reset="${esc(u.id)}">ตั้งรหัสใหม่</button>` : ''}</div></td></tr>`).join('')}</tbody></table></div><button class="button ghost" id="self-password" style="margin-top:16px">เปลี่ยนรหัสผ่านของฉัน</button></section>`);
   document.querySelectorAll('[data-approve]').forEach(b => b.addEventListener('click', () => review(b.dataset.approve, 'approved')));
   document.querySelectorAll('[data-reject]').forEach(b => b.addEventListener('click', () => review(b.dataset.reject, 'rejected')));
   document.querySelectorAll('[data-edit-user]').forEach(b => b.addEventListener('click', () => editUser(d.users.find(u => u.id === b.dataset.editUser))));

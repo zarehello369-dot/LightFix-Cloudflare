@@ -1,204 +1,203 @@
 ---
 name: LightFix
-description: Clear streetlight reporting and repair progress in a road-sign visual language.
+description: Mobile-first streetlight reporting and repair tracking with an outline bulb mark.
 colors:
-  road-ink: "#17252b"
-  sign-yellow: "#f4c928"
-  road-cream: "#f6f2e7"
-  card-white: "#fffdf8"
-  muted-ink: "#53636a"
-  line: "#cbd1ca"
-  progress-green: "#277a64"
-  danger-red: "#a43f31"
-  progress-blue: "#21596e"
+  ink: "#182b2d"
+  muted: "#526267"
+  gold: "#e9b915"
+  gold-soft: "#fff3bb"
+  surface: "#ffffff"
+  page: "#f5f7f3"
+  line: "#d9e1dc"
+  green: "#176851"
+  red: "#9c3c2e"
+  blue: "#205e72"
+  bulb-stroke: "#b58a00"
 typography:
   display:
     fontFamily: "PlexThai, Noto Sans Thai, sans-serif"
-    fontSize: "clamp(2rem, 5vw, 3.6rem)"
+    fontSize: "2rem"
     fontWeight: 700
-    lineHeight: 1.19
+    lineHeight: 1.24
     letterSpacing: "-.025em"
   headline:
     fontFamily: "PlexThai, Noto Sans Thai, sans-serif"
-    fontSize: "clamp(1.45rem, 3vw, 2.1rem)"
+    fontSize: "1.45rem"
     fontWeight: 700
-    lineHeight: 1.3
-    letterSpacing: "-.02em"
+    lineHeight: 1.35
   body:
     fontFamily: "PlexThai, Noto Sans Thai, sans-serif"
     fontSize: "16px"
     fontWeight: 400
-    lineHeight: 1.65
+    lineHeight: 1.6
   label:
     fontFamily: "PlexThai, Noto Sans Thai, sans-serif"
     fontSize: ".96rem"
     fontWeight: 600
 rounded:
-  field: "9px"
-  button: "9px"
-  record: "11px"
+  control: "10px"
+  record: "12px"
   panel: "14px"
   feature: "16px"
   pill: "999px"
 spacing:
   compact: "8px"
-  field-gap: "18px"
-  panel: "24px"
-  section: "32px"
+  field-gap: "16px"
+  mobile-gutter: "16px"
+  tablet-gutter: "24px"
+  desktop-gutter: "28px"
 components:
   button-primary:
-    backgroundColor: "{colors.sign-yellow}"
-    textColor: "{colors.road-ink}"
-    rounded: "{rounded.button}"
-    padding: "9px 18px"
-    height: "47px"
-  button-dark:
-    backgroundColor: "{colors.road-ink}"
-    textColor: "{colors.card-white}"
-    rounded: "{rounded.button}"
-    padding: "9px 18px"
-    height: "47px"
+    backgroundColor: "{colors.gold}"
+    textColor: "{colors.ink}"
+    rounded: "{rounded.control}"
+    padding: "9px 16px"
+    height: "46px"
   button-outline:
-    backgroundColor: "transparent"
-    textColor: "{colors.road-ink}"
-    rounded: "{rounded.button}"
-    padding: "9px 18px"
-    height: "47px"
+    backgroundColor: "{colors.surface}"
+    textColor: "{colors.ink}"
+    rounded: "{rounded.control}"
+    padding: "9px 16px"
+    height: "46px"
   field:
-    backgroundColor: "#ffffff"
-    textColor: "{colors.road-ink}"
-    rounded: "{rounded.field}"
+    backgroundColor: "{colors.surface}"
+    textColor: "{colors.ink}"
+    rounded: "{rounded.control}"
     padding: "10px 13px"
     height: "48px"
   panel:
-    backgroundColor: "{colors.card-white}"
-    textColor: "{colors.road-ink}"
+    backgroundColor: "{colors.surface}"
+    textColor: "{colors.ink}"
     rounded: "{rounded.panel}"
-    padding: "{spacing.panel}"
 ---
 
 # Design System: LightFix
 
 ## Overview
 
-**Creative North Star: "The Repair Route"**
+**Creative North Star: "The Clear Repair Path"**
 
-The selected road-sign and road-line direction makes each report feel like a short, legible route from a numbered pole to a finished repair. The visual language pairs high-contrast road ink with warm light surfaces and restrained sign yellow. A lightbulb mark remains the brand anchor.
+LightFix puts the resident's next action and each repair status in plain view. White working surfaces, a pale green canvas, dark text, and measured gold accents support quick reporting on a phone and dense staff work on larger screens.
 
-The public form gives the pole number the strongest field treatment and pairs it with a dark three-step route panel. Staff screens use the same palette at a denser pace: rail navigation, thin dividers, compact metrics, rows, and status pills keep work scannable.
+The only logo symbol is a yellow outline lightbulb. The LightFix name is separate text in the header and elsewhere; do not combine it with the mark into logo artwork. Thai-first labels, visible status words, and familiar controls carry the experience.
 
 **Key Characteristics:**
 
-- Thai-first IBM Plex Sans Thai with large, clear pole numbers and tabular numeric status data.
-- Yellow reserved for brand, main actions, active tabs, and route markings.
-- Cream canvas, off-white working surfaces, dark ink, and status colors with textual labels.
-- Dashed road markings and numbered route circles used as recurring cues.
+- A single-column reporting flow at phone width, with the pole number first.
+- White header and surfaces over a pale green canvas; gold marks primary actions and selected controls.
+- Textual status badges and compact, readable records.
+- Staff navigation as a select on mobile and a rail from desktop width.
 
 ## Colors
 
-Sign yellow is the action and wayfinding accent. Road ink carries navigation, headings, and the route panel; soft neutrals keep forms and records calm.
+Gold is a selective action and brand cue. Green communicates focus and completed work; blue communicates work in progress; red identifies errors and danger.
 
 ### Primary
 
-- **Sign Yellow:** Brand bulb, main actions, active tab underline, and dashed route markings.
-- **Road Ink:** Header, route panel, headings, and selected symptom controls.
+- **Gold:** Primary actions and route step numbers.
+- **Gold Soft:** Selected symptom controls and active staff navigation.
+- **Bulb Stroke:** The outline bulb mark in the header and favicon.
+- **Ink:** Main text, dark buttons, and toast background.
 
 ### Secondary
 
-- **Progress Green:** Focus outlines, timeline markers, and completed work.
-- **Progress Blue:** In-progress information and status treatment.
-- **Danger Red:** Required and error cues and destructive action.
+- **Green:** Focus outlines, successful notes, and completed states.
+- **Blue:** In-progress status treatment.
+- **Red:** Required indicators, field errors, and danger actions.
 
 ### Neutral
 
-- **Road Cream:** Page canvas.
-- **Card White:** Reporting card, panels, dialogs, and record rows.
-- **Muted Ink:** Supporting copy, dates, field notes, and table headings.
-- **Line:** Quiet panel and row boundaries.
+- **Page:** Main canvas.
+- **Surface:** Header, forms, panels, and record cards.
+- **Muted:** Supporting copy and field notes.
+- **Line:** Dividers and resting card boundaries.
 
-**The Sign Accent Rule.** Yellow identifies a route or a primary action; keep ordinary body text in road ink.
+**The Selective Gold Rule.** Reserve gold for the brand mark, primary action, selected control, and small progress cues; keep routine copy in ink.
 
 ## Typography
 
-**Display Font:** IBM Plex Sans Thai, with Noto Sans Thai and sans-serif fallbacks.
+**Display Font:** IBM Plex Sans Thai with Noto Sans Thai and sans-serif fallbacks.
 **Body Font:** The same family and fallbacks.
 
-**Character:** Bold, plainly legible Thai headings sit over relaxed body copy. Pole identifiers and dashboard counts use tabular figures so changing numbers stay aligned.
+**Character:** Direct Thai labels and bold identifiers support quick scanning. Counts use tabular figures to stay aligned.
 
 ### Hierarchy
 
-- **Display:** Bold, responsive large size and tight leading for page headings.
-- **Headline:** Bold, smaller responsive size for section headings.
-- **Body:** Regular weight with generous leading for explanations and forms; short introductions stay near 60 characters wide.
-- **Label:** Semibold, compact size for field labels and controls.
-- **Pole number:** Bold, large field text (2.05rem on desktop; 1.75rem on narrow screens) with slight positive tracking.
+- **Display:** Bold page title, starting at 2rem on phones and rising to 2.55rem at 640px and 2.8rem at 900px.
+- **Headline:** Bold section heading at 1.45rem; staff section headings are more compact.
+- **Body:** Regular 16px text with 1.6 leading; introductory copy is limited to about 65ch.
+- **Label:** Semibold .96rem for fields and controls.
+- **Pole number:** Bold, uppercase input at 1.65rem; dashboard numbers use tabular figures.
 
-**The Number First Rule.** Give pole identifiers and status counts immediate visual priority before decorative road cues.
+**The Identifier First Rule.** Make the pole number and status easy to find before secondary detail.
 
 ## Layout
 
-The shared shell is centered at a 1240px maximum with 28px side padding, reducing to 20px at 900px and 16px at 640px. The public report hero is a two-column grid: a wider form and a narrower route panel separated by 32px. At 900px it becomes one column; at 640px form fields also stack and the header navigation becomes a menu.
+Start with a single column. The centered shell is at most 1200px wide, with 16px side gutters on phones, 24px from 640px, and 28px from 900px. The public report form, route panel, status views, staff workspace, and table rows begin as stacked content.
 
-The staff workspace uses a 210px rail and a flexible content column with a 30px gap. At 900px the rail moves above content; at 640px its buttons form a compact grid. Metrics use three columns. Records, tables, and forms favor visible labels and thin separators. At 640px, records reflow and before/after photos stack. Status text remains visible alongside color.
+At 640px, the form gains two columns, symptoms become wrapping choices, detail and photo pairs gain columns, and staff forms gain two columns. From 640px through 1099px, staff table records form a two-column card grid. At 900px, the public form and route panel become two columns; the route panel is sticky, the global menu becomes inline navigation, and staff navigation becomes a left rail. At 1100px, staff tables change from labeled cards to conventional table rows, the staff rail widens, and report spacing grows.
+
+On phones, the global menu opens beneath the header while a direct tracking link stays visible. Staff choose views from a labeled select. Mobile table cards carry visible per-cell labels, and actions wrap. The three metric tiles remain side by side and permit their labels to wrap. A narrow-width adjustment at 390px reduces header and metric text slightly.
 
 ## Elevation & Depth
 
-The system uses borders and tonal contrast for most separation. A soft shadow lifts the main public report card and transient overlays. Record hover and buttons gain a smaller lift; the staff workspace remains mostly flat.
+Borders and surface contrast do most of the work. A soft shadow appears on record hover, the mobile menu, toasts, success panels, and dialogs; the main report form stays flat. Buttons gain a modest shadow on hover without moving.
 
 ### Shadow Vocabulary
 
-- **Feature card and overlay:** `0 12px 32px rgba(23,37,43,.12)`.
-- **Record hover:** `0 6px 20px rgba(23,37,43,.08)`.
-- **Button hover:** `0 7px 18px rgba(23,37,43,.14)`.
-- **Dialog:** `0 25px 70px rgba(0,0,0,.3)`.
+- **Soft surface:** `0 10px 30px rgba(24,43,45,.08)` for records on hover, menu, toast, and success panel.
+- **Button hover:** `0 4px 14px rgba(24,43,45,.10)`.
+- **Dialog:** `0 24px 70px rgba(0,0,0,.24)`.
 
-**The Quiet Workspace Rule.** Use lines and surface color to separate routine staff data; reserve lifting shadows for prominent or interactive surfaces.
+**The Flat Workspace Rule.** Use lines and white surfaces to organize routine work; apply shadows to transient or interactive states.
 
 ## Shapes
 
-Forms and controls have gently rounded corners; records and panels are slightly broader, and feature surfaces are broadest. Status badges are full pills with a colored dot. The route uses circular step numbers and dashed yellow lines. A dashed border also marks the upload field and empty states. Photo pairs share a 4:3 image frame.
+Controls use gentle 10px corners, record cards 12px, panels 14px, and the public report form 16px. Status badges are rounded pills with a dot and a word. Route steps are numbered circles. Empty states use a dashed border. Before and after photos crop to a 4:3 frame.
 
 ## Components
 
 ### Buttons
 
-- **Primary:** Sign-yellow fill, road-ink text, bold label, 47px minimum height, and a subtle lift on hover.
-- **Dark, outline, ghost, danger:** Shared button geometry. Dark reverses to ink and white; outline uses a visible muted border; ghost is transparent; danger uses the red alert color.
-- **Focus:** Shared 3px green visible outline with 3px offset. Disabled controls dim and hold their position.
+- **Primary:** Gold fill, dark bold label, 46px minimum height, and a subtle shadow on hover.
+- **Outline, dark, ghost, danger:** Share the same 10px geometry. Outline uses a visible muted border; dark uses ink fill; ghost is transparent; danger uses red.
+- **Focus and disabled:** A 3px green focus outline with 3px offset. Disabled buttons dim and keep their position. Reduced-motion preference removes transitions.
 
 ### Inputs / Fields
 
-- **Style:** White fill, gray stroke, 9px rounding, and 48px minimum height. Pole input is 70px high with enlarged uppercase characters.
-- **Focus:** Green border and translucent green ring. Error fields turn red and retain a textual error line.
-- **Symptom choices:** Bordered rectangular radio chips become dark and white when selected; keyboard focus stays visible.
+- **Style:** White fill, visible gray-green stroke, 10px corners, and 48px minimum height. The pole field is 58px high.
+- **Focus and error:** Green border and a translucent green ring on focus; red border and text error on invalid fields.
+- **Symptoms:** Two-column phone grid with 54px-high choices; at 640px they wrap in a row. Selected choices use pale gold fill and a stronger gold stroke.
+- **Upload:** Pale surface with a bordered button, filename text, and visible keyboard focus.
 
 ### Cards / Containers
 
-- **Report card:** Off-white feature surface, thin border, 16px corners, generous responsive padding, and the feature shadow.
-- **Staff panel:** Off-white, thin border, 14px corners, 24px padding on desktop and 16px on mobile.
-- **Record:** Off-white bordered row with 11px corners; its hover state adds a green border and modest lift.
+- **Report form:** White, thin line, 16px corners, and padding that grows at 640px, 900px, and 1100px.
+- **Panel and record:** White, thin line, rounded corners. Records lift on hover; regular panels stay flat.
+- **Staff table:** Labeled cards below 1100px, two columns from 640px, and a full table at 1100px.
 
 ### Navigation
 
-- **Global:** Dark ink header with bulb mark, light links, and a yellow staff entry. On narrow screens, a menu button reveals stacked links.
-- **Staff:** Text rail with a warm highlighted current page. At narrower widths it moves above the work area and becomes a button grid.
+- **Global:** White header with a linked outline bulb, separate LightFix text, direct tracking link, and menu button on mobile. The menu becomes inline at 900px.
+- **Staff:** Labeled view select below 900px; a sticky, text-labeled rail at 900px and above. Current views have a pale gold background.
 
-### Status badges and route
+### Status and route
 
-- **Badges:** Compact rounded pills with a dot and a readable status word; waiting, doing, done, and canceled each have distinct soft backgrounds.
-- **Route:** Dark panel with three numbered yellow circles and a dashed yellow line. The route motif also appears as a short divider beneath the report timeline.
+- **Badges:** Dot plus readable word; waiting, in progress, done, and canceled each have a separate tonal background.
+- **Route:** Dark teal panel with numbered gold circles. On desktop it sits beside the form; on mobile it follows the form.
 
 ## Do's and Don'ts
 
 ### Do:
 
-- **Do** lead a public reporting flow with the pole number and one clear yellow submit action.
-- **Do** keep status words visible with their colored dots.
-- **Do** preserve the lightbulb, sign yellow, and dashed route cue across public and staff surfaces.
-- **Do** keep staff data compact enough to scan while retaining readable labels on mobile.
+- **Do** place the pole number first in the public report flow and use one clear gold submit action.
+- **Do** keep status words visible alongside status color.
+- **Do** use the yellow outline bulb as the sole logo symbol and render LightFix as separate text.
+- **Do** keep staff controls usable in labeled mobile cards and a compact desktop table.
 
 ### Don't:
 
-- **Don't** spread warning colors or dashed markings across routine content; the selected direction treats them as purposeful cues.
+- **Don't** merge the word LightFix into the bulb logo artwork or replace the outline bulb with a filled mark.
 - **Don't** rely on color alone for progress, selection, or errors.
-- **Don't** replace clear pole and status labels with decorative road graphics.
+- **Don't** make mobile data depend on an unlabeled wide table.
+

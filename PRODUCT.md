@@ -49,7 +49,7 @@ The workflow centers on the pole number: a resident enters it when reporting, an
 ## Brand Commitments
 
 - Product name: LightFix. The existing public interface uses Thai as its default language and has an English option in source code.
-- The replacement keeps the lightbulb symbol and yellow as recognizable brand cues, while redesigning the rest of the interface. The first priority on the public landing surface is completing a report quickly.
+- The replacement uses only a yellow outline lightbulb as its logo symbol. “LightFix” appears as separate interface text, never as part of the logo artwork. The first priority on the public landing surface is completing a report quickly.
 - Preserve the public promise that reporting does not require an account, unless the user explicitly changes it.
 
 ## Evidence on Hand

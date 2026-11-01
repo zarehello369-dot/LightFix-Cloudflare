@@ -65,9 +65,18 @@ function reportPage() {
   pole.addEventListener('blur', async () => {
     pole.value = getPole(pole.value);
     if (!/^T\d{4}$/.test(pole.value)) return;
-    if (!/^T\d{4}$/.test(pole.value)) return;
-    try { const result = await api(`/api/poles/check?pole=${encodeURIComponent(pole.value)}`); $('#pole-error').textContent = result.found ? (result.location ? `พบเสา: ${result.location}` : 'พบหมายเลขเสานี้') : 'ไม่พบหมายเลขเสานี้ กรุณาตรวจสอบป้าย'; }
-    catch { $('#pole-error').textContent = 'ยังตรวจหมายเลขเสาไม่ได้ ระบบจะตรวจอีกครั้งเมื่อส่งเรื่อง'; }
+    const message = $('#pole-error');
+    const checkedPole = pole.value;
+    try {
+      const result = await api(`/api/poles/check?pole=${encodeURIComponent(checkedPole)}`);
+      if (pole.value !== checkedPole) return;
+      message.className = result.found ? 'field-note valid-note' : 'field-error';
+      message.textContent = result.found ? (result.location ? `พบเสา: ${result.location}` : 'พบหมายเลขเสานี้') : 'ไม่พบหมายเลขเสานี้ กรุณาตรวจสอบป้าย';
+    } catch {
+      if (pole.value !== checkedPole) return;
+      message.className = 'field-note';
+      message.textContent = 'ยังตรวจหมายเลขเสาไม่ได้ ระบบจะตรวจอีกครั้งเมื่อส่งเรื่อง';
+    }
   });
   form.addEventListener('submit', submitReport);
 }
@@ -81,6 +90,7 @@ async function submitReport(event) {
   const symptom = picked === 'อื่น ๆ' ? `อื่น ๆ: ${otherDetail}` : picked;
   const contactType = control(form, 'contactType').value;
   const contactValue = control(form, 'contactValue').value.trim();
+  $('#pole-error').className = 'field-error';
   $('#pole-error').textContent = /^T\d{4}$/.test(pole) ? '' : 'กรอกหมายเลขเสารูปแบบ T0001';
   $('#symptom-error').textContent = !picked ? 'เลือกอาการที่พบ' : picked === 'อื่น ๆ' && !otherDetail ? 'อธิบายอาการเพิ่มเติม' : '';
   $('#contact-error').textContent = contactValue ? '' : 'กรอกข้อมูลผู้แจ้ง';
