@@ -2,7 +2,15 @@ import { $, control, esc, date, badge, api, post, shell, toast, showError, photo
 import { staffPage } from './staff.js';
 
 const symptoms = ['ไฟไม่ติด', 'ไฟติด ๆ ดับ ๆ', 'ไฟสว่างน้อย', 'เสาหรือโคมชำรุด', 'อื่น ๆ'];
-const getPole = value => String(value || '').trim().toUpperCase();
+const getPole = value => {
+  const text = String(value || '').trim().toUpperCase();
+  const digits = text.startsWith('T') ? text.slice(1) : text;
+
+  return /^\d{1,4}$/.test(digits)
+    ? `T${digits.padStart(4, '0')}`
+    : text;
+};
+
 
 function reportPage() {
   document.title = 'แจ้งไฟถนนเสีย · LightFix';
@@ -41,14 +49,22 @@ function reportPage() {
     contact.inputMode = type === 'phone' ? 'tel' : type === 'email' ? 'email' : 'text';
     contact.autocomplete = type === 'phone' ? 'tel' : type === 'email' ? 'email' : 'off';
   });
-  pole.addEventListener('input', () => { pole.value = getPole(pole.value); $('#pole-error').textContent = ''; });
+  
+  pole.addEventListener('input', () => {
+    pole.value = pole.value.toUpperCase();
+    $('#pole-error').textContent = '';
+  });
+
   form.querySelectorAll('input[name=symptom]').forEach(radio => radio.addEventListener('change', () => {
     const other = radio.value === 'อื่น ๆ' && radio.checked;
     $('#other-symptom-field').hidden = !other;
     $('#other-symptom').required = other;
     $('#symptom-error').textContent = '';
   }));
+  
   pole.addEventListener('blur', async () => {
+    pole.value = getPole(pole.value);
+    if (!/^T\d{4}$/.test(pole.value)) return;
     if (!/^T\d{4}$/.test(pole.value)) return;
     try { const result = await api(`/api/poles/check?pole=${encodeURIComponent(pole.value)}`); $('#pole-error').textContent = result.found ? (result.location ? `พบเสา: ${result.location}` : 'พบหมายเลขเสานี้') : 'ไม่พบหมายเลขเสานี้ กรุณาตรวจสอบป้าย'; }
     catch { $('#pole-error').textContent = 'ยังตรวจหมายเลขเสาไม่ได้ ระบบจะตรวจอีกครั้งเมื่อส่งเรื่อง'; }
