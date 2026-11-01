@@ -81,9 +81,7 @@ async function actor(request, env, admin = false, allowPasswordChange = false) {
   return user;
 }
 
-async function audit(db, who, action, entityId) {
-  await run(db, 'INSERT INTO audit(id,at,actor,action,entity_id) VALUES(?,?,?,?,?)', id(), now(), who, action, entityId);
-}
+async function audit() {}
 
 function contact(type, value) {
   const v = clean(value, 150);
@@ -280,7 +278,6 @@ async function workspace(request, env, expectedRole) {
   if (admin) {
     result.users = await all(env.DB, 'SELECT id,username,display_name,role,active,created_at FROM users ORDER BY created_at DESC LIMIT 500');
     result.registrations = await all(env.DB, `SELECT r.*,u.username,u.display_name FROM registrations r JOIN users u ON u.id=r.user_id ORDER BY r.requested_at DESC LIMIT 500`);
-    result.audit = await all(env.DB, 'SELECT * FROM audit ORDER BY at DESC LIMIT 100');
   }
   return result;
 }

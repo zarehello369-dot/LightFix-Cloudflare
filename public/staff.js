@@ -75,7 +75,7 @@ async function loadWorkspace() {
 
 function renderWorkspace() {
   const data = state.data;
-  const tabs = state.role === 'admin' ? [['overview','ภาพรวม'],['reports','เรื่องแจ้ง'],['jobs','งานซ่อม'],['poles','ข้อมูลเสา'],['users','บัญชีผู้ใช้'],['messages','ข้อความ'],['history','ประวัติซ่อม'],['audit','บันทึกระบบ']] : [['overview','ภาพรวม'],['reports','เรื่องแจ้ง'],['jobs','งานซ่อม'],['poles','ข้อมูลเสา'],['messages','ข้อความ'],['history','ประวัติซ่อม']];
+  const tabs = state.role === 'admin' ? [['overview','ภาพรวม'],['reports','เรื่องแจ้ง'],['jobs','งานซ่อม'],['poles','ข้อมูลเสา'],['users','บัญชีผู้ใช้'],['messages','ข้อความ'],['history','ประวัติซ่อม']] : [['overview','ภาพรวม'],['reports','เรื่องแจ้ง'],['jobs','งานซ่อม'],['poles','ข้อมูลเสา'],['messages','ข้อความ'],['history','ประวัติซ่อม']];
   $('#staff-root').innerHTML = `<div class="staff-layout"><aside class="staff-rail"><h2>${roleLabel(state.role)} · ${esc(data.user.name)}</h2><nav aria-label="เมนูพื้นที่ทำงาน">${tabs.map(([key,label]) => `<button type="button" data-tab="${key}" ${state.tab === key ? 'aria-current="page"' : ''}>${label}</button>`).join('')}</nav><button id="logout" class="button ghost small" style="margin-top:18px">ออกจากระบบ</button></aside><div class="staff-main"><div id="staff-content"></div></div></div><dialog class="dialog" id="task-dialog" aria-labelledby="dialog-title"></dialog>`;
   document.querySelectorAll('[data-tab]').forEach(button => button.addEventListener('click', () => { state.tab = button.dataset.tab; renderWorkspace(); }));
   $('#logout').addEventListener('click', async () => { await post(`${base()}/auth/logout`); loginPage(); });
@@ -83,7 +83,7 @@ function renderWorkspace() {
 }
 
 function renderTab() {
-  const views = { overview, reports, jobs, poles, users, messages, history, audit };
+  const views = { overview, reports, jobs, poles, users, messages, history };
   views[state.tab]?.();
 }
 function content(html) { $('#staff-content').innerHTML = html; }
@@ -220,8 +220,3 @@ function editHistory(j) {
   const target = dialog(`<h2 id="dialog-title">แก้ไขประวัติเสา ${esc(j.pole)}</h2><form id="history-form"><div class="field"><label for="history-cause">สาเหตุ</label><select id="history-cause" name="cause">${state.data.causes.map(c => `<option value="${esc(c)}" ${j.cause === c ? 'selected' : ''}>${esc(c)}</option>`).join('')}</select></div><div class="field"><label for="history-detail">รายละเอียดสาเหตุ</label><textarea id="history-detail" name="causeDetail" rows="2">${esc(j.cause_detail)}</textarea></div><div class="field"><label for="history-note">บันทึกสาธารณะ</label><textarea id="history-note" name="note" rows="2">${esc(j.public_note)}</textarea></div><div class="field-error" data-error role="alert"></div><div class="dialog-actions"><button type="button" class="button outline" data-close>กลับ</button><button class="button primary">บันทึกการแก้ไข</button></div></form>`);
   target.querySelector('form').addEventListener('submit', async e => { e.preventDefault(); const f = e.currentTarget; try { await action(`/api/admin/history/${j.id}`, { cause: control(f, 'cause').value, causeDetail: control(f, 'causeDetail').value, note: control(f, 'note').value }, 'แก้ไขประวัติแล้ว'); } catch (error) { formError(f, error); } });
 }
-function audit() {
-  if (state.role !== 'admin') return;
-  content(`<h1>บันทึกระบบ</h1><p class="muted">รายการการเปลี่ยนแปลงล่าสุด</p>${state.data.audit.length ? `<div class="panel table-wrap"><table class="data-table"><thead><tr><th>เวลา</th><th>ผู้ทำ</th><th>การกระทำ</th><th>รายการ</th></tr></thead><tbody>${state.data.audit.map(a => `<tr><td class="number small">${date(a.at)}</td><td>${esc(a.actor)}</td><td>${esc(a.action)}</td><td class="number small">${esc(a.entity_id)}</td></tr>`).join('')}</tbody></table></div>` : '<div class="empty">ยังไม่มีบันทึก</div>'}`);
-}
-
