@@ -178,7 +178,7 @@ async function createReport(env, data) {
   if (open.count >= 3) throw new HttpError(409, 'POLE_LIMIT', 'เสานี้มีเรื่องรอดำเนินการหลายรายการแล้ว กรุณาดูหน้าติดตาม');
   const photo = decodePhoto(data.photo);
   const reportId = id();
-  const key = photo ? `unrepaired/${reportId}.${photo.ext}` : null;
+  const key = photo ? `unrepaired/${pole}/${reportId}/unrepaired-${pole}.${photo.ext}` : null;
   if (photo) await env.PHOTOS.put(key, photo.bytes, { httpMetadata: { contentType: photo.type } });
   try {
     await run(env.DB, `INSERT INTO reports(id,pole,symptom,contact_type,contact_value,before_photo_key,status,created_at,request_id)
@@ -400,7 +400,8 @@ async function finishJob(request, env, jobId, data) {
   const photo = decodePhoto(data.photo);
   if (!photo) throw new HttpError(400, 'PHOTO_REQUIRED', 'เพิ่มรูปหลังซ่อมก่อนปิดงาน');
   const reports = await all(env.DB, 'SELECT id,before_photo_key FROM reports WHERE job_id=? AND status=1', jobId);
-  const key = `repaired/after/${jobId}-${id()}.${photo.ext}`;
+  const repairFolder = `repaired/${job.pole}/${jobId}-${id()}`;
+  const key = `${repairFolder}/after/${job.pole}.${photo.ext}`;
   const createdKeys = [];
   try {
     await env.PHOTOS.put(key, photo.bytes, { httpMetadata: { contentType: photo.type } });
@@ -410,7 +411,7 @@ async function finishJob(request, env, jobId, data) {
       if (!report.before_photo_key) continue;
       const oldPhoto = await env.PHOTOS.get(report.before_photo_key);
       if (!oldPhoto) throw new HttpError(409, 'PHOTO_MISSING', 'ไม่พบรูปก่อนซ่อม กรุณาแจ้งผู้ดูแลระบบ');
-      const newKey = `repaired/before/${report.id}-${id()}.${report.before_photo_key.split('.').at(-1)}`;
+      const newKey = `${repairFolder}/before/${report.id}/${job.pole}.${report.before_photo_key.split('.').at(-1)}`;
       await env.PHOTOS.put(newKey, await oldPhoto.arrayBuffer(), { httpMetadata: oldPhoto.httpMetadata });
       createdKeys.push(newKey);
       movedPhotos.push({ id: report.id, oldKey: report.before_photo_key, newKey });

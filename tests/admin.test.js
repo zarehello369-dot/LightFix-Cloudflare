@@ -42,15 +42,50 @@ function fixture() {
       catch (error) { sqlite.exec('ROLLBACK'); throw error; }
     }
   };
+  const photos = new Map();
+  const PHOTOS = {
+    async put(key, bytes, options) { photos.set(key, { bytes: new Uint8Array(bytes), httpMetadata: options.httpMetadata }); },
+    async get(key) { const value = photos.get(key); return value ? { httpMetadata: value.httpMetadata, arrayBuffer: async () => value.bytes.slice().buffer } : null; },
+    async delete(key) { photos.delete(key); }
+  };
   const request = async (path, method = 'GET', data, token = adminToken) => {
     const response = await worker.fetch(new Request(`https://lightfix.example${path}`, {
       method, headers: { cookie: `lf_session=${token}`, ...(data ? { 'content-type': 'application/json' } : {}) },
       ...(data ? { body: JSON.stringify(data) } : {})
-    }), { DB, RATE_SALT: 'local-test-only' });
+    }), { DB, PHOTOS, RATE_SALT: 'local-test-only' });
     return { status: response.status, body: await response.json() };
   };
-  return { sqlite, request };
+  return { sqlite, request, photos };
 }
+
+test('photo names identify poles and keep multiple reports and repair rounds separate', async () => {
+  const { sqlite, request, photos } = fixture();
+  const photo = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=';
+  const create = async suffix => {
+    const result = await request('/api/reports', 'POST', { pole: 'T0001', symptom: 'ไฟไม่ติด', contactType: 'none', photo, requestId: `photo-naming-test-request-${suffix}` });
+    assert.equal(result.status, 201); return result.body.data.id;
+  };
+  const finish = async reportIds => {
+    const started = await request('/api/admin/jobs/start', 'POST', { pole: 'T0001', reportIds });
+    assert.equal(started.status, 201);
+    const result = await request(`/api/admin/jobs/${started.body.data.id}/finish`, 'POST', { cause: 'หลอดไฟหมดอายุ', photo });
+    assert.equal(result.status, 200);
+  };
+  const ids = [await create('one'), await create('two')];
+  const oldKeys = [...photos.keys()];
+  assert.equal(oldKeys.length, 2);
+  assert.ok(oldKeys.every(key => key.startsWith('unrepaired/T0001/') && key.endsWith('/unrepaired-T0001.png')));
+  await finish(ids);
+  assert.equal(photos.size, 3);
+  assert.ok(oldKeys.every(key => !photos.has(key)));
+  assert.ok([...photos.keys()].every(key => key.startsWith('repaired/T0001/') && key.endsWith('/T0001.png')));
+  for (const row of sqlite.prepare('SELECT before_photo_key FROM reports WHERE pole=?').all('T0001')) assert.ok(photos.has(row.before_photo_key));
+  const firstRound = [...photos.keys()];
+  await finish([await create('three')]);
+  assert.ok(firstRound.every(key => photos.has(key)));
+  assert.equal(photos.size, 5);
+  sqlite.close();
+});
 
 test('report without callback stores explicit tracking preference in existing schema', async () => {
   const { sqlite, request } = fixture();
