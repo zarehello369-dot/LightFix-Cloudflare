@@ -237,3 +237,6 @@ details.manage-menu summary{cursor:pointer;min-height:42px;padding:10px;font-wei
 .photo-pair img{height:auto;aspect-ratio:auto;object-fit:contain}.photo-pair figure a{display:block}.photo-pair figure a:focus-visible{outline-offset:4px}
 @media(max-width:899px){.staff-rail{padding:10px 13px}.staff-nav-label{margin-top:8px}.staff-layout{gap:14px}.staff-identity h2{font-size:.8rem}.staff-identity h2 span{display:inline;margin-left:6px;font-size:.95rem}}
 .toolbar select{max-width:100%}@media(min-width:640px){.toolbar select{max-width:280px}}
+.work-grid{display:grid;gap:14px}.work-card{min-width:0}.work-card h2{margin:0}.work-card p{margin:8px 0;overflow-wrap:anywhere}.work-card details{margin-top:12px}.work-card summary{cursor:pointer;min-height:44px;padding-block:9px;font-weight:600}.work-card input[type=checkbox]{width:24px;height:24px;accent-color:var(--green)}.work-card .staff-row{display:flex;justify-content:space-between;gap:12px}.work-card .inline{align-items:center}.work-card+.button{margin-top:8px;width:100%}.work-card .danger-note,.work-card .status-note{padding:5px 9px}
+.work-card .staff-row>div{min-width:0;flex:1;overflow-wrap:anywhere}.work-card .staff-row>.badge{flex:none}.overdue{color:var(--red);font-weight:600}
+@media(min-width:1100px){.work-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}

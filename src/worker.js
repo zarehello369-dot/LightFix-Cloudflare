@@ -83,6 +83,24 @@ async function actor(request, env, admin = false, allowPasswordChange = false) {
 
 async function audit() {}
 
+async function commitWork(env, user, pole, revision, statements) {
+  if (!Number.isSafeInteger(revision) || revision < 0) throw new HttpError(409, 'WORK_CHANGED', 'กรุณาโหลดข้อมูลงานล่าสุดก่อนทำรายการ');
+  const operation = id();
+  try {
+    const results = await env.DB.batch([
+      env.DB.prepare('INSERT INTO work_mutation_checks(operation_id,valid) VALUES(?,COALESCE((SELECT revision=? FROM pole_work_state WHERE pole=?),0))').bind(operation, revision, pole),
+      env.DB.prepare('UPDATE pole_work_state SET revision=revision+1,updated_at=?,updated_by=? WHERE pole=?').bind(now(), user.username, pole),
+      ...statements,
+      env.DB.prepare('DELETE FROM work_mutation_checks WHERE operation_id=?').bind(operation)
+    ]);
+    return results.slice(2, -1);
+  } catch (error) {
+    if (!String(error.message).includes('work_revision_match')) throw error;
+    const current = await one(env.DB, 'SELECT updated_by FROM pole_work_state WHERE pole=?', pole);
+    throw new HttpError(409, 'WORK_CHANGED', `งานนี้มีการเปลี่ยนแปลง${current?.updated_by ? `โดย ${current.updated_by}` : ''} กรุณาโหลดข้อมูลล่าสุดแล้วตรวจรายการอีกครั้ง`);
+  }
+}
+
 function contact(type, value) {
   if (type === 'none') return 'ติดตามผ่านลิงก์ (ไม่ขอรับการติดต่อกลับ)';
   const v = clean(value, 150);
@@ -181,8 +199,16 @@ async function createReport(env, data) {
   const key = photo ? `unrepaired/${pole}/${reportId}/unrepaired-${pole}.${photo.ext}` : null;
   if (photo) await env.PHOTOS.put(key, photo.bytes, { httpMetadata: { contentType: photo.type } });
   try {
-    await run(env.DB, `INSERT INTO reports(id,pole,symptom,contact_type,contact_value,before_photo_key,status,created_at,request_id)
-      VALUES(?,?,?,?,?,?,0,?,?)`, reportId, pole, symptom, type, value, key, now(), requestId);
+    const inserted = await env.DB.batch([
+      env.DB.prepare(`INSERT INTO reports(id,pole,symptom,contact_type,contact_value,before_photo_key,status,created_at,request_id,job_id,assigned_user_id,instructions,due_at)
+        SELECT ?,?,?,?,?,?,COALESCE((SELECT status FROM jobs WHERE pole=? AND status=1),0),?,?,
+        (SELECT id FROM jobs WHERE pole=? AND status=1),(SELECT COALESCE(assigned_user_id,technician_id) FROM jobs WHERE pole=? AND status=1),
+        COALESCE((SELECT instructions FROM jobs WHERE pole=? AND status=1),''),(SELECT due_at FROM jobs WHERE pole=? AND status=1)
+        WHERE (SELECT COUNT(*) FROM reports WHERE pole=? AND status<2)<3`)
+        .bind(reportId,pole,symptom,type,value,key,pole,now(),requestId,pole,pole,pole,pole,pole),
+      env.DB.prepare(`INSERT INTO pole_work_state(pole,revision,updated_at,updated_by) SELECT ?,1,?,'ผู้แจ้งเหตุ' WHERE EXISTS(SELECT 1 FROM reports WHERE id=?) ON CONFLICT(pole) DO UPDATE SET revision=revision+1,updated_at=excluded.updated_at,updated_by=excluded.updated_by`).bind(pole,now(),reportId)
+    ]);
+    if (!inserted[0].meta.changes) throw new HttpError(409, 'POLE_LIMIT', 'เสานี้มีเรื่องรอดำเนินการหลายรายการแล้ว กรุณาดูหน้าติดตาม');
   } catch (error) {
     if (photo) await env.PHOTOS.delete(key);
     const duplicate = await one(env.DB, 'SELECT id FROM reports WHERE request_id=?', requestId);
@@ -264,13 +290,14 @@ async function workspace(request, env, expectedRole) {
   const user = await actor(request, env);
   if (user.role !== expectedRole) throw new HttpError(403, 'FORBIDDEN', 'ไม่มีสิทธิ์เข้าพื้นที่นี้');
   const admin = user.role === 'admin';
-  const reports = await all(env.DB, `${PUBLIC_REPORT_SQL} ${admin ? '' : 'WHERE (r.status=0 AND (r.assigned_user_id IS NULL OR r.assigned_user_id=?) OR j.technician_id=? OR j.assigned_user_id=?)'} ORDER BY r.created_at DESC LIMIT 500`, ...(admin ? [] : [user.id, user.id, user.id]));
-  const jobs = await all(env.DB, `SELECT j.*,u.display_name AS technician_name FROM jobs j LEFT JOIN users u ON u.id=j.technician_id ${admin ? '' : 'WHERE j.technician_id=? OR j.assigned_user_id=?'} ORDER BY j.started_at DESC LIMIT 500`, ...(admin ? [] : [user.id, user.id]));
+  const reports = await all(env.DB, `${PUBLIC_REPORT_SQL} ${admin ? '' : 'WHERE (r.status=0 AND (r.assigned_user_id IS NULL OR r.assigned_user_id=?) OR COALESCE(j.assigned_user_id,j.technician_id)=?)'} ORDER BY r.created_at DESC LIMIT 500`, ...(admin ? [] : [user.id, user.id]));
+  const jobs = await all(env.DB, `SELECT j.*,u.display_name AS technician_name FROM jobs j LEFT JOIN users u ON u.id=j.technician_id ${admin ? '' : 'WHERE COALESCE(j.assigned_user_id,j.technician_id)=?'} ORDER BY j.started_at DESC LIMIT 500`, ...(admin ? [] : [user.id]));
   const poles = await all(env.DB, `SELECT p.*,(SELECT COUNT(*) FROM reports r WHERE r.pole=p.pole AND r.status<>3) AS report_count,
     (SELECT COUNT(*) FROM reports r WHERE r.pole=p.pole AND r.status<2) AS open_count,
     (SELECT COUNT(*) FROM jobs j WHERE j.pole=p.pole AND j.status=2) AS repair_count,
     (SELECT COUNT(*) FROM reports r WHERE r.pole=p.pole) AS total_report_count,
-    (SELECT COUNT(*) FROM jobs j WHERE j.pole=p.pole) AS job_count
+    (SELECT COUNT(*) FROM jobs j WHERE j.pole=p.pole) AS job_count,
+    COALESCE((SELECT revision FROM pole_work_state w WHERE w.pole=p.pole),0) AS work_revision
     FROM poles p ORDER BY p.pole LIMIT 1000`);
   const notifications = await all(env.DB, `SELECT id,title,body,report_ids,created_at,read_at FROM notifications WHERE user_id=? ORDER BY created_at DESC LIMIT 100`, user.id);
   const result = {
@@ -332,6 +359,7 @@ async function upsertPole(request, env, data) {
     model=excluded.model,installed_at=excluded.installed_at,notes=excluded.notes,active=excluded.active,updated_at=excluded.updated_at`,
     pole, location, lat, lng, model, installedAt, notes, active, time, time);
   await audit(env.DB, user.username, 'save_pole', pole);
+  await run(env.DB, 'INSERT INTO pole_work_state(pole,revision,updated_at) VALUES(?,0,?) ON CONFLICT(pole) DO NOTHING', pole, time);
   return { pole };
 }
 
@@ -360,18 +388,21 @@ async function startJob(request, env, data) {
   if (!Array.isArray(ids) || ids.length < 1 || ids.length > 3 || new Set(ids).size !== ids.length || ids.some(x => !/^[a-f0-9]{32}$/.test(x))) {
     throw new HttpError(400, 'INVALID_SELECTION', 'เลือกเรื่องแจ้ง 1 ถึง 3 เรื่องของเสาเดียวกัน');
   }
-  const reports = await all(env.DB, `SELECT id,pole,status,assigned_user_id FROM reports WHERE id IN (${ids.map(() => '?').join(',')})`, ...ids);
+  const reports = await all(env.DB, `SELECT id,pole,status,assigned_user_id,instructions,due_at FROM reports WHERE id IN (${ids.map(() => '?').join(',')})`, ...ids);
+  const waiting = await one(env.DB, 'SELECT COUNT(*) AS count FROM reports WHERE pole=? AND status=0', pole);
+  if (waiting.count !== ids.length) throw new HttpError(409, 'WORK_CHANGED', 'จำนวนเรื่องแจ้งของเสานี้เปลี่ยนไป กรุณาโหลดข้อมูลล่าสุดเพื่อรับงานรวมทั้งเสา');
   if (reports.length !== ids.length || reports.some(r => r.pole !== pole || r.status !== 0 || (user.role !== 'admin' && r.assigned_user_id && r.assigned_user_id !== user.id))) {
     throw new HttpError(409, 'STATUS_CHANGED', 'รายการเปลี่ยนไปแล้ว กรุณารีเฟรช');
   }
   const jobId = id(), time = now();
+  if (await one(env.DB, 'SELECT id FROM jobs WHERE pole=? AND status=1', pole)) throw new HttpError(409, 'WORK_CHANGED', 'เสานี้มีงานกำลังซ่อมแล้ว กรุณาโหลดข้อมูลล่าสุด');
   const placeholders = ids.map(() => '?').join(',');
   const allowed = user.role === 'admin' ? '' : 'AND (assigned_user_id IS NULL OR assigned_user_id=?)';
-  const statements = [env.DB.prepare(`INSERT INTO jobs(id,pole,status,started_at,technician_id,assigned_user_id)
-    SELECT ?,?,1,?,?,? WHERE (SELECT COUNT(*) FROM reports WHERE id IN (${placeholders}) AND pole=? AND status=0 ${allowed})=?`)
-    .bind(jobId, pole, time, user.id, reports[0].assigned_user_id || null, ...ids, pole, ...(user.role === 'admin' ? [] : [user.id]), ids.length)];
+  const statements = [env.DB.prepare(`INSERT INTO jobs(id,pole,status,started_at,technician_id,assigned_user_id,instructions,due_at)
+    SELECT ?,?,1,?,?,?,?,? WHERE (SELECT COUNT(*) FROM reports WHERE id IN (${placeholders}) AND pole=? AND status=0 ${allowed})=?`)
+    .bind(jobId, pole, time, user.id, reports[0].assigned_user_id || null, reports[0].instructions || '', reports[0].due_at || null, ...ids, pole, ...(user.role === 'admin' ? [] : [user.id]), ids.length)];
   for (const reportId of ids) statements.push(env.DB.prepare(`UPDATE reports SET status=1,job_id=? WHERE id=? AND status=0 AND EXISTS(SELECT 1 FROM jobs WHERE id=?)`).bind(jobId, reportId, jobId));
-  const result = await env.DB.batch(statements);
+  const result = await commitWork(env, user, pole, data.workRevision, statements);
   if (!result[0].meta.changes) throw new HttpError(409, 'STATUS_CHANGED', 'รายการเปลี่ยนไปแล้ว กรุณารีเฟรช');
   await audit(env.DB, user.username, 'start', jobId);
   return { id: jobId };
@@ -379,11 +410,11 @@ async function startJob(request, env, data) {
 
 async function saveNote(request, env, jobId, data) {
   const user = await actor(request, env);
-  const job = await one(env.DB, 'SELECT id,technician_id,assigned_user_id,status FROM jobs WHERE id=?', jobId);
-  if (!job || job.status !== 1 || (user.role !== 'admin' && job.technician_id !== user.id && job.assigned_user_id !== user.id)) {
+  const job = await one(env.DB, 'SELECT id,pole,technician_id,assigned_user_id,status FROM jobs WHERE id=?', jobId);
+  if (!job || job.status !== 1 || (user.role !== 'admin' && (job.assigned_user_id || job.technician_id) !== user.id)) {
     throw new HttpError(403, 'FORBIDDEN', 'ไม่มีสิทธิ์อัปเดตงานนี้');
   }
-  await run(env.DB, 'UPDATE jobs SET public_note=? WHERE id=?', clean(data.note, 500), jobId);
+  await commitWork(env, user, job.pole, data.workRevision, [env.DB.prepare('UPDATE jobs SET public_note=? WHERE id=?').bind(clean(data.note, 500), jobId)]);
   await audit(env.DB, user.username, 'note', jobId);
   return true;
 }
@@ -391,7 +422,7 @@ async function saveNote(request, env, jobId, data) {
 async function finishJob(request, env, jobId, data) {
   const user = await actor(request, env);
   const job = await one(env.DB, 'SELECT * FROM jobs WHERE id=?', jobId);
-  if (!job || job.status !== 1 || (user.role !== 'admin' && job.technician_id !== user.id && job.assigned_user_id !== user.id)) {
+  if (!job || job.status !== 1 || (user.role !== 'admin' && (job.assigned_user_id || job.technician_id) !== user.id)) {
     throw new HttpError(403, 'FORBIDDEN', 'ไม่มีสิทธิ์ปิดงานนี้');
   }
   const cause = clean(data.cause, 100);
@@ -416,7 +447,7 @@ async function finishJob(request, env, jobId, data) {
       createdKeys.push(newKey);
       movedPhotos.push({ id: report.id, oldKey: report.before_photo_key, newKey });
     }
-    const result = await env.DB.batch([
+    const result = await commitWork(env, user, job.pole, data.workRevision, [
       env.DB.prepare(`UPDATE jobs SET status=2,completed_at=?,after_photo_key=?,cause=?,cause_detail=?,public_note=?
         WHERE id=? AND status=1 AND (SELECT COUNT(*) FROM reports WHERE job_id=? AND status=1)=?`)
         .bind(now(), key, cause, detail, clean(data.note, 500), jobId, jobId, reports.length),
@@ -447,6 +478,8 @@ async function assign(request, env, data) {
     throw new HttpError(400, 'INVALID_SELECTION', 'เลือกเรื่องแจ้ง 1 ถึง 3 เรื่อง');
   }
   const reports = await all(env.DB, `SELECT id,pole,status,job_id FROM reports WHERE id IN (${ids.map(() => '?').join(',')})`, ...ids);
+  const open = await one(env.DB, 'SELECT COUNT(*) AS count FROM reports WHERE pole=? AND status<2', pole);
+  if (open.count !== ids.length) throw new HttpError(409, 'WORK_CHANGED', 'กรุณาโหลดข้อมูลล่าสุดเพื่อมอบหมายเรื่องเปิดทั้งหมดของเสาเดียวกัน');
   if (reports.length !== ids.length || reports.some(r => r.pole !== pole || r.status > 1)) throw new HttpError(409, 'STATUS_CHANGED', 'รายการเปลี่ยนไปแล้ว กรุณารีเฟรช');
   const instructions = clean(data.instructions, 1000);
   const dueAt = data.dueAt ? Number(data.dueAt) : null;
@@ -454,8 +487,8 @@ async function assign(request, env, data) {
   const statements = ids.map(reportId => env.DB.prepare(`UPDATE reports SET assigned_user_id=?,instructions=?,due_at=? WHERE id=? AND status<2`).bind(technicianId, instructions, dueAt, reportId));
   const jobIds = [...new Set(reports.map(r => r.job_id).filter(Boolean))];
   for (const jobId of jobIds) statements.push(env.DB.prepare(`UPDATE jobs SET assigned_user_id=?,instructions=?,due_at=? WHERE id=? AND status=1`).bind(technicianId, instructions, dueAt, jobId));
-  await env.DB.batch(statements);
-  await run(env.DB, 'INSERT INTO notifications(id,user_id,created_at,title,body,report_ids) VALUES(?,?,?,?,?,?)', id(), technicianId, now(), `งานมอบหมาย: ${pole}`, instructions || 'มีงานใหม่ กรุณาตรวจสอบรายการงาน', JSON.stringify(ids));
+  statements.push(env.DB.prepare('INSERT INTO notifications(id,user_id,created_at,title,body,report_ids) VALUES(?,?,?,?,?,?)').bind(id(), technicianId, now(), `งานมอบหมาย: ${pole}`, instructions || 'มีงานใหม่ กรุณาตรวจสอบรายการงาน', JSON.stringify(ids)));
+  await commitWork(env, user, pole, data.workRevision, statements);
   await audit(env.DB, user.username, 'assign', pole);
   return true;
 }
@@ -572,7 +605,7 @@ async function cancelReports(request, env, data) {
   const pole = poleNumber(data.pole);
   const note = clean(data.note, 500);
   if (!note) throw new HttpError(400, 'NOTE_REQUIRED', 'กรอกเหตุผลที่จะแสดงสาธารณะ');
-  await env.DB.batch([
+  await commitWork(env, user, pole, data.workRevision, [
     env.DB.prepare('UPDATE reports SET status=3,public_note=? WHERE pole=? AND status<2').bind(note, pole),
     env.DB.prepare('UPDATE jobs SET status=3,public_note=? WHERE pole=? AND status=1').bind(note, pole)
   ]);
@@ -585,9 +618,9 @@ async function editHistory(request, env, jobId, data) {
   const cause = clean(data.cause, 100);
   const detail = clean(data.causeDetail, 500);
   if (!CAUSES.includes(cause) || (cause === 'อื่น ๆ' && !detail)) throw new HttpError(400, 'CAUSE_REQUIRED', 'เลือกสาเหตุที่ตรวจพบ');
-  const job = await one(env.DB, 'SELECT id FROM jobs WHERE id=? AND status=2', jobId);
+  const job = await one(env.DB, 'SELECT id,pole FROM jobs WHERE id=? AND status=2', jobId);
   if (!job) throw new HttpError(404, 'NOT_FOUND', 'ไม่พบประวัติซ่อม');
-  await run(env.DB, 'UPDATE jobs SET cause=?,cause_detail=?,public_note=? WHERE id=?', cause, detail, clean(data.note, 500), jobId);
+  await commitWork(env, user, job.pole, data.workRevision, [env.DB.prepare('UPDATE jobs SET cause=?,cause_detail=?,public_note=? WHERE id=?').bind(cause, detail, clean(data.note, 500), jobId)]);
   await audit(env.DB, user.username, 'correct_repair_history', jobId);
   return true;
 }

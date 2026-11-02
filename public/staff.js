@@ -1,3 +1,4 @@
+import { groupReports, readFilters, queueReports } from './workflow.js';
 import { $, control, esc, date, badge, api, post, shell, toast, showError, photoData } from './shared.js';
 
 const state = { role: '', tab: 'overview', data: null, selected: new Set() };
@@ -6,7 +7,7 @@ const contactLabel = type => ({ phone: 'โทรศัพท์', line: 'LINE',
 const base = () => state.role === 'admin' ? '/api/admin' : '/api';
 
 export async function staffPage(role) {
-  state.role = role;
+  state.role = role; state.tab = role === 'technician' ? 'mywork' : 'overview'; state.selected.clear();
   document.title = `${roleLabel(role)} · LightFix`;
   shell(`<section class="shell page"><div id="staff-root"><p class="loading" role="status">กำลังตรวจการเข้าสู่ระบบ…</p></div></section>`, role);
   try {
@@ -76,21 +77,26 @@ function changePasswordPage(me) {
 
 async function loadWorkspace() {
   $('#staff-root').innerHTML = '<p class="loading" role="status">กำลังโหลดงาน…</p>';
-  try { state.data = await api(`${base()}/workspace`); renderWorkspace(); }
+  try { state.data = await api(`${base()}/workspace`); restoreFilters(); renderWorkspace(); }
   catch (error) { if (error.code === 'PASSWORD_CHANGE_REQUIRED') return changePasswordPage(await api(`${base()}/auth/me`)); showError($('#staff-root'), error); }
 }
 
+let filterOwner = '';
+function restoreFilters() { const key = `lightfix:filters:${state.role}:${state.data.user.id}`; if (filterOwner === key) return; filterOwner = key; try { Object.assign(state, readFilters(localStorage, key)); } catch { Object.assign(state, {reportStatus:'open',reportQuery:'',poleQuery:'',userQuery:''}); } }
+function saveFilters() { try { localStorage.setItem(filterOwner, JSON.stringify({reportStatus:state.reportStatus,reportQuery:state.reportQuery,poleQuery:state.poleQuery,userQuery:state.userQuery})); } catch {} }
+const workRevision = pole => state.data.poles.find(item => item.pole === pole)?.work_revision;
+const workPayload = (pole, data) => ({...data, workRevision:workRevision(pole)});
 function renderWorkspace() {
   const data = state.data;
-  const tabs = state.role === 'admin' ? [['overview','ภาพรวม'],['reports','เรื่องแจ้ง'],['jobs','งานซ่อม'],['poles','ข้อมูลเสา'],['users','บัญชีผู้ใช้'],['messages','ข้อความ'],['history','ประวัติซ่อม']] : [['overview','ภาพรวม'],['reports','เรื่องแจ้ง'],['jobs','งานซ่อม'],['poles','ข้อมูลเสา'],['messages','ข้อความ'],['history','ประวัติซ่อม']];
+  const tabs = state.role === 'admin' ? [['overview','ภาพรวม'],['reports','เรื่องแจ้ง'],['jobs','งานซ่อม'],['poles','ข้อมูลเสา'],['users','บัญชีผู้ใช้'],['messages','ข้อความ'],['history','ประวัติซ่อม']] : [['mywork','งานของฉัน'],['overview','ภาพรวม'],['reports','เรื่องแจ้ง'],['jobs','งานซ่อม'],['poles','ข้อมูลเสา'],['messages','ข้อความ'],['history','ประวัติซ่อม']];
   $('#staff-root').innerHTML = `<div class="staff-layout"><aside class="staff-rail"><div class="staff-identity"><h2>${roleLabel(state.role)}<span>${esc(data.user.name)}</span></h2><button id="logout" class="button ghost small" type="button">ออกจากระบบ</button></div><label class="staff-nav-label" for="staff-view">หน้าทำงาน</label><select id="staff-view" class="staff-view-select" aria-label="เลือกหน้าทำงาน">${tabs.map(([key,label]) => `<option value="${key}" ${state.tab === key ? 'selected' : ''}>${label}</option>`).join('')}</select><nav aria-label="เมนูพื้นที่ทำงาน">${tabs.map(([key,label]) => `<button type="button" data-tab="${key}" ${state.tab === key ? 'aria-current="page"' : ''}>${label}</button>`).join('')}</nav></aside><div class="staff-main"><div id="staff-content"></div></div></div><dialog class="dialog" id="task-dialog" aria-labelledby="dialog-title"></dialog>`;
   document.querySelectorAll('[data-tab]').forEach(button => button.addEventListener('click', () => {
-    state.tab = button.dataset.tab;
+    state.tab = button.dataset.tab; state.selected.clear();
     renderWorkspace();
     document.querySelector(`[data-tab="${state.tab}"]`)?.focus();
   }));
   $('#staff-view').addEventListener('change', event => {
-    state.tab = event.currentTarget.value;
+    state.tab = event.currentTarget.value; state.selected.clear();
     renderWorkspace();
     $('#staff-view').focus();
   });
@@ -99,7 +105,7 @@ function renderWorkspace() {
 }
 
 function renderTab() {
-  const views = { overview, reports, jobs, poles, users, messages, history };
+  const views = { mywork, overview, reports, jobs, poles, users, messages, history };
   views[state.tab]?.();
 }
 function enhanceTables(root = $('#staff-content')) {
@@ -117,9 +123,9 @@ function dialog(html) {
   return target;
 }
 async function action(path, data, success) {
-  await post(path, data); toast(success); state.selected.clear(); state.data = await api(`${base()}/workspace`); renderWorkspace();
+  const pole = data.pole || state.data.jobs.find(job => path.includes(job.id))?.pole; await post(path, pole ? workPayload(pole,data) : data); toast(success); state.selected.clear(); state.data = await api(`${base()}/workspace`); renderWorkspace();
 }
-function formError(form, error) { const box = form.querySelector('[data-error]'); if (box) box.textContent = error.message; }
+function formError(form, error) { const box = form.querySelector('[data-error]'); if (!box) return; box.textContent = error.message; if (error.code === 'WORK_CHANGED' || error.code === 'STATUS_CHANGED') { const button = document.createElement('button'); button.type = 'button'; button.className = 'button outline small'; button.textContent = 'โหลดข้อมูลงานล่าสุด'; button.addEventListener('click', () => loadWorkspace()); box.append(document.createElement('br'),button); } }
 function statusCount(n) { return state.data.reports.filter(r => r.status === n).length; }
 
 function overview() {
@@ -130,47 +136,66 @@ function overview() {
     <section class="staff-section"><h2>ข้อความล่าสุด</h2>${d.notifications.length ? `<div class="panel">${d.notifications.slice(0,4).map(n => `<div class="staff-row"><strong>${esc(n.title)}</strong><div>${esc(n.body)}<p>${date(n.created_at)}</p></div>${n.read_at ? '<span class="small muted">อ่านแล้ว</span>' : '<span class="badge wait">ใหม่</span>'}</div>`).join('')}</div>` : '<div class="empty">ยังไม่มีข้อความ</div>'}</section>`);
 }
 
-function reportResults(rows, d) { return rows.length ? `<div class="panel table-wrap"><table class="data-table reports-table"><thead><tr><th>เลือก</th><th>เสา / อาการ</th><th>สถานะ</th><th>วันที่</th><th>ผู้รับงาน</th></tr></thead><tbody>${rows.map(r => `<tr><td>${r.status === 0 ? `<input type="checkbox" aria-label="เลือกเรื่องเสา ${esc(r.pole)}" data-report="${esc(r.id)}" ${state.selected.has(r.id) ? 'checked' : ''}>` : ''}</td><td><strong class="number">${esc(r.pole)}</strong><br>${esc(r.symptom)}<br><span class="small muted">${esc(d.poles.find(p => p.pole === r.pole)?.location || 'ยังไม่ระบุตำแหน่ง')}</span><br><span class="small muted">${contactLabel(r.contactType)}: ${esc(r.contactValue)}</span></td><td>${badge(r.status)}</td><td class="small number">${date(r.at)}</td><td class="small">${r.assignedId ? 'มอบหมายแล้ว' : 'ยังไม่มอบหมาย'}</td></tr>`).join('')}</tbody></table></div>` : `<div class="empty"><p>ไม่พบเรื่องแจ้ง${state.reportQuery ? `สำหรับ “${esc(state.reportQuery)}”` : ''} ในตัวกรอง ${esc(document.querySelector('#report-status')?.selectedOptions[0]?.textContent || 'เรื่องที่ต้องดำเนินการ')}</p><button type="button" class="button outline small" data-clear-report-filters>ล้างตัวกรอง</button></div>`; }
+function groupCard(group, selectable = true) {
+  const ids = group.open.map(report => report.id);
+  const checked = ids.length && ids.every(id => state.selected.has(id));
+  return `<article class="panel work-card"><div class="section-head"><h2 class="section-heading number">${esc(group.pole)}</h2>${selectable && ids.length ? `<label class="inline"><input type="checkbox" data-pole-group="${esc(group.pole)}" ${checked ? 'checked' : ''}>เลือกเสานี้</label>` : ''}</div><p class="muted">${esc(group.location || 'ยังไม่ระบุตำแหน่ง')}</p><div class="inline">${group.urgent ? '<span class="danger-note">เสี่ยงอันตรายตามอาการแจ้ง</span>' : '<span class="status-note">งานทั่วไป</span>'}<span class="small">${group.reports.length} เรื่องแจ้ง · งานซ่อม ${group.job ? '1 งานกำลังทำ' : group.open.length ? 'รอเริ่มงาน' : 'ปิดแล้ว'}</span></div><p class="small">ผู้รับผิดชอบ: ${esc(group.assignedName || (group.assignedId === state.data.user.id ? state.data.user.name : group.assignedId ? 'มอบหมายแล้ว' : 'ยังไม่มอบหมาย'))}${group.dueAt ? ` · <span class="${group.dueAt < Date.now() ? 'overdue' : ''}">${group.dueAt < Date.now() ? 'เกินกำหนด' : 'กำหนดเสร็จ'} ${date(group.dueAt)}</span>` : ''}</p>${group.job?.instructions || group.open[0]?.instructions ? `<p class="small">รายละเอียดงาน: ${esc(group.job?.instructions || group.open[0]?.instructions)}</p>` : ''}<details><summary>ดูอาการและเรื่องแจ้ง ${group.reports.length} เรื่อง</summary>${group.reports.map(report => `<div class="staff-row"><div>${esc(report.symptom)}<p>${date(report.at)} · ${contactLabel(report.contactType)}: ${esc(report.contactValue)}</p></div>${badge(report.status)}</div>`).join('')}</details></article>`;
+}
+function reportResults(rows, d) {
+  const groups = groupReports(rows,d.jobs,d.users || [],d.poles);
+  return groups.length ? `<p class="small muted" role="status">${groups.length} เสา · ${rows.length} เรื่องแจ้ง</p><div class="work-grid">${groups.map(group => groupCard(group)).join('')}</div>` : `<div class="empty"><p>ไม่พบเรื่องแจ้ง${state.reportQuery ? `สำหรับ “${esc(state.reportQuery)}”` : ''} ในตัวกรอง ${esc(({open:'เรื่องที่ต้องดำเนินการ','0':'รอรับเรื่อง','1':'กำลังซ่อม','2':'ซ่อมเสร็จ','3':'ยกเลิก',all:'ทุกสถานะ'})[state.reportStatus || 'open'])}</p><button type="button" class="button outline small" data-clear-report-filters>ล้างตัวกรอง</button></div>`;
+}
+function mywork() {
+  const d = state.data;
+  const waiting = d.reports.filter(report => report.status === 0 && report.assignedId === d.user.id);
+  const active = d.jobs.filter(job => job.status === 1 && (job.assigned_user_id || job.technician_id) === d.user.id);
+  const groups = groupReports(waiting,d.jobs,d.users || [],d.poles);
+  content(`<h1>งานของฉัน</h1><p class="muted">งานที่มอบหมายให้ ${esc(d.user.name)} และงานที่กำลังซ่อม</p><button class="button outline small" id="refresh-mywork">โหลดงานล่าสุด</button><section class="staff-section"><h2>รอรับงาน ${groups.length} เสา</h2>${groups.length ? `<div class="work-grid">${groups.map(group => `<div>${groupCard(group,false)}<button class="button primary" data-accept-pole="${esc(group.pole)}">รับงานเสา ${esc(group.pole)}</button></div>`).join('')}</div>` : '<div class="empty">ยังไม่มีงานมอบหมายที่รอรับ</div>'}</section><section class="staff-section"><h2>กำลังซ่อม ${active.length} งาน</h2>${active.length ? `<div class="work-grid">${active.map(job => `<article class="panel"><h3>เสา ${esc(job.pole)}</h3><p>${esc(d.poles.find(pole => pole.pole === job.pole)?.location || 'ยังไม่ระบุตำแหน่ง')}</p><p>${esc(job.instructions || 'ไม่มีรายละเอียดเพิ่มเติม')}</p>${job.due_at ? `<p class="${job.due_at < Date.now() ? 'overdue' : ''}">${job.due_at < Date.now() ? 'เกินกำหนด' : 'กำหนดเสร็จ'} ${date(job.due_at)}</p>` : ''}<div class="actions"><button class="button outline" data-note="${esc(job.id)}">บันทึกความคืบหน้า</button><button class="button primary" data-finish="${esc(job.id)}">ปิดงานซ่อม</button></div></article>`).join('')}</div>` : '<div class="empty">ยังไม่มีงานที่กำลังซ่อม</div>'}</section>`);
+  $('#refresh-mywork').addEventListener('click',loadWorkspace);
+  document.querySelectorAll('[data-accept-pole]').forEach(button => button.addEventListener('click',()=>{state.selected = new Set(waiting.filter(report => report.pole === button.dataset.acceptPole).map(report => report.id));startSelected();}));
+  document.querySelectorAll('[data-note]').forEach(button => button.addEventListener('click',()=>noteJob(button.dataset.note)));
+  document.querySelectorAll('[data-finish]').forEach(button => button.addEventListener('click',()=>finishJob(button.dataset.finish)));
+}
 
 function reports() {
   const d = state.data;
   const status = state.reportStatus || 'open', query = state.reportQuery || '';
-  const rows = d.reports.filter(r => (status === 'all' || (status === 'open' ? r.status < 2 : r.status === Number(status))) && (!query || `${r.pole} ${r.symptom}`.toLowerCase().includes(query.toLowerCase()))).sort((a,b) => a.status - b.status || b.at - a.at);
-  content(`<h1>เรื่องแจ้ง</h1><p class="muted">เลือกเรื่องของเสาเดียวกันได้สูงสุด 3 เรื่องเพื่อเริ่มงาน${state.role === 'admin' ? 'หรือมอบหมาย' : ''}</p>
+  const rows = queueReports(d,status,query);
+  content(`<h1>เรื่องแจ้ง</h1><p class="muted">รวมเรื่องแจ้งของเสาเดียวกัน เลือกเสาเพื่อเริ่มงาน${state.role === 'admin' ? 'หรือมอบหมาย' : ''}</p>
     <div class="toolbar"><label class="eyeless" for="report-status">สถานะเรื่องแจ้ง</label><select id="report-status">${[['open','เรื่องที่ต้องดำเนินการ'],['0','รอรับเรื่อง'],['1','กำลังซ่อม'],['2','ซ่อมเสร็จ'],['3','ยกเลิก'],['all','ทุกสถานะ']].map(([key,label]) => `<option value="${key}" ${status === key ? 'selected' : ''}>${label}</option>`).join('')}</select><label class="eyeless" for="report-search">ค้นหาเสาหรืออาการ</label><input class="input" id="report-search" type="search" placeholder="ค้นหาเสาหรืออาการ" value="${esc(query)}"></div>
     <div class="toolbar"><button class="button dark" id="start-job" disabled>เริ่มงานจากที่เลือก</button>${state.role === 'admin' ? '<button class="button outline" id="assign-job" disabled>มอบหมาย</button><button class="button ghost" id="cancel-job" disabled>ยกเลิกเรื่องของเสา</button>' : ''}<span class="small muted" id="selected-count" role="status">เลือก ${state.selected.size} เรื่อง · เลือกเรื่องรอรับ 1–3 เรื่องของเสาเดียวกัน</span></div>
     <div id="report-results">${reportResults(rows, d)}</div>`);
-  const updateSelection = () => { const selected = d.reports.filter(r => state.selected.has(r.id)); const valid = selected.length > 0 && selected.length <= 3 && selected.every(r => r.status === 0) && new Set(selected.map(r => r.pole)).size === 1; ['start-job','assign-job','cancel-job'].forEach(id => { const button = document.getElementById(id); if (button) button.disabled = !valid; }); $('#selected-count').textContent = `เลือก ${selected.length} เรื่อง · เลือกเรื่องรอรับ 1–3 เรื่องของเสาเดียวกัน`; };
-  const bindRows = () => { document.querySelectorAll('[data-report]').forEach(input => input.addEventListener('change', () => { input.checked ? state.selected.add(input.dataset.report) : state.selected.delete(input.dataset.report); updateSelection(); })); updateSelection(); };
-  const drawResults = () => { const status = state.reportStatus || 'open', query = state.reportQuery || ''; const filtered = d.reports.filter(r => (status === 'all' || (status === 'open' ? r.status < 2 : r.status === Number(status))) && (!query || `${r.pole} ${r.symptom}`.toLowerCase().includes(query.toLowerCase()))).sort((a,b) => a.status-b.status || b.at-a.at); $('#report-results').innerHTML = reportResults(filtered, d); enhanceTables(); bindRows(); };
+  const updateSelection = () => { const selected = d.reports.filter(r => state.selected.has(r.id)); const valid = selected.length > 0 && selected.length <= 3 && selected.every(r => r.status < 2) && new Set(selected.map(r => r.pole)).size === 1; ['start-job','assign-job','cancel-job'].forEach(id => { const button = document.getElementById(id); if (button) button.disabled = !valid || (id === 'start-job' && selected.some(r => r.status !== 0)); }); $('#selected-count').textContent = `เลือก ${new Set(selected.map(r => r.pole)).size} เสา · ${selected.length} เรื่องแจ้ง`; };
+  const bindRows = () => { document.querySelectorAll('[data-pole-group]').forEach(input => input.addEventListener('change', () => { const ids = d.reports.filter(report => report.pole === input.dataset.poleGroup && report.status < 2).map(report => report.id); ids.forEach(id => input.checked ? state.selected.add(id) : state.selected.delete(id)); updateSelection(); })); updateSelection(); };
+  const drawResults = () => { const status = state.reportStatus || 'open', query = state.reportQuery || ''; const filtered = queueReports(d,status,query); $('#report-results').innerHTML = reportResults(filtered, d); enhanceTables(); bindRows(); };
   bindRows();
-  $('#report-results').addEventListener('click', event => { if (!event.target.closest('[data-clear-report-filters]')) return; state.reportStatus = 'open'; state.reportQuery = ''; state.selected.clear(); $('#report-status').value = 'open'; $('#report-search').value = ''; drawResults(); $('#report-search').focus(); });
-  $('#report-status').addEventListener('change', event => { state.reportStatus = event.target.value; state.selected.clear(); drawResults(); });
-  $('#report-search').addEventListener('input', event => { state.reportQuery = event.target.value; drawResults(); });
+  $('#report-results').addEventListener('click', event => { if (!event.target.closest('[data-clear-report-filters]')) return; state.reportStatus = 'open'; state.reportQuery = ''; saveFilters(); state.selected.clear(); $('#report-status').value = 'open'; $('#report-search').value = ''; drawResults(); $('#report-search').focus(); });
+  $('#report-status').addEventListener('change', event => { state.reportStatus = event.target.value; saveFilters(); state.selected.clear(); drawResults(); });
+  $('#report-search').addEventListener('input', event => { state.reportQuery = event.target.value; state.selected.clear(); saveFilters(); drawResults(); });
   $('#start-job').addEventListener('click', startSelected);
   $('#assign-job')?.addEventListener('click', assignSelected);
   $('#cancel-job')?.addEventListener('click', cancelPole);
 }
 
-function selectedReports() {
+function selectedReports(allowActive = false) {
   const rows = state.data.reports.filter(r => state.selected.has(r.id));
-  if (!rows.length || rows.length > 3 || new Set(rows.map(r => r.pole)).size !== 1 || rows.some(r => r.status !== 0)) { toast('เลือกเรื่องรอรับ 1–3 เรื่องของเสาเดียวกัน'); return null; }
+  if (!rows.length || rows.length > 3 || new Set(rows.map(r => r.pole)).size !== 1 || rows.some(r => allowActive ? r.status > 1 : r.status !== 0)) { toast(allowActive ? 'เลือกหนึ่งเสาที่มีเรื่องแจ้งเปิดอยู่' : 'เลือกหนึ่งเสาที่รอรับงาน'); return null; }
   return rows;
 }
 function startSelected() {
   const rows = selectedReports(); if (!rows) return;
   const target = dialog(`<h2 id="dialog-title">เริ่มงานเสา ${esc(rows[0].pole)}</h2><p>รับงาน ${rows.length} เรื่องเข้าสู่การซ่อม</p><div class="dialog-actions"><button class="button outline" data-close>กลับ</button><button class="button primary" id="confirm-start">ยืนยันเริ่มงาน</button></div>`);
-  $('#confirm-start').addEventListener('click', async () => { try { await action(`${base()}/jobs/start`, { pole: rows[0].pole, reportIds: rows.map(r => r.id) }, 'เริ่มงานแล้ว'); state.selected.clear(); } catch (e) { toast(e.message); } finally { target.close(); } });
+  $('#confirm-start').addEventListener('click', async () => { $('#confirm-start').disabled = true; try { await action(`${base()}/jobs/start`, { pole: rows[0].pole, reportIds: rows.map(r => r.id) }, 'เริ่มงานแล้ว'); state.selected.clear(); } catch (e) { toast(e.message); await loadWorkspace(); } });
 }
 function assignSelected() {
-  const rows = selectedReports(); if (!rows) return;
+  const rows = selectedReports(true); if (!rows) return;
   const techs = state.data.users.filter(u => u.role === 'technician' && u.active);
   if (!techs.length) return toast('ยังไม่มีบัญชีช่างที่ใช้งานได้');
   const target = dialog(`<h2 id="dialog-title">มอบหมายเสา ${esc(rows[0].pole)}</h2><form id="assign-form"><div class="field"><label for="assign-tech">ช่างที่รับงาน</label><select id="assign-tech" name="technicianId">${techs.map(u => `<option value="${esc(u.id)}">${esc(u.display_name)}</option>`).join('')}</select></div><div class="field"><label for="assign-due">กำหนดเสร็จ (ถ้ามี)</label><input class="input" type="datetime-local" id="assign-due" name="due"></div><div class="field"><label for="assign-instructions">รายละเอียดงาน</label><textarea id="assign-instructions" name="instructions" rows="3"></textarea></div><div class="field-error" data-error role="alert"></div><div class="dialog-actions"><button type="button" class="button outline" data-close>กลับ</button><button class="button primary">มอบหมายงาน</button></div></form>`);
   target.querySelector('form').addEventListener('submit', async e => { e.preventDefault(); const f = e.currentTarget; try { await action('/api/admin/assign', { pole: rows[0].pole, reportIds: rows.map(r => r.id), technicianId: control(f, 'technicianId').value, dueAt: control(f, 'due').value ? new Date(control(f, 'due').value).getTime() : null, instructions: control(f, 'instructions').value }, 'มอบหมายงานแล้ว'); state.selected.clear(); target.close(); } catch (error) { formError(f, error); } });
 }
 function cancelPole() {
-  const rows = selectedReports(); if (!rows) return;
+  const rows = selectedReports(true); if (!rows) return;
   const target = dialog(`<h2 id="dialog-title">ยกเลิกเรื่องของเสา ${esc(rows[0].pole)}?</h2><p>เรื่องที่ยังเปิดอยู่ทั้งหมดของเสานี้จะถูกยกเลิก และเหตุผลจะแสดงต่อสาธารณะ</p><form id="cancel-form"><div class="field"><label for="cancel-note">เหตุผล</label><textarea id="cancel-note" name="note" required rows="3"></textarea></div><div class="field-error" data-error role="alert"></div><div class="dialog-actions"><button type="button" class="button outline" data-close>กลับ</button><button class="button danger">ยืนยันยกเลิก</button></div></form>`);
   target.querySelector('form').addEventListener('submit', async e => { e.preventDefault(); try { await action('/api/admin/cancel', { pole: rows[0].pole, note: control(e.currentTarget, 'note').value }, 'ยกเลิกเรื่องแล้ว'); state.selected.clear(); } catch (error) { formError(e.currentTarget, error); } });
 }
@@ -206,7 +231,7 @@ function poles() {
     document.querySelectorAll('[data-edit-pole]').forEach(b => b.addEventListener('click', () => poleForm(rows.find(p => p.pole === b.dataset.editPole))));
     document.querySelectorAll('[data-delete-pole]').forEach(b => b.addEventListener('click', () => deletePole(rows.find(p => p.pole === b.dataset.deletePole))));
   };
-  $('#pole-filter').addEventListener('input', draw); draw();
+  $('#pole-filter').value = state.poleQuery || ''; $('#pole-filter').addEventListener('input', () => { state.poleQuery = $('#pole-filter').value; saveFilters(); draw(); }); draw();
   $('#new-pole')?.addEventListener('click', () => poleForm());
 }
 function deletePole(p) {
@@ -237,7 +262,8 @@ function users() {
   document.querySelectorAll('[data-reset]').forEach(b => b.addEventListener('click', () => resetUser(d.users.find(u => u.id === b.dataset.reset))));
   document.querySelectorAll('[data-delete-user]').forEach(b => b.addEventListener('click', () => deleteUser(d.users.find(u => u.id === b.dataset.deleteUser))));
   $('#new-user').addEventListener('click', createUser);
-  $('#user-filter').addEventListener('input', event => { const query = event.currentTarget.value.trim().toLowerCase(); let shown = 0; document.querySelectorAll('#user-rows tr').forEach(row => { row.hidden = !row.dataset.search.includes(query); if (!row.hidden) shown++; }); $('#user-count').textContent = `พบ ${shown} จาก ${d.users.length} บัญชี`; });
+  $('#user-filter').value = state.userQuery || '';
+  const filterUsers = event => { state.userQuery = event.currentTarget.value; saveFilters(); const query = event.currentTarget.value.trim().toLowerCase(); let shown = 0; document.querySelectorAll('#user-rows tr').forEach(row => { row.hidden = !row.dataset.search.includes(query); if (!row.hidden) shown++; }); $('#user-count').textContent = `พบ ${shown} จาก ${d.users.length} บัญชี`; }; $('#user-filter').addEventListener('input', filterUsers); filterUsers({currentTarget:$('#user-filter')});
   $('#self-password').addEventListener('click', () => changePasswordPage(d.user));
 }
 function review(id, decision) {

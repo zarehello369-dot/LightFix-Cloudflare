@@ -177,6 +177,7 @@ Controls use gentle 10px corners, record cards 12px, panels 14px, and the public
 - **Staff table:** Labeled cards below 1100px, two columns from 640px, and a full table at 1100px.
 - **Reporting:** Reveal contact input only after a reachable channel is selected. Hazard warnings appear beside symptoms. Photo controls offer camera/library, preview, removal and preparation feedback. A compact summary precedes submission.
 - **Staff queue:** Default to open work, with status/search controls and valid-selection gating. Place destructive actions inside a disclosure menu.
+- **Pole work cards:** Group complaints by pole. Lead with pole number and location; show report count, symptom-derived hazard label, assignee and deadline. Keep per-report symptoms/contact inside a labeled disclosure. Select a whole pole, never a partial complaint list. My Work separates assigned waiting poles and active repair jobs. Filters persist per account; selection does not.
 - **Admin management:** Keep add, edit, password reset, and delete actions beside the relevant record. Destructive actions use the red button and a typed pole number or username confirmation. Records tied to reports or jobs show a deactivation path instead of delete; one-time temporary passwords remain visible until the admin closes their dialog.
 
 ### Navigation
