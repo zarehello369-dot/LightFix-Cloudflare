@@ -84,6 +84,7 @@ async function actor(request, env, admin = false, allowPasswordChange = false) {
 async function audit() {}
 
 function contact(type, value) {
+  if (type === 'none') return 'ติดตามผ่านลิงก์ (ไม่ขอรับการติดต่อกลับ)';
   const v = clean(value, 150);
   if (!v) throw new HttpError(400, 'CONTACT_REQUIRED', 'กรอกข้อมูลผู้แจ้ง');
   if (type === 'phone' && !/^[+\d][\d\s()-]{7,19}$/.test(v)) throw new HttpError(400, 'CONTACT_INVALID', 'ตรวจสอบเบอร์โทรศัพท์');
@@ -164,8 +165,9 @@ async function createReport(env, data) {
   const pole = poleNumber(data.pole);
   const symptom = clean(data.symptom, 300);
   if (!symptom) throw new HttpError(400, 'SYMPTOM_REQUIRED', 'เลือกอาการหรืออธิบายปัญหา');
-  const type = clean(data.contactType, 10);
-  const value = contact(type, data.contactValue);
+  const requestedType = clean(data.contactType, 10);
+  const value = contact(requestedType, data.contactValue);
+  const type = requestedType === 'none' ? 'name' : requestedType;
   const requestId = clean(data.requestId, 80);
   if (!/^[a-zA-Z0-9-]{20,80}$/.test(requestId)) throw new HttpError(400, 'INVALID_REQUEST', 'กรุณาลองส่งเรื่องใหม่');
   const prior = await one(env.DB, 'SELECT id FROM reports WHERE request_id=?', requestId);

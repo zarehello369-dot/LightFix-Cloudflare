@@ -1,7 +1,8 @@
 import { $, control, esc, date, badge, api, post, shell, toast, showError, photoData } from './shared.js';
 import { staffPage } from './staff.js';
 
-const symptoms = ['ไฟไม่ติด', 'ไฟติด ๆ ดับ ๆ', 'ไฟสว่างน้อย', 'เสาหรือโคมชำรุด', 'อื่น ๆ'];
+const symptoms = ['ไฟไม่ติด', 'ไฟติด ๆ ดับ ๆ', 'ไฟสว่างน้อย', 'เสาหรือโคมชำรุด', 'สายไฟหลุดหรือห้อยต่ำ', 'อื่น ๆ'];
+let reportPhoto = '', photoPending = false, photoFailed = false, photoGeneration = 0, reportRequestId = '';
 const getPole = value => {
   const text = String(value || '').trim().toUpperCase();
   const digits = text.startsWith('T') ? text.slice(1) : text;
@@ -13,6 +14,7 @@ const getPole = value => {
 
 
 function reportPage() {
+  reportPhoto = ''; photoPending = false; photoFailed = false; reportRequestId = crypto.randomUUID();
   document.title = 'แจ้งไฟถนนเสีย · LightFix';
   shell(`<div class="shell report-hero">
     <section class="report-main" aria-labelledby="report-heading">
@@ -25,11 +27,13 @@ function reportPage() {
             <span id="pole-help" class="field-note">ดูหมายเลขบนป้ายที่เสาไฟ เช่น T0001</span><span id="pole-error" class="field-error" role="status"></span></div>
           <div class="field full"><span class="label" id="symptom-label">อาการที่พบ <span class="required">*</span></span>
             <div class="symptoms" role="radiogroup" aria-labelledby="symptom-label">${symptoms.map((s, i) => `<label class="symptom"><input type="radio" name="symptom" value="${esc(s)}" ${i === 0 ? '' : ''}><span>${esc(s)}</span></label>`).join('')}</div>
-            <span id="symptom-error" class="field-error" role="status"></span><span class="field-note">หากพบสายไฟหลุดหรือห้อยต่ำ อย่าเข้าใกล้ และแจ้งหน่วยฉุกเฉินในพื้นที่ทันที</span></div>
+            <span id="symptom-error" class="field-error" role="status"></span></div>
+          <div class="emergency-warning full" id="emergency-warning" hidden role="status"><strong>อย่าเข้าใกล้หรือสัมผัสเสาและสายไฟ</strong><p>ถอยออกจากจุดอันตรายและแจ้งหน่วยงานฉุกเฉินในพื้นที่ทันที แบบฟอร์มนี้เป็นการแจ้งซ่อม ไม่ใช่ช่องทางรับเหตุฉุกเฉิน</p><span class="small">หากสะดวก โปรดให้เบอร์หรือ LINE เพื่อให้เจ้าหน้าที่สอบถามตำแหน่งเพิ่มเติม</span></div>
           <div class="field full" id="other-symptom-field" hidden><label for="other-symptom">อธิบายอาการเพิ่มเติม <span class="required">*</span></label><textarea id="other-symptom" rows="2" maxlength="250" placeholder="บอกสิ่งที่พบสั้น ๆ"></textarea></div>
-          <div class="field"><label for="contact-type">ช่องทางติดต่อ <span class="required">*</span></label><select id="contact-type" name="contactType" required><option value="phone">เบอร์โทรศัพท์</option><option value="line">LINE ID</option><option value="email">อีเมล</option><option value="name">ชื่อผู้แจ้ง</option></select></div>
-          <div class="field"><label for="contact-value">ข้อมูลผู้แจ้ง <span class="required">*</span></label><input class="input" id="contact-value" name="contactValue" autocomplete="tel" inputmode="tel" placeholder="เบอร์ที่ติดต่อได้" required><span id="contact-error" class="field-error" role="status"></span></div>
-          <div class="field full"><label for="photo">รูปจุดที่เสีย <span class="muted small">(ถ้ามี)</span></label><div class="upload"><input class="visually-hidden" id="photo" name="photo" type="file" accept="image/jpeg,image/png"><label class="upload-button" for="photo">เลือกรูปภาพ</label><span class="upload-name" id="photo-name" role="status">ยังไม่ได้เลือกรูป</span><span class="field-note">JPG หรือ PNG ไม่เกิน 1.5 MB</span></div></div>
+          <div class="field"><label for="contact-type">ให้เจ้าหน้าที่ติดต่อกลับทางไหน?</label><select id="contact-type" name="contactType"><option value="none">ติดตามผ่านลิงก์ ไม่ขอรับการติดต่อกลับ</option><option value="phone">เบอร์โทรศัพท์</option><option value="line">LINE ID</option><option value="email">อีเมล</option></select><span class="field-note" id="contact-help">ทุกเรื่องจะได้รับลิงก์ติดตามหลังส่งสำเร็จ</span></div>
+          <div class="field" id="contact-value-field" hidden><label for="contact-value" id="contact-value-label">เบอร์โทรศัพท์</label><input class="input" id="contact-value" name="contactValue" autocomplete="tel" inputmode="tel" placeholder="เบอร์ที่ติดต่อได้" aria-describedby="contact-error"><span id="contact-error" class="field-error" role="status"></span></div>
+          <div class="field full"><span class="label">รูปจุดที่เสีย <span class="muted small">(ถ้ามี)</span></span><div class="upload"><input class="visually-hidden" id="photo" name="photo" type="file" accept="image/jpeg,image/png,image/webp"><input class="visually-hidden" id="camera" type="file" accept="image/*" capture="environment"><label class="upload-button" for="camera">ถ่ายรูป</label><label class="upload-button" for="photo">เลือกรูป</label><span class="upload-name" id="photo-name" role="status">ยังไม่ได้เลือกรูป</span><span class="field-note">ระบบย่อรูปให้ก่อนส่ง · JPG, PNG หรือ WebP สูงสุด 25 MB</span><div id="photo-preview" hidden><img id="preview-image" alt="รูปจุดที่เสียที่เลือกไว้"><button class="button ghost small" id="remove-photo" type="button">เอารูปออก</button></div></div></div>
+          <div class="report-summary full" id="report-summary" role="status">เลือกเสาและอาการเพื่อดูสรุปก่อนส่ง</div>
         </div>
         <div id="form-error" class="field-error" role="alert"></div>
         <div class="form-actions"><button class="button primary" type="submit" id="submit-report">ส่งเรื่องแจ้งไฟเสีย <span aria-hidden="true">→</span></button><span class="small muted">อาการและรูปอาจแสดงบนหน้าสาธารณะ ข้อมูลผู้แจ้งเห็นเฉพาะเจ้าหน้าที่</span></div>
@@ -42,17 +46,30 @@ function reportPage() {
   const form = $('#report-form');
   const pole = $('#pole');
   const contact = $('#contact-value');
-  $('#photo').addEventListener('change', event => { $('#photo-name').textContent = event.target.files[0]?.name || 'ยังไม่ได้เลือกรูป'; });
+  const summary = () => { const picked = form.querySelector('input[name=symptom]:checked')?.value; $('#report-summary').textContent = `${getPole(pole.value) || 'ยังไม่ระบุเสา'} · ${picked || 'ยังไม่เลือกอาการ'} · ${$('#contact-type').value === 'none' ? 'ติดตามผ่านลิงก์' : 'ให้เจ้าหน้าที่ติดต่อกลับ'}`; };
+  const selectPhoto = async event => {
+    const file = event.target.files[0]; if (!file) return;
+    const generation = ++photoGeneration; reportPhoto = ''; photoFailed = false; photoPending = true; $('#photo-preview').hidden = true; $('#photo-name').textContent = 'กำลังย่อรูป…';
+    try { const data = await photoData(file); if (generation !== photoGeneration) return; reportPhoto = data; $('#preview-image').src = data; $('#photo-preview').hidden = false; $('#photo-name').textContent = 'รูปพร้อมส่ง · ย่อรูปแล้ว'; }
+    catch (error) { if (generation === photoGeneration) { photoFailed = true; $('#photo-name').textContent = error.message + ' หรือกดเอารูปออกเพื่อส่งโดยไม่แนบรูป'; $('#photo-preview').hidden = false; $('#preview-image').removeAttribute('src'); } }
+    finally { if (generation === photoGeneration) photoPending = false; }
+  };
+  $('#photo').addEventListener('change', selectPhoto); $('#camera').addEventListener('change', selectPhoto);
+  $('#remove-photo').addEventListener('click', () => { photoGeneration++; photoPending = false; photoFailed = false; reportPhoto = ''; $('#photo').value = ''; $('#camera').value = ''; $('#photo-preview').hidden = true; $('#preview-image').removeAttribute('src'); $('#photo-name').textContent = 'ยังไม่ได้เลือกรูป'; });
   $('#contact-type').addEventListener('change', e => {
     const type = e.target.value;
+    $('#contact-value-field').hidden = type === 'none'; contact.required = type !== 'none'; $('#contact-error').textContent = ''; contact.setAttribute('aria-invalid', 'false');
+    $('#contact-value-label').textContent = ({phone:'เบอร์โทรศัพท์',line:'LINE ID',email:'อีเมล'})[type] || 'ช่องทางติดต่อ';
     contact.placeholder = ({ phone: 'เบอร์ที่ติดต่อได้', line: 'LINE ID', email: 'อีเมลที่ติดต่อได้', name: 'ชื่อผู้แจ้ง' })[type];
     contact.inputMode = type === 'phone' ? 'tel' : type === 'email' ? 'email' : 'text';
     contact.autocomplete = type === 'phone' ? 'tel' : type === 'email' ? 'email' : 'off';
+    summary();
   });
   
   pole.addEventListener('input', () => {
     pole.value = pole.value.toUpperCase();
     $('#pole-error').textContent = '';
+    pole.setAttribute('aria-invalid', 'false'); summary();
   });
 
   form.querySelectorAll('input[name=symptom]').forEach(radio => radio.addEventListener('change', () => {
@@ -60,6 +77,7 @@ function reportPage() {
     $('#other-symptom-field').hidden = !other;
     $('#other-symptom').required = other;
     $('#symptom-error').textContent = '';
+    $('#emergency-warning').hidden = !['เสาหรือโคมชำรุด', 'สายไฟหลุดหรือห้อยต่ำ'].includes(radio.value); summary();
   }));
   
   pole.addEventListener('blur', async () => {
@@ -93,21 +111,26 @@ async function submitReport(event) {
   $('#pole-error').className = 'field-error';
   $('#pole-error').textContent = /^T\d{4}$/.test(pole) ? '' : 'กรอกหมายเลขเสารูปแบบ T0001';
   $('#symptom-error').textContent = !picked ? 'เลือกอาการที่พบ' : picked === 'อื่น ๆ' && !otherDetail ? 'อธิบายอาการเพิ่มเติม' : '';
-  $('#contact-error').textContent = contactValue ? '' : 'กรอกข้อมูลผู้แจ้ง';
+  $('#contact-error').textContent = contactType === 'none' || contactValue ? '' : 'กรอกช่องทางที่เจ้าหน้าที่ติดต่อได้';
+  control(form, 'pole').setAttribute('aria-invalid', String(!/^T\d{4}$/.test(pole)));
+  control(form, 'contactValue').setAttribute('aria-invalid', String(contactType !== 'none' && !contactValue));
   $('#form-error').textContent = '';
   if (!/^T\d{4}$/.test(pole)) return control(form, 'pole').focus();
   if (!picked) return form.querySelector('input[name=symptom]').focus();
   if (picked === 'อื่น ๆ' && !otherDetail) return $('#other-symptom').focus();
-  if (!contactValue) return control(form, 'contactValue').focus();
+  if (contactType !== 'none' && !contactValue) return control(form, 'contactValue').focus();
+  if (photoFailed) { $('#form-error').textContent = 'รูปยังไม่พร้อม กรุณาเลือกรูปใหม่หรือกดเอารูปออก'; return; }
+  if (photoPending) { $('#form-error').textContent = 'กำลังเตรียมรูป กรุณารอสักครู่แล้วส่งอีกครั้ง'; return; }
   const button = $('#submit-report');
   button.disabled = true; button.textContent = 'กำลังส่งเรื่อง…';
   try {
-    const photo = await photoData(control(form, 'photo').files[0]);
-    const requestId = crypto.randomUUID();
+    const photo = reportPhoto;
+    const requestId = reportRequestId;
     const data = await post('/api/reports', { pole, symptom, contactType, contactValue, photo, requestId });
     const url = `${location.origin}/track?id=${data.id}`;
     shell(`<section class="shell report-result"><div class="success-panel"><div class="success-icon" aria-hidden="true">✓</div><h1 class="page-title" style="margin-top:22px">ส่งเรื่องเรียบร้อย</h1><p class="lead">เราได้รับแจ้งเสา <strong>${esc(pole)}</strong> แล้ว เก็บลิงก์นี้ไว้เพื่อติดตามงาน</p><div class="track-link number">${esc(url)}</div><div class="inline"><a class="button primary" href="${esc(url)}">ดูสถานะเรื่องนี้</a><button class="button outline" id="copy-track" type="button">คัดลอกลิงก์</button></div><p class="small muted">หากไม่เห็นสถานะใหม่ทันที โปรดกลับมาตรวจอีกครั้งภายหลัง</p></div></section>`, 'report');
     $('#copy-track').addEventListener('click', async () => { try { await navigator.clipboard.writeText(url); toast('คัดลอกลิงก์แล้ว'); } catch { toast('คัดลอกไม่ได้ กรุณาเลือกข้อความลิงก์ด้านบน'); } });
+    $('.success-panel .lead').insertAdjacentHTML('afterend', `<p class="report-summary">เลขเรื่อง: <strong class="number">${esc(data.id)}</strong></p>`);
     history.replaceState({}, '', '/');
   } catch (error) {
     $('#form-error').textContent = error.message;

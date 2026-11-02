@@ -46,11 +46,21 @@ function fixture() {
     const response = await worker.fetch(new Request(`https://lightfix.example${path}`, {
       method, headers: { cookie: `lf_session=${token}`, ...(data ? { 'content-type': 'application/json' } : {}) },
       ...(data ? { body: JSON.stringify(data) } : {})
-    }), { DB });
+    }), { DB, RATE_SALT: 'local-test-only' });
     return { status: response.status, body: await response.json() };
   };
   return { sqlite, request };
 }
+
+test('report without callback stores explicit tracking preference in existing schema', async () => {
+  const { sqlite, request } = fixture();
+  const response = await request('/api/reports', 'POST', { pole: 'T0001', symptom: 'ไฟไม่ติด', contactType: 'none', contactValue: '', requestId: 'test-request-without-contact-2026' });
+  assert.equal(response.status, 201);
+  const row = sqlite.prepare('SELECT contact_type,contact_value FROM reports WHERE id=?').get(response.body.data.id);
+  assert.equal(row.contact_type, 'name');
+  assert.equal(row.contact_value, 'ติดตามผ่านลิงก์ (ไม่ขอรับการติดต่อกลับ)');
+  sqlite.close();
+});
 
 test('only an admin can delete an unused pole, and confirmation is required', async () => {
   const { sqlite, request } = fixture();

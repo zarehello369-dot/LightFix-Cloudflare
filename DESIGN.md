@@ -175,6 +175,8 @@ Controls use gentle 10px corners, record cards 12px, panels 14px, and the public
 - **Report form:** White, thin line, 16px corners, and padding that grows at 640px, 900px, and 1100px.
 - **Panel and record:** White, thin line, rounded corners. Records lift on hover; regular panels stay flat.
 - **Staff table:** Labeled cards below 1100px, two columns from 640px, and a full table at 1100px.
+- **Reporting:** Reveal contact input only after a reachable channel is selected. Hazard warnings appear beside symptoms. Photo controls offer camera/library, preview, removal and preparation feedback. A compact summary precedes submission.
+- **Staff queue:** Default to open work, with status/search controls and valid-selection gating. Place destructive actions inside a disclosure menu.
 - **Admin management:** Keep add, edit, password reset, and delete actions beside the relevant record. Destructive actions use the red button and a typed pole number or username confirmation. Records tied to reports or jobs show a deactivation path instead of delete; one-time temporary passwords remain visible until the admin closes their dialog.
 
 ### Navigation

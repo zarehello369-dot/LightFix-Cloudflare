@@ -25,6 +25,12 @@ test('pole and photo validation rejects malformed inputs', () => {
   assert.throws(() => internals.decodePhoto('data:image/svg+xml;base64,PHN2Zz4='));
 });
 
+test('tracking without contact is explicit and reachable contact remains validated', () => {
+  assert.equal(internals.contact('none', ''), 'ติดตามผ่านลิงก์ (ไม่ขอรับการติดต่อกลับ)');
+  assert.throws(() => internals.contact('phone', ''));
+  assert.throws(() => internals.contact('email', 'invalid'));
+});
+
 test('staff workspaces require a LightFix login session', async () => {
   for (const path of ['/api/admin/workspace', '/api/workspace']) {
     const response = await worker.fetch(new Request(`https://lightfix.example${path}`), {});

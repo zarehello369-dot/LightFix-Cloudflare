@@ -45,6 +45,13 @@ input,textarea,select{caret-color:var(--green)}
 #toast.show{opacity:1;transform:translateY(0)}
 
 /* Public reporting */
+[hidden]{display:none!important}
+.emergency-warning{padding:16px;border:1px solid #d99f94;border-radius:12px;background:#fff0ed;color:#792b22}.emergency-warning p{margin:7px 0}
+.report-summary{padding:13px;border-radius:10px;background:#eef2ec;font-size:.9rem;overflow-wrap:anywhere}
+#photo-preview{width:100%}#preview-image{display:block;width:100%;max-height:240px;object-fit:contain;border-radius:10px;background:#eef2ec}
+.staff-row[data-open-reports]{cursor:pointer}.staff-row[data-open-reports]:hover{background:var(--gold-soft)}
+details.manage-menu summary{cursor:pointer;min-height:42px;padding:10px;font-weight:600}details.manage-menu[open]{padding-bottom:8px}
+@media(max-width:899px){.staff-rail{padding:10px 13px}.staff-nav-label{margin-top:8px}.staff-layout{gap:14px}.staff-identity h2{font-size:.8rem}.staff-identity h2 span{display:inline;margin-left:6px;font-size:.95rem}}
 .report-hero{display:grid;gap:18px;padding-top:20px}
 .report-main{min-width:0;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:22px 16px}
 .page-title{max-width:20ch;margin:0 0 9px;font-size:2rem;line-height:1.24;font-weight:700;letter-spacing:-.025em;text-wrap:balance}
@@ -225,3 +232,6 @@ input,textarea,select{caret-color:var(--green)}
 }
 @media(max-width:390px){.site-name{font-size:1.07rem}.header-track{font-size:.8rem}.menu-toggle{min-width:52px;padding-inline:8px}.metric span{font-size:.72rem}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
+.upload{display:flex;flex-wrap:wrap}.upload .upload-name,.upload .field-note{width:100%}#preview-image:not([src]){display:none}
+@media(max-width:899px){.staff-rail{padding:10px 13px}.staff-nav-label{margin-top:8px}.staff-layout{gap:14px}.staff-identity h2{font-size:.8rem}.staff-identity h2 span{display:inline;margin-left:6px;font-size:.95rem}}
+.toolbar select{max-width:100%}@media(min-width:640px){.toolbar select{max-width:280px}}

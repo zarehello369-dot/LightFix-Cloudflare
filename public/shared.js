@@ -51,12 +51,20 @@ export function showError(target, error) {
 }
 export async function photoData(file) {
   if (!file) return '';
-  if (!['image/jpeg', 'image/png'].includes(file.type)) throw new Error('รูปต้องเป็น JPG หรือ PNG');
-  if (file.size > 1_500_000) throw new Error('รูปต้องมีขนาดไม่เกิน 1.5 MB');
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = () => reject(new Error('อ่านรูปไม่ได้ กรุณาเลือกใหม่'));
-    reader.readAsDataURL(file);
-  });
+  if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) throw new Error('เปิดรูปนี้ไม่ได้ กรุณาเลือกรูป JPG, PNG หรือถ่ายรูปใหม่');
+  if (file.size > 25_000_000) throw new Error('รูปใหญ่เกิน 25 MB กรุณาเลือกรูปที่เล็กลง');
+  const source = URL.createObjectURL(file);
+  try {
+    const image = new Image(); image.src = source; await image.decode();
+    const scale = Math.min(1, 1600 / Math.max(image.width, image.height));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, Math.round(image.width * scale)); canvas.height = Math.max(1, Math.round(image.height * scale));
+    const context = canvas.getContext('2d'); context.fillStyle = '#fff'; context.fillRect(0, 0, canvas.width, canvas.height); context.drawImage(image, 0, 0, canvas.width, canvas.height);
+    for (const quality of [.85, .7, .5]) {
+      const result = canvas.toDataURL('image/jpeg', quality);
+      if (result.length * .75 <= 1_500_000) return result;
+    }
+    throw new Error('ย่อรูปไม่สำเร็จ กรุณาถ่ายใหม่หรือเลือกรูปอื่น');
+  } catch (error) { throw new Error(error.message?.includes('กรุณา') ? error.message : 'อ่านรูปไม่ได้ กรุณาถ่ายใหม่หรือเลือกรูปอื่น'); }
+  finally { URL.revokeObjectURL(source); }
 }
