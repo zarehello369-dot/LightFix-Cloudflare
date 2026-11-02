@@ -233,5 +233,7 @@ details.manage-menu summary{cursor:pointer;min-height:42px;padding:10px;font-wei
 @media(max-width:390px){.site-name{font-size:1.07rem}.header-track{font-size:.8rem}.menu-toggle{min-width:52px;padding-inline:8px}.metric span{font-size:.72rem}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
 .upload{display:flex;flex-wrap:wrap}.upload .upload-name,.upload .field-note{width:100%}#preview-image:not([src]){display:none}
+.upload:has(#photo:focus-visible) label[for=photo],.upload:has(#camera:focus-visible) label[for=camera]{outline:3px solid var(--green);outline-offset:3px}
+.photo-pair img{height:auto;aspect-ratio:auto;object-fit:contain}.photo-pair figure a{display:block}.photo-pair figure a:focus-visible{outline-offset:4px}
 @media(max-width:899px){.staff-rail{padding:10px 13px}.staff-nav-label{margin-top:8px}.staff-layout{gap:14px}.staff-identity h2{font-size:.8rem}.staff-identity h2 span{display:inline;margin-left:6px;font-size:.95rem}}
 .toolbar select{max-width:100%}@media(min-width:640px){.toolbar select{max-width:280px}}
