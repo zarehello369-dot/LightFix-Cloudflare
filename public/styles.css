@@ -266,3 +266,37 @@ details.manage-menu summary{cursor:pointer;min-height:42px;padding:10px;font-wei
 .work-grid{display:grid;gap:14px}.work-card{min-width:0}.work-card h2{margin:0}.work-card p{margin:8px 0;overflow-wrap:anywhere}.work-card details{margin-top:12px}.work-card summary{cursor:pointer;min-height:44px;padding-block:9px;font-weight:600}.work-card input[type=checkbox]{width:24px;height:24px;accent-color:var(--green)}.work-card .staff-row{display:flex;justify-content:space-between;gap:12px}.work-card .inline{align-items:center}.work-card+.button{margin-top:8px;width:100%}.work-card .danger-note,.work-card .status-note{padding:5px 9px}
 .work-card .staff-row>div{min-width:0;flex:1;overflow-wrap:anywhere}.work-card .staff-row>.badge{flex:none}.overdue{color:var(--red);font-weight:600}
 @media(min-width:1100px){.work-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* Staff work stays in one pole context, with actions beside the record. */
+.staff-more{margin-top:12px;border-top:1px solid var(--line);padding-top:8px}
+.staff-more summary{min-height:44px;padding:10px 12px;font-weight:600;cursor:pointer}
+.work-switch{display:flex;gap:8px;margin:18px 0 20px}
+.work-switch button{flex:1;min-height:48px;padding:10px;border:1px solid #748a81;border-radius:10px;background:var(--surface);color:var(--ink);font-weight:600}
+.work-switch button[aria-pressed=true]{background:var(--gold-soft);border-color:#927000;box-shadow:inset 0 -3px #927000}
+.work-switch .number{margin-inline-start:7px}
+.work-card{display:flex;flex-direction:column;gap:0;overflow-wrap:anywhere}
+.work-card .section-head{align-items:flex-start}
+.work-card .work-symptoms{font-weight:600}
+.work-card .danger-note{align-self:flex-start}
+.work-actions{display:grid;gap:9px;margin-top:auto;padding-top:16px}
+.work-actions .button{width:100%;min-height:48px}
+.work-actions .manage-menu summary{min-height:44px;text-align:center}
+.work-evidence{margin-bottom:12px}
+.complaint-detail{padding-block:14px;border-top:1px solid var(--line)}
+.complaint-detail h3{font-size:1rem;line-height:1.5;margin:0 0 6px}
+.work-photo-link{display:block;max-width:100%;margin:12px 0;font-size:.875rem;overflow-wrap:anywhere}
+.work-photo-link img{display:block;width:100%;max-height:280px;object-fit:contain;background:var(--page);border-radius:10px;margin-bottom:6px}
+.work-photo-link:focus-visible{outline-offset:5px}
+.repair-photo-preview{margin:10px 0 0;max-width:100%;overflow-wrap:anywhere}
+.repair-photo-preview img{display:block;width:100%;max-height:260px;object-fit:contain;background:var(--page);border-radius:10px}
+.repair-photo-preview figcaption{font-size:.875rem;margin:7px 0}
+.draft-status{margin:0;padding:10px 12px;background:var(--gold-soft);color:var(--ink);border-radius:10px}
+.draft-manage summary{min-height:44px;padding-block:10px;font-size:.875rem;font-weight:600;cursor:pointer}
+.latest-work{margin-block:12px;padding:12px;background:var(--page);color:var(--ink);font-weight:400;border-radius:10px}
+.latest-work p{margin:6px 0;overflow-wrap:anywhere}
+.dialog{overscroll-behavior:contain;color:var(--ink)}
+.dialog [data-error] .inline{align-items:flex-start;margin-top:12px;color:var(--ink)}
+.dialog input[type=checkbox]{flex:none;width:24px;height:24px;accent-color:var(--green)}
+#finish-photo{max-width:100%;font-size:16px}
+@media(max-width:899px){.staff-layout{padding-top:0;gap:18px}.staff-rail{padding:10px 12px}.staff-identity .button{min-height:44px}.page:has(.staff-layout){padding-top:18px}}
+@media(min-width:640px){.work-switch{max-width:520px}.work-actions{grid-template-columns:repeat(2,minmax(0,1fr))}.work-actions>.manage-menu{grid-column:1/-1}.work-actions>.button:only-child{grid-column:1/-1}}

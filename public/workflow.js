@@ -7,7 +7,7 @@ export function groupReports(rows, jobs = [], users = [], poles = []) {
   }
   return [...groups.values()].map(group => {
     const open = group.reports.filter(report => report.status < 2);
-    const job = jobs.find(job => job.pole === group.pole && job.status === 1);
+    const job = open.length ? jobs.find(job => job.pole === group.pole && job.status === 1) : undefined;
     const assignedId = job?.assigned_user_id || job?.technician_id || open.find(report => report.assignedId)?.assignedId;
     return { ...group, open, job, assignedId, assignedName: users.find(user => user.id === assignedId)?.display_name || '', location: poles.find(pole => pole.pole === group.pole)?.location || '', dueAt: job?.due_at || open.find(report => report.dueAt)?.dueAt || null, firstAt: Math.min(...group.reports.map(report => report.at)) };
   }).sort((a,b) => Number(b.urgent)-Number(a.urgent) || a.firstAt-b.firstAt);

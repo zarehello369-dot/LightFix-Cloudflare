@@ -176,14 +176,15 @@ Controls use gentle 10px corners, record cards 12px, panels 14px, and the public
 - **Panel and record:** White, thin line, rounded corners. Records lift on hover; regular panels stay flat.
 - **Staff table:** Labeled cards below 1100px, two columns from 640px, and a full table at 1100px.
 - **Reporting:** Reveal contact input only after a reachable channel is selected. Hazard warnings appear beside symptoms. Photo controls offer camera/library, preview, removal and preparation feedback. A compact summary precedes submission.
-- **Staff queue:** Default to open work, with status/search controls and valid-selection gating. Place destructive actions inside a disclosure menu.
-- **Pole work cards:** Group complaints by pole. Lead with pole number and location; show report count, symptom-derived hazard label, assignee and deadline. Keep per-report symptoms/contact inside a labeled disclosure. Select a whole pole, never a partial complaint list. My Work separates assigned waiting poles and active repair jobs. Filters persist per account; selection does not.
+- **Staff queue:** Default to open work, with saved status/search controls. Act on one pole directly from its card; no distant selection toolbar. Place destructive actions inside a disclosure menu.
+- **Pole work cards:** Group complaints by pole. Lead with pole number, location and symptoms; show report count, symptom-derived hazard label, assignee, deadline and latest public note. Keep contact and full-size before-photo links inside a labeled disclosure in both waiting and active jobs. Each action includes every open complaint on its pole. My Work opens on active repairs with count-bearing active/waiting switches. The administrator overview counts unique poles and also labels the number of complaints.
+- **Work forms:** Preserve note and completion text drafts for 24 hours in account-scoped session storage, with in-memory fallback. Keep prepared photos in memory only, show a preview/remove action, and explicitly request photo reselection after reload. A revision conflict refreshes server context in the existing form and requires review before resubmission. Do not discard draft input while recovering. Clear the matching draft after a committed save and clear account drafts on sign-out.
 - **Admin management:** Keep add, edit, password reset, and delete actions beside the relevant record. Destructive actions use the red button and a typed pole number or username confirmation. Records tied to reports or jobs show a deactivation path instead of delete; one-time temporary passwords remain visible until the admin closes their dialog.
 
 ### Navigation
 
 - **Global:** White header with a linked outline bulb, separate LightFix text, direct tracking link, and menu button on mobile. The menu becomes inline at 900px.
-- **Staff:** Labeled view select below 900px; a sticky, text-labeled rail at 900px and above. Current views have a pale gold background.
+- **Staff:** Labeled view select with primary/secondary option groups below 900px; a sticky, text-labeled rail with a secondary disclosure at 900px and above. Technician primary views are My Work, Available Queue and Messages; pole information and history remain available as secondary views. Current views have a pale gold background. Move focus to the heading after changing a view.
 
 ### Status and route
 

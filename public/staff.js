@@ -1,4 +1,5 @@
 import { groupReports, readFilters, queueReports } from './workflow.js';
+import { submitStaffForm, readWorkDraft, saveWorkDraft, selectPoleReports } from './staff-forms.js';
 import { $, control, esc, date, badge, api, post, shell, toast, showError, photoData, enhancePasswordFields } from './shared.js';
 
 const state = { role: '', tab: 'overview', data: null, selected: new Set() };
@@ -89,21 +90,24 @@ function saveFilters() { try { localStorage.setItem(filterOwner, JSON.stringify(
 const workRevision = pole => state.data.poles.find(item => item.pole === pole)?.work_revision;
 const workPayload = (pole, data) => ({...data, workRevision:workRevision(pole)});
 function renderWorkspace() {
-  const data = state.data;
-  const tabs = state.role === 'admin' ? [['overview','ภาพรวม'],['reports','เรื่องแจ้ง'],['jobs','งานซ่อม'],['poles','ข้อมูลเสา'],['users','บัญชีผู้ใช้'],['messages','ข้อความ'],['history','ประวัติซ่อม']] : [['mywork','งานของฉัน'],['overview','ภาพรวม'],['reports','เรื่องแจ้ง'],['jobs','งานซ่อม'],['poles','ข้อมูลเสา'],['messages','ข้อความ'],['history','ประวัติซ่อม']];
-  $('#staff-root').innerHTML = `<div class="staff-layout"><aside class="staff-rail"><div class="staff-identity"><h2>${roleLabel(state.role)}<span>${esc(data.user.name)}</span></h2><button id="logout" class="button ghost small" type="button">ออกจากระบบ</button></div><label class="staff-nav-label" for="staff-view">หน้าทำงาน</label><select id="staff-view" class="staff-view-select" aria-label="เลือกหน้าทำงาน">${tabs.map(([key,label]) => `<option value="${key}" ${state.tab === key ? 'selected' : ''}>${label}</option>`).join('')}</select><nav aria-label="เมนูพื้นที่ทำงาน">${tabs.map(([key,label]) => `<button type="button" data-tab="${key}" ${state.tab === key ? 'aria-current="page"' : ''}>${label}</button>`).join('')}</nav></aside><div class="staff-main"><div id="staff-content"></div></div></div><dialog class="dialog" id="task-dialog" aria-labelledby="dialog-title"></dialog>`;
-  document.querySelectorAll('[data-tab]').forEach(button => button.addEventListener('click', () => {
-    state.tab = button.dataset.tab; state.selected.clear();
-    renderWorkspace();
-    document.querySelector(`[data-tab="${state.tab}"]`)?.focus();
-  }));
-  $('#staff-view').addEventListener('change', event => {
-    state.tab = event.currentTarget.value; state.selected.clear();
-    renderWorkspace();
-    $('#staff-view').focus();
+  const data = state.data, admin = state.role === 'admin';
+  const primary = admin ? [['overview','ภาพรวม'],['reports','คิวงาน'],['jobs','กำลังซ่อม'],['messages','ข้อความ']] : [['mywork','งานของฉัน'],['reports','คิวงานที่รับได้'],['messages','ข้อความ']];
+  const secondary = admin ? [['poles','ข้อมูลเสา'],['users','บัญชีผู้ใช้'],['history','ประวัติซ่อม']] : [['poles','ข้อมูลเสา'],['history','ประวัติซ่อม']];
+  const options = tabs => tabs.map(([key,label]) => `<option value="${key}" ${state.tab === key ? 'selected' : ''}>${label}</option>`).join('');
+  const buttons = tabs => tabs.map(([key,label]) => `<button type="button" data-tab="${key}" ${state.tab === key ? 'aria-current="page"' : ''}>${label}</button>`).join('');
+  $('#staff-root').innerHTML = `<div class="staff-layout"><aside class="staff-rail"><div class="staff-identity"><h2>${roleLabel(state.role)}<span>${esc(data.user.name)}</span></h2><button id="logout" class="button ghost small" type="button">ออกจากระบบ</button></div><label class="staff-nav-label" for="staff-view">หน้าทำงาน</label><select id="staff-view" class="staff-view-select"><optgroup label="งานหลัก">${options(primary)}</optgroup><optgroup label="ข้อมูลเพิ่มเติม">${options(secondary)}</optgroup></select><nav aria-label="เมนูพื้นที่ทำงาน">${buttons(primary)}<details class="staff-more" ${secondary.some(([key])=>key===state.tab) ? 'open' : ''}><summary>ข้อมูลเพิ่มเติม</summary>${buttons(secondary)}</details></nav></aside><div class="staff-main"><div id="staff-content"></div></div></div><dialog class="dialog" id="task-dialog" aria-labelledby="dialog-title"></dialog>`;
+  document.querySelectorAll('[data-tab]').forEach(button => button.addEventListener('click', () => navigateTab(button.dataset.tab)));
+  $('#staff-view').addEventListener('change', event => navigateTab(event.currentTarget.value));
+  $('#logout').addEventListener('click', async () => {
+    await post(`${base()}/auth/logout`);
+    clearAccountDrafts(); loginPage();
   });
-  $('#logout').addEventListener('click', async () => { await post(`${base()}/auth/logout`); loginPage(); });
   renderTab();
+}
+function navigateTab(tab) {
+  state.tab = tab; state.selected.clear(); renderWorkspace();
+  const heading = $('#staff-content h1');
+  if (heading) { heading.tabIndex = -1; heading.focus(); }
 }
 
 function renderTab() {
@@ -118,65 +122,169 @@ function enhanceTables(root = $('#staff-content')) {
     }));
   });
 }
-function content(html) { $('#staff-content').innerHTML = html; enhanceTables(); $('#staff-content [data-queue]')?.addEventListener('click', () => { state.tab = 'reports'; state.reportStatus = 'open'; renderWorkspace(); }); }
+function content(html) {
+  $('#staff-content').innerHTML = html; enhanceTables(); bindWorkActions();
+  $('#staff-content [data-queue]')?.addEventListener('click', () => { state.reportStatus = 'open'; state.reportQuery = ''; saveFilters(); navigateTab('reports'); });
+}
 function dialog(html) {
   const target = $('#task-dialog'); target.innerHTML = html; target.showModal();
-  target.querySelector('[data-close]')?.addEventListener('click', () => target.close());
+  const close = event => {
+    if (target.querySelector('form[data-preparing="true"]')) { event?.preventDefault(); toast('กำลังเตรียมรูป รอสักครู่ก่อนกลับ'); return; }
+    if (event?.type !== 'cancel') target.close();
+  };
+  target.querySelector('[data-close]')?.addEventListener('click', close);
+  target.oncancel = close;
   return target;
 }
-async function action(path, data, success) {
-  const pole = data.pole || state.data.jobs.find(job => path.includes(job.id))?.pole; await post(path, pole ? workPayload(pole,data) : data); toast(success); state.selected.clear(); state.data = await api(`${base()}/workspace`); renderWorkspace();
+async function action(path, data, success, onSaved) {
+  const pole = data.pole || state.data.jobs.find(job => path.includes(job.id))?.pole;
+  await post(path, pole ? workPayload(pole, data) : data);
+  onSaved?.(); toast(success); state.selected.clear();
+  $('#task-dialog')?.close();
+  // A failed refresh does not turn an already committed write into a failed save.
+  try {
+    state.data = await api(`${base()}/workspace`); renderWorkspace();
+    const heading = $('#staff-content h1'); if (heading) { heading.tabIndex = -1; heading.focus(); }
+  } catch { showError($('#staff-root'), new Error(`${success} แต่โหลดรายการใหม่ไม่ได้ ตรวจสอบอินเทอร์เน็ตแล้วลองใหม่`)); }
 }
-function formError(form, error) { const box = form.querySelector('[data-error]'); if (!box) return; box.textContent = error.message; if (error.code === 'WORK_CHANGED' || error.code === 'STATUS_CHANGED') { const button = document.createElement('button'); button.type = 'button'; button.className = 'button outline small'; button.textContent = 'โหลดข้อมูลงานล่าสุด'; button.addEventListener('click', () => loadWorkspace()); box.append(document.createElement('br'),button); } }
-function statusCount(n) { return state.data.reports.filter(r => r.status === n).length; }
+function formError(form, error) {
+  const box = form?.querySelector('[data-error]'); if (!box) { toast(error.message); return; }
+  box.textContent = error.message;
+  if (error.code === 'LOGIN_REQUIRED') {
+    const link=document.createElement('a'); link.className='button outline small'; link.href=`/${state.role}`; link.textContent='เข้าสู่ระบบอีกครั้ง';
+    box.append(document.createElement('br'),link); return;
+  }
+  if (error.code !== 'WORK_CHANGED' && error.code !== 'STATUS_CHANGED') return;
+  const button = document.createElement('button'); button.type = 'button'; button.className = 'button outline small'; button.textContent = 'โหลดข้อมูลงานล่าสุด';
+  button.addEventListener('click', async () => {
+    button.disabled = true; button.textContent = 'กำลังโหลดข้อมูล…';
+    try {
+      const latest = await api(`${base()}/workspace`); state.data = latest;
+      const pole = form.dataset.pole, job = latest.jobs.find(item => item.id === form.dataset.jobId);
+      const group = groupReports(latest.reports.filter(item => item.pole === pole && item.status < 2), latest.jobs, latest.users || [], latest.poles)[0];
+      const unavailable = form.dataset.jobId ? !job || job.status !== 1 || (state.role !== 'admin' && (job.assigned_user_id || job.technician_id) !== latest.user.id) : !group?.open.length;
+      const submit = form.querySelector('button:not([type="button"])');
+      if (unavailable) {
+        form.dataset.unavailable = 'true'; if (submit) submit.disabled = true;
+        box.innerHTML = '<p>งานนี้ปิดแล้วหรือเปลี่ยนผู้รับผิดชอบ ร่างของคุณยังเก็บไว้ กลับไปตรวจรายการงานล่าสุด</p><button type="button" class="button outline small" data-return-work>กลับไปรายการงาน</button>';
+        box.querySelector('button').addEventListener('click', () => renderWorkspace()); return;
+      }
+      const note = job?.public_note || '', instructions = job?.instructions || group?.open[0]?.instructions || '';
+      const assignedId=job?.assigned_user_id || job?.technician_id || group?.assignedId;
+      const assignedName=latest.users?.find(user=>user.id===assignedId)?.display_name || (assignedId===latest.user.id?latest.user.name:assignedId?'มอบหมายแล้ว':'ยังไม่มอบหมาย');
+      const dueAt=job?.due_at || group?.dueAt;
+      box.innerHTML = `<p>โหลดข้อมูลล่าสุดแล้ว ข้อความและรูปที่คุณกำลังเตรียมยังอยู่</p><div class="latest-work"><strong>ข้อมูลล่าสุดของเสา ${esc(pole)}</strong><p>สถานะ: ${job ? 'กำลังซ่อม' : 'รอรับงาน'}</p><p>ผู้รับผิดชอบ: ${esc(assignedName)}</p><p>กำหนดเสร็จ: ${date(dueAt)}</p><p>รายละเอียดงาน: ${esc(instructions || 'ไม่มี')}</p><p>บันทึกล่าสุด: ${esc(note || 'ยังไม่มี')}</p></div><label class="inline"><input type="checkbox" required> ตรวจสอบข้อมูลล่าสุดแล้ว และต้องการบันทึกข้อมูลที่กรอก</label>`;
+      box.querySelector('input').focus();
+    } catch (failure) { box.firstChild.textContent = `${failure.message} `; button.disabled = false; button.textContent = 'ลองโหลดข้อมูลอีกครั้ง'; }
+  });
+  box.append(document.createElement('br'), button);
+}
+
+const draftMemory = new Map(), draftPhotos = new Map();
+const draftKey = (type, jobId) => `lightfix:work-draft:${state.role}:${state.data.user.id}:${type}:${jobId}`;
+function readDraft(key) {
+  const memory=readWorkDraft({getItem:()=>JSON.stringify(draftMemory.get(key)||null)},key);
+  if(memory)return memory;
+  draftMemory.delete(key); draftPhotos.delete(key);
+  try { return readWorkDraft(sessionStorage,key); } catch { return null; }
+}
+function deleteDraft(key) { draftMemory.delete(key); draftPhotos.delete(key); try { sessionStorage.removeItem(key); } catch {} }
+function clearAccountDrafts() {
+  const prefix = `lightfix:work-draft:${state.role}:${state.data.user.id}:`;
+  for (const key of draftMemory.keys()) if (key.startsWith(prefix)) deleteDraft(key);
+  try { Object.keys(sessionStorage).filter(key=>key.startsWith(prefix)).forEach(key=>sessionStorage.removeItem(key)); } catch {}
+}
+function attachDraft(form, type, job) {
+  const key = draftKey(type,job.id), draft = readDraft(key);
+  form.dataset.jobId = job.id; form.dataset.pole = job.pole;
+  const fields = [...form.elements].filter(el=>['note','cause','causeDetail'].includes(el.name));
+  if (draft) for (const field of fields) if (typeof draft.fields[field.name] === 'string') field.value = draft.fields[field.name];
+  const status = document.createElement('p'); status.className = 'field-note draft-status'; status.setAttribute('role','status'); form.prepend(status);
+  const save = () => {
+    const values = Object.fromEntries(fields.map(field=>[field.name,field.value]));
+    const hasPhoto = draftPhotos.has(key), value = { fields:values, hasPhoto, updatedAt:Date.now() };
+    draftMemory.set(key,value); let saved = false;
+    try { saved = saveWorkDraft(sessionStorage,key,values,hasPhoto); } catch {}
+    status.textContent = saved ? `เก็บข้อความร่างในแท็บนี้ 24 ชั่วโมง ยังไม่ได้ส่งข้อมูล${hasPhoto ? ' รูปต้องเลือกใหม่หากโหลดหน้าใหม่' : ''}` : 'เก็บร่างได้ระหว่างเปิดหน้านี้เท่านั้น อย่าปิดแท็บก่อนบันทึก';
+  };
+  status.textContent = draft ? `เรียกคืนร่างแล้ว${draft.hasPhoto && !draftPhotos.has(key) ? ' กรุณาเลือกรูปอีกครั้งหลังโหลดหน้าใหม่' : ''}` : 'เก็บข้อความร่างในแท็บนี้ รูปเก็บได้จนกว่าจะโหลดหน้าใหม่หรือปิดแท็บ';
+  form.addEventListener('input', save); form.addEventListener('change', save);
+  const clear = document.createElement('details'); clear.className = 'draft-manage'; clear.innerHTML = '<summary>จัดการร่างในเครื่อง</summary><p class="field-note">ล้างเฉพาะข้อความและรูปที่เตรียมในฟอร์มนี้ ไม่เปลี่ยนข้อมูลงานที่บันทึกแล้ว</p><button type="button" class="button outline small">ล้างร่างและเริ่มใหม่</button>';
+  clear.querySelector('button').addEventListener('click',()=>{ deleteDraft(key); form.reset(); form.querySelector('[data-error]').textContent=''; if (form.dataset.unavailable !== 'true') { const submit=form.querySelector('button:not([type="button"])'); submit.disabled=false; } resetPhoto(); status.textContent='ล้างร่างแล้ว ข้อมูลงานที่บันทึกไว้ยังอยู่'; });
+  form.insertBefore(clear,form.querySelector('.dialog-actions'));
+  const input = control(form,'photo'), preview = form.querySelector('[data-photo-preview]'), preparation = form.querySelector('[data-photo-status]');
+  let generation = 0;
+  const resetPhoto = () => { generation++; delete form.dataset.preparing; if (!input) return; input.value=''; input.required=true; preview.hidden=true; preview.querySelector('img')?.remove(); if (preparation) preparation.textContent=''; };
+  const displayPhoto = () => { if (!input) return; const photo=draftPhotos.get(key); input.required=!photo; preview.hidden=!photo; preview.querySelector('img')?.remove(); if(photo) { const image=document.createElement('img'); image.alt='ตัวอย่างรูปหลังซ่อมที่เตรียมส่ง'; image.src=photo.data; preview.prepend(image); preview.querySelector('figcaption').textContent=photo.name; } };
+  displayPhoto();
+  input?.addEventListener('change',async()=>{
+    const file=input.files[0], version=++generation, submit=form.querySelector('button:not([type="button"])');
+    draftPhotos.delete(key); displayPhoto(); if(!file) {save();return;}
+    form.dataset.preparing='true'; submit.disabled=true; preparation.textContent='กำลังเตรียมรูป…';
+    try { const data=await photoData(file); if(version!==generation)return; draftPhotos.set(key,{data,name:file.name}); displayPhoto(); preparation.textContent='รูปพร้อมส่ง ตรวจภาพก่อนยืนยันปิดงาน'; save(); }
+    catch(error) { if(version!==generation)return; input.value=''; preparation.textContent=error.message; save(); }
+    finally { if(version===generation) { delete form.dataset.preparing; if(form.dataset.unavailable!=='true')submit.disabled=false; } }
+  });
+  form.querySelector('[data-remove-photo]')?.addEventListener('click',()=>{draftPhotos.delete(key);resetPhoto();save();});
+  return { clear:()=>deleteDraft(key), photo:()=>draftPhotos.get(key)?.data || '' };
+}
 
 function overview() {
-  const d = state.data, open = d.reports.filter(r => r.status < 2);
-  content(`<h1>งานวันนี้</h1><p class="muted">${state.role === 'admin' ? 'ตรวจเรื่องใหม่ มอบหมาย และดูงานที่กำลังทำ' : 'ดูเรื่องที่รับได้และงานที่ต้องอัปเดต'}</p>
-    <div class="metric-row"><div class="metric"><strong>${statusCount(0)}</strong><span>รอรับเรื่อง</span></div><div class="metric"><strong>${statusCount(1)}</strong><span>กำลังซ่อม</span></div><div class="metric"><strong>${d.notifications.filter(n => !n.read_at).length}</strong><span>ข้อความยังไม่อ่าน</span></div></div>
-    <section class="staff-section"><div class="section-head"><h2>เรื่องที่ต้องดู</h2><button class="button outline small" data-queue>เปิดคิวงาน</button></div>${open.length ? `<div class="panel">${open.slice(0,8).map(r => `<div class="staff-row"><strong class="number">${esc(r.pole)}</strong><div>${esc(r.symptom)}<p>${date(r.at)}</p></div>${badge(r.status)}</div>`).join('')}</div>` : '<div class="empty">ยังไม่มีเรื่องที่ต้องดำเนินการ</div>'}</section>
-    <section class="staff-section"><h2>ข้อความล่าสุด</h2>${d.notifications.length ? `<div class="panel">${d.notifications.slice(0,4).map(n => `<div class="staff-row"><strong>${esc(n.title)}</strong><div>${esc(n.body)}<p>${date(n.created_at)}</p></div>${n.read_at ? '<span class="small muted">อ่านแล้ว</span>' : '<span class="badge wait">ใหม่</span>'}</div>`).join('')}</div>` : '<div class="empty">ยังไม่มีข้อความ</div>'}</section>`);
+  const d=state.data, groups=groupReports(d.reports.filter(r=>r.status<2),d.jobs,d.users||[],d.poles);
+  const waiting=groups.filter(group=>!group.job), active=groups.filter(group=>group.job);
+  content(`<h1>ภาพรวมงาน</h1><p class="muted">ดูงานรายเสา แล้วเปิดคิวเพื่อมอบหมายหรือติดตามการซ่อม</p><div class="metric-row"><div class="metric"><strong>${waiting.length}</strong><span>เสารอเริ่มงาน</span><span>${waiting.reduce((n,g)=>n+g.reports.length,0)} เรื่องแจ้ง</span></div><div class="metric"><strong>${active.length}</strong><span>เสากำลังซ่อม</span><span>${active.reduce((n,g)=>n+g.reports.length,0)} เรื่องแจ้ง</span></div><div class="metric"><strong>${d.notifications.filter(n=>!n.read_at).length}</strong><span>ข้อความยังไม่อ่าน</span></div></div><section class="staff-section"><div class="section-head"><h2>เสาที่ต้องดำเนินการ</h2><button class="button outline small" data-queue>เปิดคิวทั้งหมด</button></div>${groups.length ? `<div class="work-grid">${groups.slice(0,8).map(group=>groupCard(group,'overview')).join('')}</div>` : '<div class="empty">ยังไม่มีเสาที่ต้องดำเนินการ</div>'}</section>`);
 }
-
-function groupCard(group, selectable = true) {
-  const ids = group.open.map(report => report.id);
-  const checked = ids.length && ids.every(id => state.selected.has(id));
-  return `<article class="panel work-card"><div class="section-head"><h2 class="section-heading number">${esc(group.pole)}</h2>${selectable && ids.length ? `<label class="inline"><input type="checkbox" data-pole-group="${esc(group.pole)}" ${checked ? 'checked' : ''}>เลือกเสานี้</label>` : ''}</div><p class="muted">${esc(group.location || 'ยังไม่ระบุตำแหน่ง')}</p><div class="inline">${group.urgent ? '<span class="danger-note">เสี่ยงอันตรายตามอาการแจ้ง</span>' : '<span class="status-note">งานทั่วไป</span>'}<span class="small">${group.reports.length} เรื่องแจ้ง · งานซ่อม ${group.job ? '1 งานกำลังทำ' : group.open.length ? 'รอเริ่มงาน' : 'ปิดแล้ว'}</span></div><p class="small">ผู้รับผิดชอบ: ${esc(group.assignedName || (group.assignedId === state.data.user.id ? state.data.user.name : group.assignedId ? 'มอบหมายแล้ว' : 'ยังไม่มอบหมาย'))}${group.dueAt ? ` · <span class="${group.dueAt < Date.now() ? 'overdue' : ''}">${group.dueAt < Date.now() ? 'เกินกำหนด' : 'กำหนดเสร็จ'} ${date(group.dueAt)}</span>` : ''}</p>${group.job?.instructions || group.open[0]?.instructions ? `<p class="small">รายละเอียดงาน: ${esc(group.job?.instructions || group.open[0]?.instructions)}</p>` : ''}<details><summary>ดูอาการและเรื่องแจ้ง ${group.reports.length} เรื่อง</summary>${group.reports.map(report => `<div class="staff-row"><div>${esc(report.symptom)}<p>${date(report.at)} · ${contactLabel(report.contactType)}: ${esc(report.contactValue)}</p></div>${badge(report.status)}</div>`).join('')}</details></article>`;
+function jobGroup(job) {
+  const d=state.data, rows=d.reports.filter(report=>report.jobId===job.id || (report.pole===job.pole && report.status===1));
+  return groupReports(rows,[job],d.users||[],d.poles)[0] || {pole:job.pole,reports:[],open:[],urgent:false,job,assignedId:job.assigned_user_id||job.technician_id,assignedName:'',location:d.poles.find(p=>p.pole===job.pole)?.location||'',dueAt:job.due_at,firstAt:job.started_at};
 }
-function reportResults(rows, d) {
-  const groups = groupReports(rows,d.jobs,d.users || [],d.poles);
-  return groups.length ? `<p class="small muted" role="status">${groups.length} เสา · ${rows.length} เรื่องแจ้ง</p><div class="work-grid">${groups.map(group => groupCard(group)).join('')}</div>` : `<div class="empty"><p>ไม่พบเรื่องแจ้ง${state.reportQuery ? `สำหรับ “${esc(state.reportQuery)}”` : ''} ในตัวกรอง ${esc(({open:'เรื่องที่ต้องดำเนินการ','0':'รอรับเรื่อง','1':'กำลังซ่อม','2':'ซ่อมเสร็จ','3':'ยกเลิก',all:'ทุกสถานะ'})[state.reportStatus || 'open'])}</p><button type="button" class="button outline small" data-clear-report-filters>ล้างตัวกรอง</button></div>`;
+function groupCard(group, mode='queue') {
+  const job=group.job, canStart=group.open.length && !job && group.open.every(report=>report.status===0), admin=state.role==='admin';
+  const owner=group.assignedName || (group.assignedId===state.data.user.id ? state.data.user.name : group.assignedId ? 'มอบหมายแล้ว' : 'ยังไม่มอบหมาย');
+  const closed=!group.open.length && !job;
+  let actions='';
+  if(mode==='overview') actions=`<button class="button outline" data-open-pole="${esc(group.pole)}">เปิดงานเสา ${esc(group.pole)}</button>`;
+  else {
+    if(job) actions+=`<button class="button primary" data-finish="${esc(job.id)}">ปิดงานซ่อม</button><button class="button outline" data-note="${esc(job.id)}">บันทึกความคืบหน้า</button>`;
+    if(admin && group.open.length) actions+=`<button class="button ${job?'outline':'primary'}" data-assign-pole="${esc(group.pole)}">${group.assignedId?'เปลี่ยนผู้รับผิดชอบ':'มอบหมายช่าง'}</button>`;
+    if(canStart) actions+=`<button class="button ${admin?'outline':'primary'}" data-start-pole="${esc(group.pole)}">รับงานเสา ${esc(group.pole)}</button>`;
+    if(admin && group.open.length) actions+=`<details class="manage-menu"><summary>จัดการเพิ่มเติม</summary><button class="button danger small" data-cancel-pole="${esc(group.pole)}">ยกเลิกเรื่องของเสานี้</button></details>`;
+  }
+  return `<article class="panel work-card" data-work-pole="${esc(group.pole)}"><div class="section-head"><h2 class="section-heading number">${esc(group.pole)}</h2>${badge(job?1:closed?(group.reports[0]?.status??2):0)}</div><p class="muted">${esc(group.location||'ยังไม่ระบุตำแหน่ง')}</p>${group.urgent?'<p class="danger-note">เสี่ยงอันตรายตามอาการแจ้ง</p>':''}<p class="work-symptoms">${esc([...new Set(group.reports.map(report=>report.symptom))].join(' · ')||'เปิดรายละเอียดงานเพื่อดูข้อมูลที่มี')}</p><p class="small">${group.reports.length} เรื่องแจ้ง · ผู้รับผิดชอบ: ${esc(owner)}</p>${group.dueAt?`<p class="small ${group.dueAt<Date.now()?'overdue':''}">${group.dueAt<Date.now()?'เกินกำหนด':'กำหนดเสร็จ'} ${date(group.dueAt)}</p>`:''}${job?.instructions||group.open[0]?.instructions?`<p class="small">รายละเอียดงาน: ${esc(job?.instructions||group.open[0]?.instructions)}</p>`:''}${job?.public_note?`<p class="small"><strong>บันทึกล่าสุด:</strong> ${esc(job.public_note)}</p>`:''}<details class="work-evidence"><summary>ดูรูปและรายละเอียด ${group.reports.length} เรื่อง</summary>${group.reports.length?group.reports.map(report=>`<section class="complaint-detail"><h3>${esc(report.symptom)}</h3><p class="small muted">แจ้งเมื่อ ${date(report.at)}</p><p class="small">${contactLabel(report.contactType)}: ${esc(report.contactValue||'ไม่ได้ระบุ')}</p>${report.hasBefore?`<a class="work-photo-link" href="/media/${encodeURIComponent(report.id)}/before" target="_blank" rel="noopener"><img src="/media/${encodeURIComponent(report.id)}/before" loading="lazy" alt="รูปก่อนซ่อมเสา ${esc(group.pole)}"><span>เปิดรูปก่อนซ่อมขนาดเต็ม (แท็บใหม่)</span></a>`:'<p class="small muted">เรื่องนี้ไม่มีรูปก่อนซ่อม</p>'}${badge(report.status)}</section>`).join(''):'<p class="small">ไม่พบรายละเอียดเรื่องแจ้งในรายการที่โหลด กรุณาโหลดงานล่าสุด</p>'}</details><div class="work-actions">${actions}</div></article>`;
+}
+function choosePole(pole) { state.selected=new Set(selectPoleReports(state.data.reports,pole)); }
+function bindWorkActions() {
+  const root=$('#staff-content');
+  root.querySelectorAll('[data-start-pole]').forEach(button=>button.addEventListener('click',()=>{choosePole(button.dataset.startPole);startSelected();}));
+  root.querySelectorAll('[data-assign-pole]').forEach(button=>button.addEventListener('click',()=>{choosePole(button.dataset.assignPole);assignSelected();}));
+  root.querySelectorAll('[data-cancel-pole]').forEach(button=>button.addEventListener('click',()=>{choosePole(button.dataset.cancelPole);cancelPole();}));
+  root.querySelectorAll('[data-note]').forEach(button=>button.addEventListener('click',()=>noteJob(button.dataset.note)));
+  root.querySelectorAll('[data-finish]').forEach(button=>button.addEventListener('click',()=>finishJob(button.dataset.finish)));
+  root.querySelectorAll('[data-open-pole]').forEach(button=>button.addEventListener('click',()=>{state.reportStatus='open';state.reportQuery=button.dataset.openPole;saveFilters();navigateTab('reports');}));
+}
+function reportResults(rows,d) {
+  const groups=groupReports(rows,d.jobs,d.users||[],d.poles);
+  return groups.length?`<p class="small muted" role="status">${groups.length} เสา · ${rows.length} เรื่องแจ้ง · ทำรายการได้ทีละเสา</p><div class="work-grid">${groups.map(group=>groupCard(group)).join('')}</div>`:`<div class="empty"><p>ไม่พบเรื่องแจ้ง${state.reportQuery?`สำหรับ “${esc(state.reportQuery)}”`:''} ในตัวกรอง ${esc(({open:'เรื่องที่ต้องดำเนินการ','0':'รอรับเรื่อง','1':'กำลังซ่อม','2':'ซ่อมเสร็จ','3':'ยกเลิก',all:'ทุกสถานะ'})[state.reportStatus||'open'])}</p><button type="button" class="button outline small" data-clear-report-filters>ล้างตัวกรอง</button></div>`;
+}
+function activeCards(jobs) {
+  const groups=jobs.map(jobGroup).sort((a,b)=>Number(b.urgent)-Number(a.urgent)||(a.dueAt||Infinity)-(b.dueAt||Infinity)||a.firstAt-b.firstAt);
+  return groups.length?`<div class="work-grid">${groups.map(group=>groupCard(group,'active')).join('')}</div>`:'<div class="empty"><p>ยังไม่มีงานที่กำลังซ่อม</p><p class="small muted">รับงานจากรายการรอรับเพื่อเริ่มบันทึกการซ่อม</p></div>';
 }
 function mywork() {
-  const d = state.data;
-  const waiting = d.reports.filter(report => report.status === 0 && report.assignedId === d.user.id);
-  const active = d.jobs.filter(job => job.status === 1 && (job.assigned_user_id || job.technician_id) === d.user.id);
-  const groups = groupReports(waiting,d.jobs,d.users || [],d.poles);
-  content(`<h1>งานของฉัน</h1><p class="muted">งานที่มอบหมายให้ ${esc(d.user.name)} และงานที่กำลังซ่อม</p><button class="button outline small" id="refresh-mywork">โหลดงานล่าสุด</button><section class="staff-section"><h2>รอรับงาน ${groups.length} เสา</h2>${groups.length ? `<div class="work-grid">${groups.map(group => `<div>${groupCard(group,false)}<button class="button primary" data-accept-pole="${esc(group.pole)}">รับงานเสา ${esc(group.pole)}</button></div>`).join('')}</div>` : '<div class="empty">ยังไม่มีงานมอบหมายที่รอรับ</div>'}</section><section class="staff-section"><h2>กำลังซ่อม ${active.length} งาน</h2>${active.length ? `<div class="work-grid">${active.map(job => `<article class="panel"><h3>เสา ${esc(job.pole)}</h3><p>${esc(d.poles.find(pole => pole.pole === job.pole)?.location || 'ยังไม่ระบุตำแหน่ง')}</p><p>${esc(job.instructions || 'ไม่มีรายละเอียดเพิ่มเติม')}</p>${job.due_at ? `<p class="${job.due_at < Date.now() ? 'overdue' : ''}">${job.due_at < Date.now() ? 'เกินกำหนด' : 'กำหนดเสร็จ'} ${date(job.due_at)}</p>` : ''}<div class="actions"><button class="button outline" data-note="${esc(job.id)}">บันทึกความคืบหน้า</button><button class="button primary" data-finish="${esc(job.id)}">ปิดงานซ่อม</button></div></article>`).join('')}</div>` : '<div class="empty">ยังไม่มีงานที่กำลังซ่อม</div>'}</section>`);
+  const d=state.data, waiting=d.reports.filter(report=>report.status===0 && report.assignedId===d.user.id), active=d.jobs.filter(job=>job.status===1 && (job.assigned_user_id||job.technician_id)===d.user.id), groups=groupReports(waiting,d.jobs,d.users||[],d.poles);
+  const view=state.workView||'active';
+  content(`<div class="section-head"><h1>งานของฉัน</h1><button class="button outline small" id="refresh-mywork">โหลดงานล่าสุด</button></div><p class="muted">เปิดงานเพื่อดูอาการ รูป และบันทึกผลการซ่อม</p><div class="work-switch" role="group" aria-label="ประเภทงานของฉัน"><button type="button" data-work-view="active" aria-pressed="${view==='active'}">กำลังทำ <span class="number">${active.length}</span></button><button type="button" data-work-view="waiting" aria-pressed="${view==='waiting'}">รอรับ <span class="number">${groups.length}</span></button></div><section aria-label="${view==='active'?'งานกำลังซ่อม':'งานรอรับ'}">${view==='active'?activeCards(active):groups.length?`<div class="work-grid">${groups.map(group=>groupCard(group,'waiting')).join('')}</div>`:'<div class="empty"><p>ยังไม่มีงานมอบหมายที่รอรับ</p><button class="button outline" data-open-available>ดูคิวงานที่รับได้</button></div>'}</section>`);
   $('#refresh-mywork').addEventListener('click',loadWorkspace);
-  document.querySelectorAll('[data-accept-pole]').forEach(button => button.addEventListener('click',()=>{state.selected = new Set(waiting.filter(report => report.pole === button.dataset.acceptPole).map(report => report.id));startSelected();}));
-  document.querySelectorAll('[data-note]').forEach(button => button.addEventListener('click',()=>noteJob(button.dataset.note)));
-  document.querySelectorAll('[data-finish]').forEach(button => button.addEventListener('click',()=>finishJob(button.dataset.finish)));
+  document.querySelectorAll('[data-work-view]').forEach(button=>button.addEventListener('click',()=>{state.workView=button.dataset.workView;mywork();document.querySelector(`[data-work-view="${state.workView}"]`).focus();}));
+  $('[data-open-available]')?.addEventListener('click',()=>{state.reportStatus='0';state.reportQuery='';saveFilters();navigateTab('reports');});
 }
-
 function reports() {
-  const d = state.data;
-  const status = state.reportStatus || 'open', query = state.reportQuery || '';
-  const rows = queueReports(d,status,query);
-  content(`<h1>เรื่องแจ้ง</h1><p class="muted">รวมเรื่องแจ้งของเสาเดียวกัน เลือกเสาเพื่อเริ่มงาน${state.role === 'admin' ? 'หรือมอบหมาย' : ''}</p>
-    <div class="toolbar"><label class="eyeless" for="report-status">สถานะเรื่องแจ้ง</label><select id="report-status">${[['open','เรื่องที่ต้องดำเนินการ'],['0','รอรับเรื่อง'],['1','กำลังซ่อม'],['2','ซ่อมเสร็จ'],['3','ยกเลิก'],['all','ทุกสถานะ']].map(([key,label]) => `<option value="${key}" ${status === key ? 'selected' : ''}>${label}</option>`).join('')}</select><label class="eyeless" for="report-search">ค้นหาเสาหรืออาการ</label><input class="input" id="report-search" type="search" placeholder="ค้นหาเสาหรืออาการ" value="${esc(query)}"></div>
-    <div class="toolbar"><button class="button dark" id="start-job" disabled>เริ่มงานจากที่เลือก</button>${state.role === 'admin' ? '<button class="button outline" id="assign-job" disabled>มอบหมาย</button><button class="button ghost" id="cancel-job" disabled>ยกเลิกเรื่องของเสา</button>' : ''}<span class="small muted" id="selected-count" role="status">เลือก ${state.selected.size} เรื่อง · เลือกเรื่องรอรับ 1–3 เรื่องของเสาเดียวกัน</span></div>
-    <div id="report-results">${reportResults(rows, d)}</div>`);
-  const updateSelection = () => { const selected = d.reports.filter(r => state.selected.has(r.id)); const valid = selected.length > 0 && selected.length <= 3 && selected.every(r => r.status < 2) && new Set(selected.map(r => r.pole)).size === 1; ['start-job','assign-job','cancel-job'].forEach(id => { const button = document.getElementById(id); if (button) button.disabled = !valid || (id === 'start-job' && selected.some(r => r.status !== 0)); }); $('#selected-count').textContent = `เลือก ${new Set(selected.map(r => r.pole)).size} เสา · ${selected.length} เรื่องแจ้ง`; };
-  const bindRows = () => { document.querySelectorAll('[data-pole-group]').forEach(input => input.addEventListener('change', () => { const ids = d.reports.filter(report => report.pole === input.dataset.poleGroup && report.status < 2).map(report => report.id); ids.forEach(id => input.checked ? state.selected.add(id) : state.selected.delete(id)); updateSelection(); })); updateSelection(); };
-  const drawResults = () => { const status = state.reportStatus || 'open', query = state.reportQuery || ''; const filtered = queueReports(d,status,query); $('#report-results').innerHTML = reportResults(filtered, d); enhanceTables(); bindRows(); };
-  bindRows();
-  $('#report-results').addEventListener('click', event => { if (!event.target.closest('[data-clear-report-filters]')) return; state.reportStatus = 'open'; state.reportQuery = ''; saveFilters(); state.selected.clear(); $('#report-status').value = 'open'; $('#report-search').value = ''; drawResults(); $('#report-search').focus(); });
-  $('#report-status').addEventListener('change', event => { state.reportStatus = event.target.value; saveFilters(); state.selected.clear(); drawResults(); });
-  $('#report-search').addEventListener('input', event => { state.reportQuery = event.target.value; state.selected.clear(); saveFilters(); drawResults(); });
-  $('#start-job').addEventListener('click', startSelected);
-  $('#assign-job')?.addEventListener('click', assignSelected);
-  $('#cancel-job')?.addEventListener('click', cancelPole);
+  const d=state.data, status=state.reportStatus||'open', query=state.reportQuery||'';
+  content(`<h1>${state.role==='admin'?'คิวงานรายเสา':'คิวงานที่รับได้'}</h1><p class="muted">${state.role==='admin'?'เปิดรายละเอียดแล้วมอบหมายจากบัตรเสาได้ทันที':'ดูอาการและรูปก่อนรับงาน ทำรายการได้ทีละเสา'}</p><div class="toolbar"><label class="eyeless" for="report-status">สถานะเรื่องแจ้ง</label><select id="report-status">${[['open','เรื่องที่ต้องดำเนินการ'],['0','รอรับเรื่อง'],['1','กำลังซ่อม'],['2','ซ่อมเสร็จ'],['3','ยกเลิก'],['all','ทุกสถานะ']].map(([key,label])=>`<option value="${key}" ${status===key?'selected':''}>${label}</option>`).join('')}</select><label class="eyeless" for="report-search">ค้นหาเสาหรืออาการ</label><input class="input" id="report-search" type="search" placeholder="ค้นหาเสาหรืออาการ" value="${esc(query)}"></div><div id="report-results">${reportResults(queueReports(d,status,query),d)}</div>`);
+  const draw=()=>{state.selected.clear();$('#report-results').innerHTML=reportResults(queueReports(d,state.reportStatus||'open',state.reportQuery||''),d);bindWorkActions();};
+  $('#report-results').addEventListener('click',event=>{if(!event.target.closest('[data-clear-report-filters]'))return;state.reportStatus='open';state.reportQuery='';saveFilters();$('#report-status').value='open';$('#report-search').value='';draw();$('#report-search').focus();});
+  $('#report-status').addEventListener('change',event=>{state.reportStatus=event.target.value;saveFilters();draw();});
+  $('#report-search').addEventListener('input',event=>{state.reportQuery=event.target.value;saveFilters();draw();});
 }
 
 function selectedReports(allowActive = false) {
@@ -193,32 +301,40 @@ function assignSelected() {
   const rows = selectedReports(true); if (!rows) return;
   const techs = state.data.users.filter(u => u.role === 'technician' && u.active);
   if (!techs.length) return toast('ยังไม่มีบัญชีช่างที่ใช้งานได้');
+  const group = groupReports(rows,state.data.jobs,state.data.users,state.data.poles)[0];
   const target = dialog(`<h2 id="dialog-title">มอบหมายเสา ${esc(rows[0].pole)}</h2><form id="assign-form"><div class="field"><label for="assign-tech">ช่างที่รับงาน</label><select id="assign-tech" name="technicianId">${techs.map(u => `<option value="${esc(u.id)}">${esc(u.display_name)}</option>`).join('')}</select></div><div class="field"><label for="assign-due">กำหนดเสร็จ (ถ้ามี)</label><input class="input" type="datetime-local" id="assign-due" name="due"></div><div class="field"><label for="assign-instructions">รายละเอียดงาน</label><textarea id="assign-instructions" name="instructions" rows="3"></textarea></div><div class="field-error" data-error role="alert"></div><div class="dialog-actions"><button type="button" class="button outline" data-close>กลับ</button><button class="button primary">มอบหมายงาน</button></div></form>`);
-  target.querySelector('form').addEventListener('submit', async e => { e.preventDefault(); const f = e.currentTarget; try { await action('/api/admin/assign', { pole: rows[0].pole, reportIds: rows.map(r => r.id), technicianId: control(f, 'technicianId').value, dueAt: control(f, 'due').value ? new Date(control(f, 'due').value).getTime() : null, instructions: control(f, 'instructions').value }, 'มอบหมายงานแล้ว'); state.selected.clear(); target.close(); } catch (error) { formError(f, error); } });
+  target.querySelector('form').dataset.pole = rows[0].pole;
+  const form=target.querySelector('form');
+  if(group.assignedId) control(form,'technicianId').value=group.assignedId;
+  control(form,'instructions').value=group.job?.instructions || group.open[0]?.instructions || '';
+  if(group.dueAt) { const value=new Date(group.dueAt); control(form,'due').value=new Date(value.getTime()-value.getTimezoneOffset()*60000).toISOString().slice(0,16); }
+  form.addEventListener('submit', event => submitStaffForm(event, async f => { await action('/api/admin/assign', { pole: rows[0].pole, reportIds: selectPoleReports(state.data.reports,rows[0].pole), technicianId: control(f, 'technicianId').value, dueAt: control(f, 'due').value ? new Date(control(f, 'due').value).getTime() : null, instructions: control(f, 'instructions').value }, 'มอบหมายงานแล้ว'); }, formError));
 }
 function cancelPole() {
   const rows = selectedReports(true); if (!rows) return;
   const target = dialog(`<h2 id="dialog-title">ยกเลิกเรื่องของเสา ${esc(rows[0].pole)}?</h2><p>เรื่องที่ยังเปิดอยู่ทั้งหมดของเสานี้จะถูกยกเลิก และเหตุผลจะแสดงต่อสาธารณะ</p><form id="cancel-form"><div class="field"><label for="cancel-note">เหตุผล</label><textarea id="cancel-note" name="note" required rows="3"></textarea></div><div class="field-error" data-error role="alert"></div><div class="dialog-actions"><button type="button" class="button outline" data-close>กลับ</button><button class="button danger">ยืนยันยกเลิก</button></div></form>`);
-  target.querySelector('form').addEventListener('submit', async e => { e.preventDefault(); try { await action('/api/admin/cancel', { pole: rows[0].pole, note: control(e.currentTarget, 'note').value }, 'ยกเลิกเรื่องแล้ว'); state.selected.clear(); } catch (error) { formError(e.currentTarget, error); } });
+  target.querySelector('form').dataset.pole = rows[0].pole;
+  target.querySelector('form').addEventListener('submit', event => submitStaffForm(event, form => action('/api/admin/cancel', { pole: rows[0].pole, note: control(form, 'note').value }, 'ยกเลิกเรื่องแล้ว'), formError));
 }
 
 function jobs() {
-  const rows = state.data.jobs.filter(j => j.status === 1);
-  content(`<h1>งานซ่อม</h1><p class="muted">เปิดงานเพื่อบันทึกความคืบหน้าหรือปิดงานพร้อมรูปหลังซ่อม</p>
-    ${rows.length ? `<div class="record-list">${rows.map(j => `<article class="panel"><div class="inline" style="justify-content:space-between"><h2 class="section-heading number" style="margin:0">เสา ${esc(j.pole)}</h2>${badge(1)}</div><p class="small muted">เริ่ม ${date(j.started_at)}${j.due_at ? ` · กำหนด ${date(j.due_at)}` : ''}</p>${j.instructions ? `<p><strong>รายละเอียด:</strong> ${esc(j.instructions)}</p>` : ''}${j.public_note ? `<p><strong>บันทึก:</strong> ${esc(j.public_note)}</p>` : ''}<div class="actions"><button class="button outline small" data-note="${esc(j.id)}">บันทึกความคืบหน้า</button><button class="button primary small" data-finish="${esc(j.id)}">ปิดงานซ่อม</button></div></article>`).join('')}</div>` : '<div class="empty">ไม่มีงานที่กำลังซ่อม <button class="button ghost" data-tab="reports">ดูเรื่องแจ้ง</button></div>'}`);
-  document.querySelectorAll('[data-note]').forEach(b => b.addEventListener('click', () => noteJob(b.dataset.note)));
-  document.querySelectorAll('[data-finish]').forEach(b => b.addEventListener('click', () => finishJob(b.dataset.finish)));
-  $('#staff-content [data-tab=reports]')?.addEventListener('click', () => { state.tab = 'reports'; renderWorkspace(); });
+  content(`<h1>งานกำลังซ่อม</h1><p class="muted">ดูอาการ รูปก่อนซ่อม และบันทึกผลในงานเดียวกัน</p>${activeCards(state.data.jobs.filter(job=>job.status===1))}`);
 }
 function noteJob(jobId) {
-  const job = state.data.jobs.find(j => j.id === jobId);
-  const target = dialog(`<h2 id="dialog-title">บันทึกงานเสา ${esc(job.pole)}</h2><form id="note-form"><div class="field"><label for="job-note">ข้อความความคืบหน้า</label><textarea id="job-note" name="note" rows="4" maxlength="500">${esc(job.public_note)}</textarea><span class="field-note">ข้อความนี้แสดงบนหน้าติดตามเรื่อง</span></div><div class="field-error" data-error role="alert"></div><div class="dialog-actions"><button type="button" class="button outline" data-close>กลับ</button><button class="button primary">บันทึก</button></div></form>`);
-  target.querySelector('form').addEventListener('submit', async e => { e.preventDefault(); try { await action(`${base()}/jobs/${jobId}/note`, { note: control(e.currentTarget, 'note').value }, 'บันทึกความคืบหน้าแล้ว'); } catch (error) { formError(e.currentTarget, error); } });
+  const job=state.data.jobs.find(item=>item.id===jobId);
+  const target=dialog(`<h2 id="dialog-title">บันทึกงานเสา ${esc(job.pole)}</h2><form id="note-form"><div class="field"><label for="job-note">ข้อความความคืบหน้า</label><textarea id="job-note" name="note" rows="4" maxlength="500">${esc(job.public_note)}</textarea><span class="field-note">ข้อความนี้แสดงบนหน้าติดตามเรื่อง</span></div><div class="field-error" data-error role="alert"></div><div class="dialog-actions"><button type="button" class="button outline" data-close>กลับและเก็บร่าง</button><button class="button primary" type="submit">บันทึก</button></div></form>`);
+  const form=target.querySelector('form'), draft=attachDraft(form,'note',job);
+  form.addEventListener('submit',event=>submitStaffForm(event, f=>action(`${base()}/jobs/${jobId}/note`,{note:control(f,'note').value},'บันทึกความคืบหน้าแล้ว',draft.clear),formError));
 }
 function finishJob(jobId) {
-  const job = state.data.jobs.find(j => j.id === jobId);
-  const target = dialog(`<h2 id="dialog-title">ปิดงานเสา ${esc(job.pole)}</h2><p>เพิ่มรูปหลังซ่อมและสาเหตุที่ตรวจพบก่อนยืนยัน</p><form id="finish-form"><div class="field"><label for="finish-cause">สาเหตุ <span class="required">*</span></label><select id="finish-cause" name="cause" required><option value="">เลือกสาเหตุ</option>${state.data.causes.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('')}</select></div><div class="field"><label for="finish-detail">รายละเอียดสาเหตุ (ถ้ามี)</label><textarea id="finish-detail" name="causeDetail" rows="2"></textarea></div><div class="field"><label for="finish-note">บันทึกสำหรับผู้แจ้ง</label><textarea id="finish-note" name="note" rows="2">${esc(job.public_note)}</textarea></div><div class="field"><label for="finish-photo">รูปหลังซ่อม <span class="required">*</span></label><input id="finish-photo" name="photo" type="file" accept="image/jpeg,image/png,image/webp" required><span class="field-note">ระบบย่อรูปก่อนส่ง · JPG, PNG หรือ WebP สูงสุด 25 MB</span></div><div class="field-error" data-error role="alert"></div><div class="dialog-actions"><button type="button" class="button outline" data-close>กลับ</button><button class="button primary">ยืนยันปิดงาน</button></div></form>`);
-  target.querySelector('form').addEventListener('submit', async e => { e.preventDefault(); const f = e.currentTarget, button = f.querySelector('button:not([type=button])'); button.disabled = true; button.textContent = 'กำลังบันทึก…'; try { const photo = await photoData(control(f, 'photo').files[0]); await action(`${base()}/jobs/${jobId}/finish`, { cause: control(f, 'cause').value, causeDetail: control(f, 'causeDetail').value, note: control(f, 'note').value, photo }, 'ปิดงานซ่อมแล้ว'); } catch (error) { formError(f, error); button.disabled = false; button.textContent = 'ยืนยันปิดงาน'; } });
+  const job=state.data.jobs.find(item=>item.id===jobId);
+  const target=dialog(`<h2 id="dialog-title">ปิดงานเสา ${esc(job.pole)}</h2><p>ตรวจรูปหลังซ่อมและสาเหตุก่อนส่ง ข้อความและรูปอาจแสดงต่อสาธารณะ</p><form id="finish-form"><div class="field"><label for="finish-cause">สาเหตุ <span class="required">*</span></label><select id="finish-cause" name="cause" required><option value="">เลือกสาเหตุ</option>${state.data.causes.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('')}</select></div><div class="field"><label for="finish-detail">รายละเอียดสาเหตุ (ถ้ามี)</label><textarea id="finish-detail" name="causeDetail" rows="2"></textarea></div><div class="field"><label for="finish-note">บันทึกสำหรับผู้แจ้ง</label><textarea id="finish-note" name="note" rows="2" maxlength="500">${esc(job.public_note)}</textarea></div><div class="field"><label for="finish-photo">รูปหลังซ่อม <span class="required">*</span></label><input id="finish-photo" name="photo" type="file" accept="image/jpeg,image/png,image/webp" required aria-describedby="finish-photo-help finish-photo-status"><span class="field-note" id="finish-photo-help">ถ่ายรูปหรือเลือกจากเครื่อง · JPG, PNG หรือ WebP สูงสุด 25 MB ระบบย่อรูปก่อนส่ง</span><span class="field-note" id="finish-photo-status" data-photo-status role="status"></span><figure class="repair-photo-preview" data-photo-preview hidden><figcaption></figcaption><button class="button outline small" type="button" data-remove-photo>นำรูปนี้ออก</button></figure></div><div class="field-error" data-error role="alert"></div><div class="dialog-actions"><button type="button" class="button outline" data-close>กลับและเก็บร่าง</button><button class="button primary" type="submit">ยืนยันปิดงาน</button></div></form>`);
+  const form=target.querySelector('form'), draft=attachDraft(form,'finish',job);
+  form.addEventListener('submit',event=>submitStaffForm(event,async f=>{
+    const photo=draft.photo()||await photoData(control(f,'photo').files[0]);
+    if(!photo)throw new Error('เลือกรูปหลังซ่อมและตรวจภาพก่อนปิดงาน');
+    await action(`${base()}/jobs/${jobId}/finish`,{cause:control(f,'cause').value,causeDetail:control(f,'causeDetail').value,note:control(f,'note').value,photo},'ปิดงานซ่อมแล้ว',draft.clear);
+  },formError));
 }
 
 function poles() {
@@ -270,7 +386,7 @@ function users() {
 }
 function review(id, decision) {
   const target = dialog(`<h2 id="dialog-title">${decision === 'approved' ? 'อนุมัติ' : 'ปฏิเสธ'}คำขอนี้?</h2><form id="review-form"><div class="field"><label for="review-reason">เหตุผล (ถ้ามี)</label><textarea id="review-reason" name="reason" rows="2"></textarea></div><div class="field-error" data-error role="alert"></div><div class="dialog-actions"><button type="button" class="button outline" data-close>กลับ</button><button class="button ${decision === 'approved' ? 'primary' : 'danger'}">ยืนยัน</button></div></form>`);
-  target.querySelector('form').addEventListener('submit', async e => { e.preventDefault(); try { await action(`/api/admin/registrations/${id}/review`, { decision, reason: control(e.currentTarget, 'reason').value }, 'บันทึกผลคำขอแล้ว'); } catch (error) { formError(e.currentTarget, error); } });
+  target.querySelector('form').addEventListener('submit', event => submitStaffForm(event, form => action(`/api/admin/registrations/${id}/review`, { decision, reason: control(form, 'reason').value }, 'บันทึกผลคำขอแล้ว'), formError));
 }
 function editUser(u) {
   const target = dialog(`<h2 id="dialog-title">แก้ไขบัญชี ${esc(u.username)}</h2><form id="user-form"><div class="field"><label for="user-name">ชื่อที่แสดง</label><input class="input" id="user-name" name="name" value="${esc(u.display_name)}" required></div><div class="field"><label for="user-role">บทบาท</label><select id="user-role" name="role"><option value="technician" ${u.role === 'technician' ? 'selected' : ''}>ช่างไฟฟ้า</option><option value="admin" ${u.role === 'admin' ? 'selected' : ''}>ผู้ดูแล</option></select></div><label class="inline"><input name="active" type="checkbox" ${u.active ? 'checked' : ''}> เปิดใช้งาน</label><div class="field-error" data-error role="alert"></div><div class="dialog-actions"><button type="button" class="button outline" data-close>กลับ</button><button class="button primary">บันทึกบัญชี</button></div></form>`);
