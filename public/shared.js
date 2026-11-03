@@ -16,6 +16,26 @@ export async function api(path, options = {}) {
 }
 export const post = (path, data = {}) => api(path, { method: 'POST', body: JSON.stringify(data) });
 
+export function enhancePasswordFields(root) {
+  root.querySelectorAll('input[type="password"]').forEach(input => {
+    if (input.closest('.password-control')) return;
+    const wrap = document.createElement('div');
+    wrap.className = 'password-control';
+    input.before(wrap); wrap.append(input);
+    const toggle = document.createElement('button');
+    toggle.type = 'button'; toggle.className = 'password-toggle';
+    toggle.setAttribute('aria-controls', input.id);
+    const update = () => {
+      const visible = input.type === 'text';
+      toggle.setAttribute('aria-label', visible ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน');
+      toggle.setAttribute('aria-pressed', String(visible));
+      toggle.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>${visible ? '<path d="m3 3 18 18"/>' : ''}</svg>`;
+    };
+    toggle.addEventListener('click', () => { input.type = input.type === 'password' ? 'text' : 'password'; update(); });
+    update(); wrap.append(toggle);
+  });
+}
+
 let toastTimer;
 export function toast(message) {
   const target = $('#toast');

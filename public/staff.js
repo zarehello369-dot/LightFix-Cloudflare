@@ -1,5 +1,5 @@
 import { groupReports, readFilters, queueReports } from './workflow.js';
-import { $, control, esc, date, badge, api, post, shell, toast, showError, photoData } from './shared.js';
+import { $, control, esc, date, badge, api, post, shell, toast, showError, photoData, enhancePasswordFields } from './shared.js';
 
 const state = { role: '', tab: 'overview', data: null, selected: new Set() };
 const roleLabel = role => role === 'admin' ? 'เจ้าหน้าที่' : 'ช่างไฟฟ้า';
@@ -32,7 +32,9 @@ function loginPage(message = '') {
     <form id="login-form"><div class="field"><label for="username">ชื่อผู้ใช้</label><input class="input" id="username" name="username" autocomplete="username" required></div>
     <div class="field"><label for="password">รหัสผ่าน</label><input class="input" id="password" name="password" type="password" autocomplete="current-password" required></div>
     <div id="login-error" class="field-error" role="alert"></div><button class="button primary" type="submit">เข้าสู่ระบบ</button></form>
-    <button id="show-register" class="button ghost" type="button">ขอบัญชีใหม่</button></div></div>`;
+    <button id="show-register" class="button ghost" type="button">ขอบัญชีใหม่</button>
+    <details class="login-help"><summary>เข้าสู่ระบบไม่ได้?</summary><p>ตรวจสอบชื่อผู้ใช้และเลือกทางเข้าให้ตรงกับบทบาทของคุณ บัญชีใหม่ต้องรอเจ้าหน้าที่อนุมัติก่อน</p><p>หากลืมรหัสผ่าน ให้ติดต่อผู้ดูแล LightFix ของพื้นที่เพื่อขอรหัสชั่วคราว แล้วตั้งรหัสใหม่เมื่อเข้าสู่ระบบ</p><p>หากเป็นผู้ดูแลเพียงคนเดียว ให้เจ้าของระบบตรวจสอบบัญชีผ่านผู้ดูแล Cloudflare</p><a href="/${state.role === 'admin' ? 'technician' : 'admin'}">${state.role === 'admin' ? 'ไปทางเข้าสำหรับช่างไฟฟ้า' : 'ไปทางเข้าสำหรับเจ้าหน้าที่'}</a></details></div></div>`;
+  enhancePasswordFields($('#login-form'));
   $('#login-form').addEventListener('submit', async event => {
     event.preventDefault(); const form = event.currentTarget, button = form.querySelector('button:not([type=button])');
     button.disabled = true; button.textContent = 'กำลังเข้าสู่ระบบ…'; $('#login-error').textContent = '';

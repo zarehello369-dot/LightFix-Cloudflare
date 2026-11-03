@@ -1,5 +1,6 @@
 import { $, control, esc, date, badge, api, post, shell, toast, showError, photoData } from './shared.js';
 import { staffPage } from './staff.js';
+import { readRecentReports, rememberReport, clearRecentReports, trackingPath } from './tracking.js';
 
 const symptoms = ['ไฟไม่ติด', 'ไฟติด ๆ ดับ ๆ', 'ไฟสว่างน้อย', 'เสาหรือโคมชำรุด', 'สายไฟหลุดหรือห้อยต่ำ', 'อื่น ๆ'];
 let reportPhoto = '', photoPending = false, photoFailed = false, photoGeneration = 0, reportRequestId = '';
@@ -26,7 +27,7 @@ function reportPage() {
             <input class="input pole-input" id="pole" name="pole" placeholder="T0001" autocomplete="off" inputmode="text" maxlength="5" required aria-describedby="pole-help pole-error">
             <span id="pole-help" class="field-note">ดูหมายเลขบนป้ายที่เสาไฟ เช่น T0001</span><span id="pole-error" class="field-error" role="status"></span></div>
           <div class="field full"><span class="label" id="symptom-label">อาการที่พบ <span class="required">*</span></span>
-            <div class="symptoms" role="radiogroup" aria-labelledby="symptom-label">${symptoms.map((s, i) => `<label class="symptom"><input type="radio" name="symptom" value="${esc(s)}" ${i === 0 ? '' : ''}><span>${esc(s)}</span></label>`).join('')}</div>
+            <div class="symptoms" role="radiogroup" aria-labelledby="symptom-label">${symptoms.map(s => `<label class="symptom"><input type="radio" name="symptom" value="${esc(s)}"><span><svg class="symptom-check" viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m4 10 4 4 8-8"/></svg><span class="symptom-text">${esc(s)}</span></span></label>`).join('')}</div>
             <span id="symptom-error" class="field-error" role="status"></span></div>
           <div class="emergency-warning full" id="emergency-warning" hidden role="status"><strong>อย่าเข้าใกล้หรือสัมผัสเสาและสายไฟ</strong><p>ถอยออกจากจุดอันตรายและแจ้งหน่วยงานฉุกเฉินในพื้นที่ทันที แบบฟอร์มนี้เป็นการแจ้งซ่อม ไม่ใช่ช่องทางรับเหตุฉุกเฉิน</p><span class="small">หากสะดวก โปรดให้เบอร์หรือ LINE เพื่อให้เจ้าหน้าที่สอบถามตำแหน่งเพิ่มเติม</span></div>
           <div class="field full" id="other-symptom-field" hidden><label for="other-symptom">อธิบายอาการเพิ่มเติม <span class="required">*</span></label><textarea id="other-symptom" rows="2" maxlength="250" placeholder="เช่น โคมหลุดจากแขนเสา" aria-describedby="other-symptom-error"></textarea><span id="other-symptom-error" class="field-error" role="status"></span></div>
@@ -39,10 +40,12 @@ function reportPage() {
         <div class="form-actions"><button class="button primary" type="submit" id="submit-report">ส่งเรื่องแจ้งไฟเสีย <span aria-hidden="true">→</span></button><span class="small muted">อาการและรูปอาจแสดงบนหน้าสาธารณะ ข้อมูลผู้แจ้งเห็นเฉพาะเจ้าหน้าที่</span></div>
       </form>
     </section>
-    <aside class="route-panel" aria-label="ขั้นตอนของเรื่องแจ้ง"><h2>จากเสาที่เสีย<br>ไปสู่งานซ่อม</h2>
+    <details class="report-help"><summary>วิธีใช้งานและสถานะการซ่อม</summary><div class="route-panel"><h2>จากเสาที่เสีย<br>ไปสู่งานซ่อม</h2>
       <ol class="route-steps"><li><b>1</b><div><strong>ระบุเสา</strong><span>ใส่หมายเลขบนป้าย</span></div></li><li><b>2</b><div><strong>บอกอาการ</strong><span>เลือกสิ่งที่พบและช่องทางติดต่อ</span></div></li><li><b>3</b><div><strong>เก็บลิงก์</strong><span>ดูสถานะได้หลังส่งเรื่อง</span></div></li></ol>
-      <p class="road-end">LIGHTFIX / เส้นทางการซ่อม</p></aside>
-  </div><section class="shell info-band"><div><h2 class="section-heading">ติดตามได้ทุกช่วง</h2><p class="muted">ลิงก์ประจำเรื่องจะแสดงหลังส่งสำเร็จ เก็บไว้เพื่อกลับมาดูการรับงานและผลซ่อม</p><a href="/track">มีลิงก์แล้ว? ติดตามเรื่อง →</a></div><div><h2 class="section-heading">สถานะที่ใช้</h2><div class="status-legend">${[0,1,2].map(badge).join('')}</div><p class="small muted">ถ้าพบสายไฟหลุดหรือจุดที่เสี่ยงอันตราย อย่าเข้าใกล้และแจ้งหน่วยฉุกเฉินในพื้นที่ทันที</p></div></section>`, 'report');
+      <div class="help-statuses"><h3>สถานะของเรื่องแจ้ง</h3><div class="status-legend">${[0,1,2].map(badge).join('')}</div><p>เก็บลิงก์หลังส่งเรื่องไว้ หรือเปิดเรื่องล่าสุดในอุปกรณ์นี้จากหน้าติดตาม</p><a href="/track">ไปหน้าติดตามเรื่อง</a></div></div></details>
+  </div><section class="shell recent-section" id="recent-reports" aria-label="เรื่องล่าสุดในอุปกรณ์นี้"></section>`, 'report');
+  $('.report-help').open = matchMedia('(min-width: 900px)').matches;
+  renderRecentReports($('#recent-reports'), true);
   const form = $('#report-form');
   const pole = $('#pole');
   const contact = $('#contact-value');
@@ -131,11 +134,18 @@ async function submitReport(event) {
     const photo = reportPhoto;
     const requestId = reportRequestId;
     const data = await post('/api/reports', { pole, symptom, contactType, contactValue, photo, requestId });
-    const url = `${location.origin}/track?id=${data.id}`;
-    shell(`<section class="shell report-result"><div class="success-panel"><div class="success-icon" aria-hidden="true">✓</div><h1 class="page-title" style="margin-top:22px">ส่งเรื่องเรียบร้อย</h1><p class="lead">เราได้รับแจ้งเสา <strong>${esc(pole)}</strong> แล้ว เก็บลิงก์นี้ไว้เพื่อติดตามงาน</p><div class="track-link number">${esc(url)}</div><div class="inline"><a class="button primary" href="${esc(url)}">ดูสถานะเรื่องนี้</a><button class="button outline" id="copy-track" type="button">คัดลอกลิงก์</button></div><p class="small muted">หากไม่เห็นสถานะใหม่ทันที โปรดกลับมาตรวจอีกครั้งภายหลัง</p></div></section>`, 'report');
+    const url = `${location.origin}${trackingPath(data.id)}`;
+    const saved = rememberReport({ id: data.id, pole });
+    history.replaceState({}, '', trackingPath(data.id));
+    shell(`<section class="shell report-result"><div class="success-panel"><div class="success-icon" aria-hidden="true">✓</div><h1 class="page-title" style="margin-top:22px">ส่งเรื่องเรียบร้อย</h1><p class="lead">เราได้รับแจ้งเสา <strong>${esc(pole)}</strong> แล้ว เก็บลิงก์นี้ไว้เพื่อติดตามงาน</p><div class="track-link number">${esc(url)}</div><div class="inline"><a class="button primary" href="${esc(url)}">ดูสถานะเรื่องนี้</a><button class="button outline" id="copy-track" type="button">คัดลอกลิงก์</button>${typeof navigator.share === 'function' ? '<button class="button outline" id="share-track" type="button">แชร์ลิงก์</button>' : ''}</div><p class="small muted">${saved ? 'บันทึกลิงก์ในเรื่องล่าสุดของอุปกรณ์นี้แล้ว เก็บไว้ไม่เกิน 30 วัน หากใช้เครื่องร่วมกับผู้อื่น สามารถล้างประวัติได้ที่หน้าติดตาม' : 'เบราว์เซอร์นี้บันทึกประวัติไม่ได้ กรุณาคัดลอกลิงก์หรือเพิ่มหน้านี้ในบุ๊กมาร์ก'}</p><p class="small muted">หากไม่เห็นสถานะใหม่ทันที โปรดกลับมาตรวจอีกครั้งภายหลัง</p></div></section>`, 'track');
     $('#copy-track').addEventListener('click', async () => { try { await navigator.clipboard.writeText(url); toast('คัดลอกลิงก์แล้ว'); } catch { toast('คัดลอกไม่ได้ กรุณาเลือกข้อความลิงก์ด้านบน'); } });
     $('.success-panel .lead').insertAdjacentHTML('afterend', `<p class="report-summary">เลขเรื่อง: <strong class="number">${esc(data.id)}</strong></p>`);
-    history.replaceState({}, '', '/');
+    $('#share-track')?.addEventListener('click', async () => {
+      try { await navigator.share({ title: `ติดตามเรื่องแจ้งเสา ${pole} · LightFix`, url }); }
+      catch (error) { if (error.name !== 'AbortError') toast('แชร์ไม่ได้ กรุณาใช้ปุ่มคัดลอกลิงก์'); }
+    });
+    document.title = 'ส่งเรื่องเรียบร้อย · LightFix';
+    $('.success-panel h1').tabIndex = -1; $('.success-panel h1').focus();
   } catch (error) {
     $('#form-error').textContent = error.message;
     button.disabled = false; button.textContent = 'ส่งเรื่องแจ้งไฟเสีย →';
@@ -163,7 +173,8 @@ async function boardPage() {
 async function trackPage() {
   document.title = 'ติดตามเรื่อง · LightFix';
   const id = new URLSearchParams(location.search).get('id') || '';
-  shell(`<section class="shell page"><h1 class="page-title">ติดตามเรื่องแจ้ง</h1><p class="lead">เปิดลิงก์ที่ได้หลังส่งเรื่อง หรือใส่รหัสจากลิงก์เพื่อตรวจสถานะ</p><div class="toolbar"><label class="eyeless" for="track-id">รหัสเรื่องแจ้ง</label><input id="track-id" class="input number" placeholder="รหัสเรื่องแจ้ง" value="${esc(id)}"><button class="button primary" id="track-search">ดูสถานะ</button></div><div id="track-detail"></div></section>`, 'track');
+  shell(`<section class="shell page"><h1 class="page-title">ติดตามเรื่องแจ้ง</h1><p class="lead">เปิดลิงก์ที่ได้หลังส่งเรื่อง หรือใส่รหัสจากลิงก์เพื่อตรวจสถานะ</p><div class="toolbar"><label class="eyeless" for="track-id">รหัสเรื่องแจ้ง</label><input id="track-id" class="input number" placeholder="รหัสเรื่องแจ้ง" value="${esc(id)}"><button class="button primary" id="track-search">ดูสถานะ</button></div><div id="track-detail"></div><section class="recent-section" id="recent-reports" aria-label="เรื่องล่าสุดในอุปกรณ์นี้"></section></section>`, 'track');
+  renderRecentReports($('#recent-reports'));
   const target = $('#track-detail');
   async function load() {
     const value = $('#track-id').value.trim().toLowerCase();
@@ -179,6 +190,17 @@ async function trackPage() {
   $('#track-search').addEventListener('click', load);
   $('#track-id').addEventListener('keydown', e => { if (e.key === 'Enter') load(); });
   if (id) await load();
+}
+
+function renderRecentReports(target, hideEmpty = false) {
+  const rows = readRecentReports();
+  if (!rows.length && hideEmpty) { target.hidden = true; return; }
+  target.hidden = false;
+  target.innerHTML = `<div class="section-head"><h2 class="section-heading">เรื่องล่าสุดในอุปกรณ์นี้</h2>${rows.length ? '<button class="button outline small" id="clear-recent" type="button">ล้างประวัติในอุปกรณ์นี้</button>' : ''}</div><p class="small muted">เก็บเฉพาะเลขเรื่อง หมายเลขเสา และเวลาที่ส่ง ไม่เกิน 10 เรื่อง ภายใน 30 วัน ไม่เก็บข้อมูลติดต่อหรือรูปในประวัตินี้ การล้างประวัติไม่ยกเลิกเรื่องแจ้ง</p>${rows.length ? `<div class="record-list">${rows.map(row => `<a class="record" href="${trackingPath(row.id)}"><strong class="record-title number">${esc(row.pole)}</strong><span>ดูสถานะ</span><span class="record-detail">ส่งเมื่อ ${date(row.at)} · เลขเรื่อง ${esc(row.id)}</span></a>`).join('')}</div>` : '<p class="empty">ยังไม่มีเรื่องที่บันทึกไว้ในเบราว์เซอร์นี้ หากส่งจากเครื่องอื่น ให้เปิดลิงก์ติดตามที่เก็บไว้</p>'}<p class="small muted">หากใช้เครื่องร่วมกับผู้อื่น ให้ล้างประวัติหลังใช้งาน</p>`;
+  $('#clear-recent')?.addEventListener('click', () => {
+    if (!clearRecentReports()) { toast('ล้างประวัติไม่ได้ กรุณาตรวจการอนุญาตเก็บข้อมูลของเบราว์เซอร์'); return; }
+    renderRecentReports(target, hideEmpty); toast('ล้างประวัติในอุปกรณ์นี้แล้ว เรื่องแจ้งยังอยู่ในระบบ');
+  });
 }
 
 const path = location.pathname;
