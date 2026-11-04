@@ -46,9 +46,13 @@ export function toast(message) {
 }
 
 export function shell(content, current = '') {
+  const staff = current === 'admin' || current === 'technician';
+  document.body.dataset.area = staff ? 'staff' : 'public';
+  const areaLabel = current === 'admin' ? 'เจ้าหน้าที่' : current === 'technician' ? 'ช่างไฟฟ้า' : 'ประชาชน';
   $('#app').innerHTML = `<header class="site-header"><div class="shell">
     <a class="brand" href="/" aria-label="LightFix หน้าแรก">${icon}</a>
-    <span class="site-name">LightFix</span>
+    <a class="site-name" href="/">LightFix</a>
+    <span class="area-label">${areaLabel}</span>
     <a class="header-track" href="/track">ติดตามเรื่อง</a>
     <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="site-nav" aria-label="เปิดเมนู">เมนู</button>
     <nav id="site-nav" class="site-nav" aria-label="เมนูหลัก">
@@ -59,6 +63,7 @@ export function shell(content, current = '') {
       <a class="nav-cta" href="/admin" ${current === 'admin' ? 'aria-current="page"' : ''}>เจ้าหน้าที่</a>
     </nav></div></header><main id="main">${content}</main>
     <footer class="site-footer"><div class="shell"><span>LightFix · แจ้งไฟถนนเสีย ติดตามงานซ่อม</span><span><a href="/board">ดูความคืบหน้า</a><a href="/technician">พื้นที่ช่างไฟฟ้า</a></span></div></footer>`;
+  if (!staff) $('#app').insertAdjacentHTML('beforeend', `<nav class="mobile-site-nav" aria-label="ทางลัดบนมือถือ"><a href="/" ${current === 'report' ? 'aria-current="page"' : ''}>แจ้งเหตุ</a><a href="/track" ${current === 'track' ? 'aria-current="page"' : ''}>ติดตาม</a><a href="/board" ${current === 'board' ? 'aria-current="page"' : ''}>ความคืบหน้า</a></nav>`);
   $('.menu-toggle')?.addEventListener('click', event => {
     const open = $('#site-nav').classList.toggle('open');
     event.currentTarget.setAttribute('aria-expanded', String(open));

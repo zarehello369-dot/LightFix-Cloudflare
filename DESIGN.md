@@ -1,22 +1,31 @@
 ---
 name: LightFix
-description: Mobile-first streetlight reporting and repair tracking with an outline bulb mark.
+description: A Thai-first coordination centre for streetlight reporting and repair.
 colors:
-  ink: "#182b2d"
-  muted: "#526267"
-  gold: "#e9b915"
-  gold-soft: "#fff3bb"
+  deep: "#143f46"
+  deep-hover: "#1e535b"
+  ink: "#142e32"
+  muted: "#52676b"
+  gold: "#f1c62b"
+  gold-soft: "#fff3bd"
   surface: "#ffffff"
-  page: "#f5f7f3"
-  line: "#d9e1dc"
+  page: "#eff4f1"
+  line: "#cbdad5"
   green: "#176851"
-  red: "#9c3c2e"
   blue: "#205e72"
-  bulb-stroke: "#b58a00"
+  red: "#9c3c2e"
+  control-line: "#768d89"
+  selected-line: "#806100"
 typography:
+  wordmark:
+    fontFamily: "Urbanist, PlexThai, Noto Sans Thai, sans-serif"
+    fontSize: "1.55rem"
+    fontWeight: 800
+    lineHeight: 1
+    letterSpacing: "-.035em"
   display:
     fontFamily: "PlexThai, Noto Sans Thai, sans-serif"
-    fontSize: "2rem"
+    fontSize: "clamp(1.8rem, 7vw, 2.55rem)"
     fontWeight: 700
     lineHeight: 1.24
     letterSpacing: "-.025em"
@@ -33,16 +42,14 @@ typography:
   label:
     fontFamily: "PlexThai, Noto Sans Thai, sans-serif"
     fontSize: ".96rem"
-    fontWeight: 600
+    fontWeight: 700
 rounded:
-  control: "10px"
-  record: "12px"
-  panel: "14px"
-  feature: "16px"
+  control: "12px"
+  panel: "16px"
   pill: "999px"
 spacing:
   compact: "8px"
-  field-gap: "16px"
+  field-gap: "20px"
   mobile-gutter: "16px"
   tablet-gutter: "24px"
   desktop-gutter: "28px"
@@ -52,13 +59,13 @@ components:
     textColor: "{colors.ink}"
     rounded: "{rounded.control}"
     padding: "9px 16px"
-    height: "46px"
+    height: "48px"
   button-outline:
     backgroundColor: "{colors.surface}"
     textColor: "{colors.ink}"
     rounded: "{rounded.control}"
     padding: "9px 16px"
-    height: "46px"
+    height: "48px"
   field:
     backgroundColor: "{colors.surface}"
     textColor: "{colors.ink}"
@@ -75,134 +82,88 @@ components:
 
 ## Overview
 
-**Creative North Star: "The Clear Repair Path"**
+**Creative North Star: “ศูนย์ประสานงาน” (Coordination Centre).** One visual grammar connects a numbered streetlight, its status, and the next action across resident, technician, and administrator journeys. The public form remains the quickest route to submit a report.
 
-LightFix puts the resident's next action and each repair status in plain view. White working surfaces, a pale green canvas, dark text, and measured gold accents support quick reporting on a phone and dense staff work on larger screens.
-
-The only logo symbol is a yellow outline lightbulb. The LightFix name is separate text in the header and elsewhere; do not combine it with the mark into logo artwork. Thai-first labels, visible status words, and familiar controls carry the experience.
+A deep teal command header anchors pale green-gray working space and white records. Yellow identifies the outline bulb, role context, selected controls, and primary actions. “LightFix” is separate Urbanist text, never part of the bulb artwork. Thai interface copy uses self-hosted IBM Plex Sans Thai.
 
 **Key Characteristics:**
 
-- A single-column reporting flow at phone width, with the pole number first.
-- White header and surfaces over a pale green canvas; gold marks primary actions and selected controls.
-- Textual status badges and compact, readable records.
-- Staff navigation as a select on mobile and a rail from desktop width.
+- Pole identifiers and readable status words lead each record.
+- The first phone viewport starts the current task immediately.
+- Shared cards and controls connect public and staff surfaces.
+- Layout grows into two columns at tablet width and a staff rail at desktop width.
 
 ## Colors
 
-Gold is a selective action and brand cue. Green communicates focus and completed work; blue communicates work in progress; red identifies errors and danger.
-
 ### Primary
 
-- **Gold:** Primary actions and route step numbers.
-- **Gold Soft:** Selected symptom controls and active staff navigation.
-- **Bulb Stroke:** The outline bulb mark in the header and favicon.
-- **Ink:** Main text, dark buttons, and toast background.
+- **Command Teal** (`#143f46`): header, route panel, dark action; `#1e535b` on hover.
+- **Action Yellow** (`#f1c62b`): bulb outline, role pill, primary buttons and route numbers.
+- **Soft Yellow** (`#fff3bd`): selected symptom, switch and navigation states.
 
 ### Secondary
 
-- **Green:** Focus outlines, successful notes, and completed states.
-- **Blue:** In-progress status treatment.
-- **Red:** Required indicators, field errors, and danger actions.
+- **Green** (`#176851`): focus and success; **Blue** (`#205e72`): work in progress; **Red** (`#9c3c2e`): errors and danger actions. Status badges pair color with words.
 
 ### Neutral
 
-- **Page:** Main canvas.
-- **Surface:** Header, forms, panels, and record cards.
-- **Muted:** Supporting copy and field notes.
-- **Line:** Dividers and resting card boundaries.
+- **Ink** (`#142e32`) and **Muted** (`#52676b`): main and supporting text.
+- **Page** (`#eff4f1`), **Surface** (`#ffffff`), and **Line** (`#cbdad5`): canvas, records and boundaries.
+- **Control Line** (`#768d89`) and **Selected Line** (`#806100`): field borders and selected controls.
 
-**The Selective Gold Rule.** Reserve gold for the brand mark, primary action, selected control, and small progress cues; keep routine copy in ink.
+**The Selective Yellow Rule.** Use yellow to mark the brand and a clear next action, rather than coloring routine copy.
 
 ## Typography
 
-**Display Font:** IBM Plex Sans Thai with Noto Sans Thai and sans-serif fallbacks.
-**Body Font:** The same family and fallbacks.
+**Wordmark:** Self-hosted Urbanist variable, 800 weight, separate from the bulb; 1.55rem on phones and 1.75rem from 900px. **Interface:** Self-hosted IBM Plex Sans Thai (PlexThai), with Noto Sans Thai and sans-serif fallbacks.
 
-**Character:** Direct Thai labels and bold identifiers support quick scanning. Counts use tabular figures to stay aligned.
-
-### Hierarchy
-
-- **Display:** Bold page title, starting at 2rem on phones and rising to 2.55rem at 640px and 2.8rem at 900px.
-- **Headline:** Bold section heading at 1.45rem; staff section headings are more compact.
-- **Body:** Regular 16px text with 1.6 leading; introductory copy is limited to about 65ch.
-- **Label:** Semibold .96rem for fields and controls.
-- **Pole number:** Bold, uppercase input at 1.65rem; dashboard numbers use tabular figures.
+- **Display:** Bold page titles, `clamp(1.8rem, 7vw, 2.55rem)` on phones, 2.35rem from 640px, with a 1.24 line height.
+- **Headline:** Bold section titles around 1.45rem; staff titles respond to context.
+- **Body:** 16px / 1.6; introductory copy stays near 58ch on the report surface.
+- **Label:** Bold, approximately .96rem. Pole numbers and metric counts are prominent; counts use tabular numerals.
 
 **The Identifier First Rule.** Make the pole number and status easy to find before secondary detail.
 
 ## Layout
 
-Start with a single column. The centered shell is at most 1200px wide, with 16px side gutters on phones, 24px from 640px, and 28px from 900px. The public report form, route panel, status views, staff workspace, and table rows begin as stacked content.
+The shell tops out at 1200px. Side gutters are 16px on phones, 24px from 640px, and 28px from 900px. The public report starts directly on the page ground without a large enclosing white form card. Pole input precedes symptom choices; its primary submit button fills the phone width.
 
-At 640px, the form gains two columns, symptoms become wrapping choices, detail and photo pairs gain columns, and staff forms gain two columns. From 640px through 1099px, staff table records form a two-column card grid. At 900px, the public form and route panel become two columns; the route panel is sticky, the global menu becomes inline navigation, and staff navigation becomes a left rail. At 1100px, staff tables change from labeled cards to conventional table rows, the staff rail widens, and report spacing grows.
-
-On phones, the global menu opens beneath the header while a direct tracking link stays visible. Staff choose views from a labeled select. Mobile table cards carry visible per-cell labels, and actions wrap. The three metric tiles remain side by side and permit their labels to wrap. A narrow-width adjustment at 390px reduces header and metric text slightly.
+Below 900px, the deep teal header is compact and the public and staff areas use fixed, white bottom navigation with safe-area padding. Staff rail content opens as an overlay from the mobile work navigation. At 640px, report fields and supporting details gain columns, the submit button returns to intrinsic width, and the three metrics align in one row. From 768px through 899px, the public report and help form a two-column layout and staff work cards form a two-column grid. At 900px, header links become inline, bottom navigation disappears, the public route/help panel sits beside the form, and a 220px sticky staff rail appears. From 1100px, conventional staff table rows replace labeled cards and work cards use two columns.
 
 ## Elevation & Depth
 
-Borders and surface contrast do most of the work. A soft shadow appears on record hover, the mobile menu, toasts, success panels, and dialogs; the main report form stays flat. Buttons gain a modest shadow on hover without moving.
-
-### Shadow Vocabulary
-
-- **Soft surface:** `0 10px 30px rgba(24,43,45,.08)` for records on hover, menu, toast, and success panel.
-- **Button hover:** `0 4px 14px rgba(24,43,45,.10)`.
-- **Dialog:** `0 24px 70px rgba(0,0,0,.24)`.
-
-**The Flat Workspace Rule.** Use lines and white surfaces to organize routine work; apply shadows to transient or interactive states.
+Tonal layering and borders organize resting content. The shared shadow token is `0 12px 32px rgba(20,63,70,.12)`; menu, toast, hover, and dialog treatments carry transient depth. The bottom bar casts a soft upward shadow; the staff rail is a bordered white panel at desktop width. Reduced-motion preference removes transitions and animation.
 
 ## Shapes
 
-Controls use gentle 10px corners, record cards 12px, panels 14px, and the public report form 16px. Status badges are rounded pills with a dot and a word. Route steps are numbered circles. Empty states use a dashed border. Before and after photos crop to a 4:3 frame.
+Buttons, fields, symptom choices and disclosures use 12px corners. Panels, records, work cards and dialogs use 16px corners. Role and status labels are pill-shaped. The bulb remains an outlined symbol, route steps are numbered circles, and empty states have a dashed boundary.
 
 ## Components
 
-### Buttons
+### Buttons and fields
 
-- **Primary:** Gold fill, dark bold label, 46px minimum height, and a subtle shadow on hover.
-- **Outline, dark, ghost, danger:** Share the same 10px geometry. Outline uses a visible muted border; dark uses ink fill; ghost is transparent; danger uses red.
-- **Focus and disabled:** A 3px green focus outline with 3px offset. Disabled buttons dim and keep their position. Reduced-motion preference removes transitions.
+Primary buttons have a yellow fill, dark bold text, a minimum 48px height and a brighter hover state. Dark buttons use command teal; outline controls have a visible gray-green stroke; danger buttons are red. Active buttons compress slightly. Inputs, selects and textareas use 12px corners, a visible border, green focus ring and text errors. The pole input remains 58px high. Selected symptoms use soft yellow and a stronger border.
 
-### Inputs / Fields
+### Records and work cards
 
-- **Style:** White fill, visible gray-green stroke, 10px corners, and 48px minimum height. The pole field is 58px high.
-- **Focus and error:** Green border and a translucent green ring on focus; red border and text error on invalid fields.
-- **Symptoms:** Two-column phone grid with 54px-high choices; at 640px they wrap in a row. Selected choices use pale gold fill and a stronger gold stroke.
-- **Upload:** Pale surface with a bordered button, filename text, and visible keyboard focus.
-
-### Cards / Containers
-
-- **Report form:** White, thin line, 16px corners, and padding that grows at 640px, 900px, and 1100px.
-- **Panel and record:** White, thin line, rounded corners. Records lift on hover; regular panels stay flat.
-- **Staff table:** Labeled cards below 1100px, two columns from 640px, and a full table at 1100px.
-- **Reporting:** Reveal contact input only after a reachable channel is selected. Hazard warnings appear beside symptoms. Photo controls offer camera/library, preview, removal and preparation feedback. A compact summary precedes submission.
-- **Staff queue:** Default to open work, with saved status/search controls. Act on one pole directly from its card; no distant selection toolbar. Place destructive actions inside a disclosure menu.
-- **Pole work cards:** Group complaints by pole. Lead with pole number, location and symptoms; show report count, symptom-derived hazard label, assignee, deadline and latest public note. Keep contact and full-size before-photo links inside a labeled disclosure in both waiting and active jobs. Each action includes every open complaint on its pole. My Work opens on active repairs with count-bearing active/waiting switches. The administrator overview counts unique poles and also labels the number of complaints.
-- **Work forms:** Preserve note and completion text drafts for 24 hours in account-scoped session storage, with in-memory fallback. Keep prepared photos in memory only, show a preview/remove action, and explicitly request photo reselection after reload. A revision conflict refreshes server context in the existing form and requires review before resubmission. Do not discard draft input while recovering. Clear the matching draft after a committed save and clear account drafts on sign-out.
-- **Admin management:** Keep add, edit, password reset, and delete actions beside the relevant record. Destructive actions use the red button and a typed pole number or username confirmation. Records tied to reports or jobs show a deactivation path instead of delete; one-time temporary passwords remain visible until the admin closes their dialog.
+White 16px panels sit on the pale ground. Pole cards lead with the pole number, status, location and symptoms, then show instructions and evidence. Status badges always contain a word. Staff actions sit on the relevant pole card; disclosures hold additional contact and photo evidence. Preserve the established reporting, drafts, conflict recovery, and management behavior described in PRODUCT.md.
 
 ### Navigation
 
-- **Global:** White header with a linked outline bulb, separate LightFix text, direct tracking link, and menu button on mobile. The menu becomes inline at 900px.
-- **Staff:** Labeled view select with primary/secondary option groups below 900px; a sticky, text-labeled rail with a secondary disclosure at 900px and above. Technician primary views are My Work, Available Queue and Messages; pole information and history remain available as secondary views. Current views have a pale gold background. Move focus to the heading after changing a view.
-
-### Status and route
-
-- **Badges:** Dot plus readable word; waiting, in progress, done, and canceled each have a separate tonal background.
-- **Route:** Dark teal panel with numbered gold circles. On desktop it sits beside the form; on mobile it follows the form.
+The deep teal header contains the yellow outline bulb, separate Urbanist wordmark, yellow role label and menu at narrow widths. Public and staff fixed bottom navigation expose the current destination with soft yellow. At 900px, header links and the staff rail replace those bars. Route help uses a dark teal panel with yellow step circles.
 
 ## Do's and Don'ts
 
 ### Do:
 
-- **Do** place the pole number first in the public report flow and use one clear gold submit action.
-- **Do** keep status words visible alongside status color.
-- **Do** use the yellow outline bulb as the sole logo symbol and render LightFix as separate text.
-- **Do** keep staff controls usable in labeled mobile cards and a compact desktop table.
+- **Do** put the pole number and current status before secondary record details.
+- **Do** keep the first public action visible early and use one clear yellow submit action.
+- **Do** label progress, selections, errors, and status in words as well as color.
+- **Do** keep the outline bulb and Urbanist wordmark as separate elements.
 
 ### Don't:
 
-- **Don't** merge the word LightFix into the bulb logo artwork or replace the outline bulb with a filled mark.
-- **Don't** rely on color alone for progress, selection, or errors.
+- **Don't** merge “LightFix” into the bulb artwork or fill the bulb symbol.
+- **Don't** return to a white header or a large framed form that delays the first task.
 - **Don't** make mobile data depend on an unlabeled wide table.
 

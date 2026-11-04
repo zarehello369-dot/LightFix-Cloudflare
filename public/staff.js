@@ -91,12 +91,14 @@ const workRevision = pole => state.data.poles.find(item => item.pole === pole)?.
 const workPayload = (pole, data) => ({...data, workRevision:workRevision(pole)});
 function renderWorkspace() {
   const data = state.data, admin = state.role === 'admin';
-  const primary = admin ? [['overview','ภาพรวม'],['reports','คิวงาน'],['jobs','กำลังซ่อม'],['messages','ข้อความ']] : [['mywork','งานของฉัน'],['reports','คิวงานที่รับได้'],['messages','ข้อความ']];
+  const primary = admin ? [['overview','งานรอ'],['reports','คิวงาน'],['jobs','กำลังซ่อม'],['messages','ข้อความ']] : [['mywork','งานของฉัน'],['reports','คิวงานที่รับได้'],['messages','ข้อความ']];
   const secondary = admin ? [['poles','ข้อมูลเสา'],['users','บัญชีผู้ใช้'],['history','ประวัติซ่อม']] : [['poles','ข้อมูลเสา'],['history','ประวัติซ่อม']];
   const options = tabs => tabs.map(([key,label]) => `<option value="${key}" ${state.tab === key ? 'selected' : ''}>${label}</option>`).join('');
   const buttons = tabs => tabs.map(([key,label]) => `<button type="button" data-tab="${key}" ${state.tab === key ? 'aria-current="page"' : ''}>${label}</button>`).join('');
-  $('#staff-root').innerHTML = `<div class="staff-layout"><aside class="staff-rail"><div class="staff-identity"><h2>${roleLabel(state.role)}<span>${esc(data.user.name)}</span></h2><button id="logout" class="button ghost small" type="button">ออกจากระบบ</button></div><label class="staff-nav-label" for="staff-view">หน้าทำงาน</label><select id="staff-view" class="staff-view-select"><optgroup label="งานหลัก">${options(primary)}</optgroup><optgroup label="ข้อมูลเพิ่มเติม">${options(secondary)}</optgroup></select><nav aria-label="เมนูพื้นที่ทำงาน">${buttons(primary)}<details class="staff-more" ${secondary.some(([key])=>key===state.tab) ? 'open' : ''}><summary>ข้อมูลเพิ่มเติม</summary>${buttons(secondary)}</details></nav></aside><div class="staff-main"><div id="staff-content"></div></div></div><dialog class="dialog" id="task-dialog" aria-labelledby="dialog-title"></dialog>`;
+  $('#staff-root').innerHTML = `<div class="staff-layout"><aside class="staff-rail" id="staff-rail"><div class="staff-identity"><h2>${roleLabel(state.role)}<span>${esc(data.user.name)}</span></h2><button id="logout" class="button ghost small" type="button">ออกจากระบบ</button></div><label class="staff-nav-label" for="staff-view">หน้าทำงาน</label><select id="staff-view" class="staff-view-select"><optgroup label="งานหลัก">${options(primary)}</optgroup><optgroup label="ข้อมูลเพิ่มเติม">${options(secondary)}</optgroup></select><nav aria-label="เมนูพื้นที่ทำงาน">${buttons(primary)}<details class="staff-more" ${secondary.some(([key])=>key===state.tab) ? 'open' : ''}><summary>ข้อมูลเพิ่มเติม</summary>${buttons(secondary)}</details></nav></aside><div class="staff-main"><div id="staff-content"></div></div></div><nav class="mobile-work-nav" aria-label="ทางลัดพื้นที่ทำงาน">${buttons(primary.slice(0,3))}<button type="button" data-staff-menu aria-controls="staff-rail" aria-expanded="false">เพิ่มเติม</button></nav><dialog class="dialog" id="task-dialog" aria-labelledby="dialog-title"></dialog>`;
   document.querySelectorAll('[data-tab]').forEach(button => button.addEventListener('click', () => navigateTab(button.dataset.tab)));
+  $('[data-staff-menu]').addEventListener('click', event => { const rail = $('#staff-rail'), open = rail.classList.toggle('mobile-open'); event.currentTarget.setAttribute('aria-expanded', String(open)); if (open) $('#staff-view').focus(); });
+  $('#staff-rail').addEventListener('keydown', event => { if (event.key === 'Escape') { $('#staff-rail').classList.remove('mobile-open'); $('[data-staff-menu]').setAttribute('aria-expanded','false'); $('[data-staff-menu]').focus(); } });
   $('#staff-view').addEventListener('change', event => navigateTab(event.currentTarget.value));
   $('#logout').addEventListener('click', async () => {
     await post(`${base()}/auth/logout`);
@@ -232,7 +234,7 @@ function attachDraft(form, type, job) {
 function overview() {
   const d=state.data, groups=groupReports(d.reports.filter(r=>r.status<2),d.jobs,d.users||[],d.poles);
   const waiting=groups.filter(group=>!group.job), active=groups.filter(group=>group.job);
-  content(`<h1>ภาพรวมงาน</h1><p class="muted">ดูงานรายเสา แล้วเปิดคิวเพื่อมอบหมายหรือติดตามการซ่อม</p><div class="metric-row"><div class="metric"><strong>${waiting.length}</strong><span>เสารอเริ่มงาน</span><span>${waiting.reduce((n,g)=>n+g.reports.length,0)} เรื่องแจ้ง</span></div><div class="metric"><strong>${active.length}</strong><span>เสากำลังซ่อม</span><span>${active.reduce((n,g)=>n+g.reports.length,0)} เรื่องแจ้ง</span></div><div class="metric"><strong>${d.notifications.filter(n=>!n.read_at).length}</strong><span>ข้อความยังไม่อ่าน</span></div></div><section class="staff-section"><div class="section-head"><h2>เสาที่ต้องดำเนินการ</h2><button class="button outline small" data-queue>เปิดคิวทั้งหมด</button></div>${groups.length ? `<div class="work-grid">${groups.slice(0,8).map(group=>groupCard(group,'overview')).join('')}</div>` : '<div class="empty">ยังไม่มีเสาที่ต้องดำเนินการ</div>'}</section>`);
+  content(`<h1>งานรอจัดการ</h1><p class="muted">ดูงานรายเสา แล้วมอบหมายหรือติดตามการซ่อม</p><div class="metric-row"><div class="metric"><strong>${waiting.length}</strong><span>เสารอเริ่มงาน</span><span>${waiting.reduce((n,g)=>n+g.reports.length,0)} เรื่องแจ้ง</span></div><div class="metric"><strong>${active.length}</strong><span>เสากำลังซ่อม</span><span>${active.reduce((n,g)=>n+g.reports.length,0)} เรื่องแจ้ง</span></div><div class="metric"><strong>${d.notifications.filter(n=>!n.read_at).length}</strong><span>ข้อความยังไม่อ่าน</span></div></div><section class="staff-section"><div class="section-head"><h2>เรื่องที่ต้องดำเนินการ</h2><button class="button outline small" data-queue>เปิดคิวทั้งหมด</button></div>${groups.length ? `<div class="work-grid">${[...waiting,...active].slice(0,8).map(group=>groupCard(group,'overview')).join('')}</div>` : '<div class="empty">ยังไม่มีเสาที่ต้องดำเนินการ</div>'}</section>`);
 }
 function jobGroup(job) {
   const d=state.data, rows=d.reports.filter(report=>report.jobId===job.id || (report.pole===job.pole && report.status===1));
@@ -243,7 +245,9 @@ function groupCard(group, mode='queue') {
   const owner=group.assignedName || (group.assignedId===state.data.user.id ? state.data.user.name : group.assignedId ? 'มอบหมายแล้ว' : 'ยังไม่มอบหมาย');
   const closed=!group.open.length && !job;
   let actions='';
-  if(mode==='overview') actions=`<button class="button outline" data-open-pole="${esc(group.pole)}">เปิดงานเสา ${esc(group.pole)}</button>`;
+  if(mode==='overview') actions=admin && group.open.length && !job
+    ? `<button class="button primary" data-assign-pole="${esc(group.pole)}">มอบหมายช่าง</button>`
+    : `<button class="button outline" data-open-pole="${esc(group.pole)}">เปิดงานเสา ${esc(group.pole)}</button>`;
   else {
     if(job) actions+=`<button class="button primary" data-finish="${esc(job.id)}">ปิดงานซ่อม</button><button class="button outline" data-note="${esc(job.id)}">บันทึกความคืบหน้า</button>`;
     if(admin && group.open.length) actions+=`<button class="button ${job?'outline':'primary'}" data-assign-pole="${esc(group.pole)}">${group.assignedId?'เปลี่ยนผู้รับผิดชอบ':'มอบหมายช่าง'}</button>`;

@@ -53,9 +53,10 @@ The workflow centers on the pole number: a resident enters it when reporting, an
 
 ## Brand Commitments
 
-- Product name: LightFix. The existing public interface uses Thai as its default language and has an English option in source code.
-- The replacement uses only a yellow outline lightbulb as its logo symbol. “LightFix” appears as separate interface text, never as part of the logo artwork. The first priority on the public landing surface is completing a report quickly.
-- Preserve the public promise that reporting does not require an account, unless the user explicitly changes it.
+- Product name: LightFix. The public interface is Thai-first, with an English option in source code.
+- The selected visual direction is “ศูนย์ประสานงาน” (Coordination Centre): a deep teal command header, pale green-gray working ground, white records, and selective yellow action cues. Residents and staff share a visual grammar for pole number, status, and next action.
+- The only logo symbol is the yellow outline lightbulb. “LightFix” is separate interface text rendered in self-hosted Urbanist; Thai interface text uses self-hosted IBM Plex Sans Thai.
+- The public first priority remains completing a report quickly without an account. Status and progress must remain understandable in words as well as color.
 
 ## Evidence on Hand
 
