@@ -130,7 +130,7 @@ Preload the regular and bold Thai faces and the Urbanist wordmark. Font faces us
 
 The shell tops out at 1200px. Side gutters are 16px on phones, 24px from 640px, and 28px from 900px. The public report starts directly on the page ground without a large enclosing white form card. Pole input precedes symptom choices; its primary submit button fills the phone width.
 
-Below 900px, the deep teal header is compact and the public and staff areas use fixed, white bottom navigation with safe-area padding. Staff rail content opens as an overlay from the mobile work navigation. At 640px, report fields and supporting details gain columns, the submit button returns to intrinsic width, and the three metrics align in one row. From 768px through 899px, the public report and help form a two-column layout and staff work cards form a two-column grid. At 900px, header links become inline, bottom navigation disappears, the public route/help panel sits beside the form, and a 220px sticky staff rail appears. From 1100px, conventional staff table rows replace labeled cards and work cards use two columns.
+Below 900px, the deep teal header is compact and the public and staff areas use fixed, white bottom navigation with safe-area padding. Staff navigation opens as an overlay with direct buttons grouped by task; it has no native view select. Below 640px, form selects present a short choice sheet while retaining the native select as the form value. At 640px, report fields and supporting details gain columns, the submit button returns to intrinsic width, and the three metrics align in one row. From 768px through 899px, the public report and help form a two-column layout and staff work cards form a two-column grid. At 900px, header links become inline, bottom navigation disappears, the public route/help panel sits beside the form, and a 220px sticky staff rail appears. From 1100px, conventional staff table rows replace labeled cards and work cards use two columns.
 
 ## Elevation & Depth
 
@@ -144,7 +144,7 @@ Buttons, fields, symptom choices and disclosures use 12px corners. Panels, recor
 
 ### Buttons and fields
 
-Primary buttons have a yellow fill, dark bold text, a minimum 48px height and a brighter hover state. Dark buttons use command teal; outline controls have a visible gray-green stroke; danger buttons are red. Active buttons compress slightly. Inputs, selects and textareas use 12px corners, a visible border, green focus ring and text errors. The pole input remains 58px high. Selected symptoms use soft yellow and a stronger border.
+Primary buttons have a yellow fill, dark bold text, a minimum 48px height and a brighter hover state. Dark buttons use command teal; outline controls have a visible gray-green stroke; danger buttons are red. Active buttons compress slightly. Inputs, selects and textareas use 12px corners, a visible border, green focus ring and text errors. Phone choice sheets use the same yellow selected state and restore focus to their trigger. The pole input remains 58px high. Selected symptoms use soft yellow and a stronger border.
 
 ### Records and work cards
 
@@ -158,9 +158,9 @@ The deep teal header contains the yellow outline bulb, separate Urbanist wordmar
 
 The focal moment is a signal becoming a report: the three report information markers fill as the user supplies the required fields; after a committed submission, the outline bulb draws and lights once over 620ms. These markers describe supplied information, not separate wizard pages or server validation. Submission and focus never wait for an animation.
 
-Menus and protected work dialogs arrive over 260ms with a small upward movement and clipped opening. Pole and report lists animate at most six records, with a maximum 120ms stagger regardless of workspace size. Controls respond in 140–220ms. Interrupted Web Animations are canceled before replay; content is visible without animation support. Reduced motion skips spatial and stroke animation, retains completed markers and the success bulb, and replaces the loading spinner with a static dot. No decorative loop runs on idle screens.
+Menus, work dialogs and lists appear immediately so changing a tab or filter never replays an entrance over live content. Controls respond in 140–220ms; photo preview fades locally over 180ms. Interrupted Web Animations are canceled before replay. Reduced motion skips the preview and bulb stroke animation, retains completed markers and the static success bulb, and replaces the loading spinner with a static dot. No decorative loop runs on idle screens.
 
-Page text has one rendered layer. Do not crossfade old and new document snapshots or animate the whole main text region during font loading. Keep motion on the local controls, records, sheets and committed success state.
+Page text has one rendered layer. Do not crossfade old and new document snapshots or animate the whole main text region during font loading. Keep motion on local controls, photo feedback and the committed success state.
 
 ## Do's and Don'ts
 

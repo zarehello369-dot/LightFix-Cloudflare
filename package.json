@@ -7,7 +7,7 @@
     "deploy": "wrangler deploy",
     "db:local": "wrangler d1 migrations apply lightfix-db --local",
     "db:remote": "wrangler d1 migrations apply lightfix-db --remote",
-    "check": "node --check src/worker.js && node --check public/app.js && node --check public/staff.js && node --check public/shared.js && node --check public/motion.js && node --check public/requests.js && node --test tests/*.test.js"
+    "check": "node --check src/worker.js && node --check public/app.js && node --check public/staff.js && node --check public/shared.js && node --check public/mobile-picker.js && node --check public/motion.js && node --check public/requests.js && node --test tests/*.test.js"
   },
   "devDependencies": {
     "wrangler": "^4.45.0"

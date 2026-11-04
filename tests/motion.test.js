@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { reveal, revealRecords } from '../public/motion.js';
+import { reveal } from '../public/motion.js';
 
 test('motion respects reduced preference and cancels interrupted feedback', () => {
   const previous=globalThis.matchMedia;
@@ -9,22 +9,13 @@ test('motion respects reduced preference and cancels interrupted feedback', () =
   const calls=[];
   const element={animate:(frames,options)=>{calls.push({frames,options});return {cancel:()=>canceled++,finished:new Promise(()=>{})};}};
   try {
-    reveal(element,'sheet');
+    reveal(element);
     assert.equal(calls.length,1);
-    assert.match(calls[0].frames[0].transform,/12px/);
-    reduce=true;reveal(element,'sheet');
+    assert.deepEqual(calls[0].frames,[{opacity:.7},{opacity:1}]);
+    assert.equal(calls[0].options.duration,180);
+    reduce=true;reveal(element);
     assert.equal(canceled,1);
     assert.equal(calls.length,1);
     assert.doesNotThrow(()=>reveal({}));
   } finally { if(previous)globalThis.matchMedia=previous;else delete globalThis.matchMedia; }
-});
-
-test('a thousand records have a bounded animation budget and remain visible by default', () => {
-  const calls=[];
-  const cards=Array.from({length:1000},()=>({animate:(frames,options)=>{calls.push({frames,options});return {cancel(){},finished:Promise.resolve()};}}));
-  revealRecords({querySelectorAll:()=>cards});
-  assert.equal(calls.length,6);
-  assert.ok(calls.every(call=>call.options.delay<=120));
-  assert.ok(calls.every(call=>call.options.fill==='backwards'));
-  assert.ok(calls.every(call=>call.frames.every(frame=>frame.opacity>0)));
 });

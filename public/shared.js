@@ -1,5 +1,5 @@
-import { reveal, revealRecords } from './motion.js';
-export { reveal, revealRecords };
+import { reveal } from './motion.js';
+export { reveal };
 export const $ = selector => document.querySelector(selector);
 export const control = (form, name) => form.elements.namedItem(name);
 export const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
@@ -69,7 +69,6 @@ export function shell(content, current = '') {
     const open = $('#site-nav').classList.toggle('open');
     event.currentTarget.setAttribute('aria-expanded', String(open));
     event.currentTarget.setAttribute('aria-label', open ? 'ปิดเมนู' : 'เปิดเมนู');
-    if (open) reveal($('#site-nav'),'sheet');
   });
 }
 export function showError(target, error) {

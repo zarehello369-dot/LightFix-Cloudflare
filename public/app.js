@@ -1,4 +1,5 @@
-import { $, control, esc, date, badge, api, post, shell, toast, showError, photoData, icon, reveal, revealRecords } from './shared.js';
+import { $, control, esc, date, badge, api, post, shell, toast, showError, photoData, icon, reveal } from './shared.js';
+import { installMobilePickers } from './mobile-picker.js';
 import { staffPage } from './staff.js';
 import { readRecentReports, rememberReport, clearRecentReports, trackingPath } from './tracking.js';
 import { createLatestRequest } from './requests.js';
@@ -178,7 +179,6 @@ async function boardPage() {
     list.innerHTML = '<p class="loading" role="status">กำลังโหลดรายการ…</p>';
     await requests.run(() => api(`/api/reports${pole ? `?pole=${encodeURIComponent(pole)}` : ''}`), rows => {
       list.innerHTML = rows.length ? rows.map(r => `<a class="record" href="/track?id=${esc(r.id)}"><span class="record-title number">${esc(r.pole)}</span><span class="record-detail">${esc(r.symptom)} · ${date(r.at)}</span>${badge(r.status)}</a>`).join('') : '<div class="empty">ยังไม่มีเรื่องแจ้งในรายการนี้ <a href="/">แจ้งไฟเสีย</a></div>';
-      revealRecords(list);
     }, error => showError(list, error));
   }
   $('#board-search').addEventListener('click', load);
@@ -220,6 +220,7 @@ function renderRecentReports(target, hideEmpty = false) {
   });
 }
 
+installMobilePickers();
 const path = location.pathname;
 if (path === '/' || path === '/index.html') reportPage();
 else if (path === '/board') boardPage();
