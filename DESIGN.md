@@ -117,6 +117,8 @@ A deep teal command header anchors pale green-gray working space and white recor
 
 **Wordmark:** Self-hosted Urbanist variable, 800 weight, separate from the bulb; 1.55rem on phones and 1.75rem from 900px. **Interface:** Self-hosted IBM Plex Sans Thai (PlexThai), with Noto Sans Thai and sans-serif fallbacks.
 
+Preload the regular and bold Thai faces and the Urbanist wordmark. Font faces use `font-display: optional`: slow first visits retain a readable fallback instead of swapping text metrics after the page is already being read. Warm visits use the cached custom faces.
+
 - **Display:** Bold page titles, `clamp(1.8rem, 7vw, 2.55rem)` on phones, 2.35rem from 640px, with a 1.24 line height.
 - **Headline:** Bold section titles around 1.45rem; staff titles respond to context.
 - **Body:** 16px / 1.6; introductory copy stays near 58ch on the report surface.
@@ -157,6 +159,8 @@ The deep teal header contains the yellow outline bulb, separate Urbanist wordmar
 The focal moment is a signal becoming a report: the three report information markers fill as the user supplies the required fields; after a committed submission, the outline bulb draws and lights once over 620ms. These markers describe supplied information, not separate wizard pages or server validation. Submission and focus never wait for an animation.
 
 Menus and protected work dialogs arrive over 260ms with a small upward movement and clipped opening. Pole and report lists animate at most six records, with a maximum 120ms stagger regardless of workspace size. Controls respond in 140–220ms. Interrupted Web Animations are canceled before replay; content is visible without animation support. Reduced motion skips spatial and stroke animation, retains completed markers and the success bulb, and replaces the loading spinner with a static dot. No decorative loop runs on idle screens.
+
+Page text has one rendered layer. Do not crossfade old and new document snapshots or animate the whole main text region during font loading. Keep motion on the local controls, records, sheets and committed success state.
 
 ## Do's and Don'ts
 

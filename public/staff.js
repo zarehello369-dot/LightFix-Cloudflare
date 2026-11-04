@@ -7,6 +7,14 @@ const roleLabel = role => role === 'admin' ? 'เจ้าหน้าที่'
 const contactLabel = type => ({ phone: 'โทรศัพท์', line: 'LINE', email: 'อีเมล', name: 'ชื่อ' })[type] || 'ข้อมูลผู้แจ้ง';
 const base = () => state.role === 'admin' ? '/api/admin' : '/api';
 
+function focusViewHeading() {
+  const heading = $('#staff-root h1');
+  if (!heading) return;
+  window.scrollTo({top:0,behavior:'instant'});
+  heading.tabIndex = -1;
+  heading.focus({preventScroll:true});
+}
+
 export async function staffPage(role) {
   state.role = role; state.tab = role === 'technician' ? 'mywork' : 'overview'; state.selected.clear();
   document.title = `${roleLabel(role)} · LightFix`;
@@ -45,6 +53,7 @@ function loginPage(message = '') {
     } catch (error) { $('#login-error').textContent = error.message; button.disabled = false; button.textContent = 'เข้าสู่ระบบ'; }
   });
   $('#show-register').addEventListener('click', registerPage);
+  focusViewHeading();
 }
 
 function registerPage() {
@@ -52,8 +61,9 @@ function registerPage() {
     <form id="register-form"><div class="field"><label for="register-name">ชื่อที่แสดง</label><input class="input" id="register-name" name="name" required maxlength="100"></div>
       <div class="field"><label for="register-username">ชื่อผู้ใช้</label><input class="input" id="register-username" name="username" required pattern="[a-zA-Z0-9._-]{3,40}" autocomplete="username"></div>
       <div class="field"><label for="register-contact">ช่องทางติดต่อสำหรับการอนุมัติ</label><input class="input" id="register-contact" name="contact" required maxlength="150"></div>
-      <div class="field"><label for="register-password">รหัสผ่านใหม่</label><input class="input" id="register-password" name="password" type="password" required minlength="12" autocomplete="new-password"><span class="field-note">อย่างน้อย 12 ตัวอักษร</span></div>
+      <div class="field"><label for="register-password">รหัสผ่านใหม่</label><input class="input" id="register-password" name="password" type="password" required minlength="12" maxlength="200" autocomplete="new-password"><span class="field-note">อย่างน้อย 12 ตัวอักษร</span></div>
       <div id="register-error" class="field-error" role="alert"></div><button class="button primary" type="submit">ส่งคำขอ</button></form><button id="back-login" class="button ghost" type="button">กลับไปเข้าสู่ระบบ</button></div></div>`;
+  focusViewHeading();
   $('#back-login').addEventListener('click', () => loginPage());
   $('#register-form').addEventListener('submit', async event => {
     event.preventDefault(); const form = event.currentTarget, button = form.querySelector('button:not([type=button])');
@@ -69,6 +79,7 @@ function changePasswordPage(me) {
     <form id="change-form"><div class="field"><label for="new-password">รหัสผ่านใหม่</label><input class="input" id="new-password" name="password" type="password" minlength="12" maxlength="200" required autocomplete="new-password"></div>
       <div class="field"><label for="confirm-password">ยืนยันรหัสผ่าน</label><input class="input" id="confirm-password" name="confirm" type="password" minlength="12" required autocomplete="new-password"></div>
       <div id="change-error" class="field-error" role="alert"></div><button class="button primary" type="submit">บันทึกรหัสใหม่</button></form></div></div>`;
+  focusViewHeading();
   $('#change-form').addEventListener('submit', async event => {
     event.preventDefault(); const form = event.currentTarget;
     if (control(form, 'password').value !== control(form, 'confirm').value) return $('#change-error').textContent = 'รหัสผ่านทั้งสองช่องไม่ตรงกัน';
@@ -105,11 +116,10 @@ function renderWorkspace() {
     clearAccountDrafts(); loginPage();
   });
   renderTab();
+  focusViewHeading();
 }
 function navigateTab(tab) {
   state.tab = tab; state.selected.clear(); renderWorkspace();
-  const heading = $('#staff-content h1');
-  if (heading) { heading.tabIndex = -1; heading.focus(); }
 }
 
 function renderTab() {
@@ -148,7 +158,6 @@ async function action(path, data, success, onSaved) {
   // A failed refresh does not turn an already committed write into a failed save.
   try {
     state.data = await api(`${base()}/workspace`); renderWorkspace();
-    const heading = $('#staff-content h1'); if (heading) { heading.tabIndex = -1; heading.focus(); }
   } catch { showError($('#staff-root'), new Error(`${success} แต่โหลดรายการใหม่ไม่ได้ ตรวจสอบอินเทอร์เน็ตแล้วลองใหม่`)); }
 }
 function formError(form, error) {
@@ -369,7 +378,7 @@ function deletePole(p) {
 function poleForm(p = {}) {
   const editing = !!p.pole;
   const target = dialog(`<h2 id="dialog-title">${editing ? `แก้ไขเสา ${esc(p.pole)}` : 'เพิ่มเสาใหม่'}</h2><form id="pole-form" class="staff-form"><div class="field"><label for="edit-pole">หมายเลขเสา</label><input class="input number" id="edit-pole" name="pole" required pattern="T[0-9]{4}" maxlength="5" value="${esc(p.pole || '')}" ${editing ? 'readonly' : ''}></div><div class="field"><label for="edit-location">ตำแหน่ง</label><input class="input" id="edit-location" name="location" value="${esc(p.location || '')}"></div><div class="field"><label for="edit-lat">ละติจูด</label><input class="input" id="edit-lat" name="lat" type="number" step="any" value="${p.lat ?? ''}"></div><div class="field"><label for="edit-lng">ลองจิจูด</label><input class="input" id="edit-lng" name="lng" type="number" step="any" value="${p.lng ?? ''}"></div><div class="field"><label for="edit-model">รุ่นโคม</label><input class="input" id="edit-model" name="model" value="${esc(p.model || '')}"></div><div class="field"><label for="edit-installed">ติดตั้งเมื่อ</label><input class="input" id="edit-installed" name="installedAt" value="${esc(p.installed_at || '')}"></div><div class="field full"><label for="edit-notes">บันทึก</label><textarea id="edit-notes" name="notes" rows="2">${esc(p.notes || '')}</textarea></div><label class="inline full"><input name="active" type="checkbox" ${p.active === 0 ? '' : 'checked'}> เปิดใช้เสานี้</label><div class="field-error full" data-error role="alert"></div><div class="dialog-actions full"><button type="button" class="button outline" data-close>กลับ</button><button class="button primary">บันทึกเสา</button></div></form>`);
-  target.querySelector('form').addEventListener('submit', async e => { e.preventDefault(); const f = e.currentTarget; try { await action('/api/admin/poles', { pole: control(f, 'pole').value.toUpperCase(), location: control(f, 'location').value, lat: control(f, 'lat').value, lng: control(f, 'lng').value, model: control(f, 'model').value, installedAt: control(f, 'installedAt').value, notes: control(f, 'notes').value, active: control(f, 'active').checked }, 'บันทึกข้อมูลเสาแล้ว'); } catch (error) { formError(f, error); } });
+  target.querySelector('form').addEventListener('submit', event => submitStaffForm(event, f => action('/api/admin/poles', { pole: control(f, 'pole').value.toUpperCase(), location: control(f, 'location').value, lat: control(f, 'lat').value, lng: control(f, 'lng').value, model: control(f, 'model').value, installedAt: control(f, 'installedAt').value, notes: control(f, 'notes').value, active: control(f, 'active').checked }, 'บันทึกข้อมูลเสาแล้ว'), formError));
 }
 
 function users() {
@@ -396,7 +405,7 @@ function review(id, decision) {
 }
 function editUser(u) {
   const target = dialog(`<h2 id="dialog-title">แก้ไขบัญชี ${esc(u.username)}</h2><form id="user-form"><div class="field"><label for="user-name">ชื่อที่แสดง</label><input class="input" id="user-name" name="name" value="${esc(u.display_name)}" required></div><div class="field"><label for="user-role">บทบาท</label><select id="user-role" name="role"><option value="technician" ${u.role === 'technician' ? 'selected' : ''}>ช่างไฟฟ้า</option><option value="admin" ${u.role === 'admin' ? 'selected' : ''}>ผู้ดูแล</option></select></div><label class="inline"><input name="active" type="checkbox" ${u.active ? 'checked' : ''}> เปิดใช้งาน</label><div class="field-error" data-error role="alert"></div><div class="dialog-actions"><button type="button" class="button outline" data-close>กลับ</button><button class="button primary">บันทึกบัญชี</button></div></form>`);
-  target.querySelector('form').addEventListener('submit', async e => { e.preventDefault(); const f = e.currentTarget; try { await action(`/api/admin/users/${u.id}`, { name: control(f, 'name').value, role: control(f, 'role').value, active: control(f, 'active').checked }, 'บันทึกบัญชีแล้ว'); } catch (error) { formError(f, error); } });
+  target.querySelector('form').addEventListener('submit', event => submitStaffForm(event, f => action(`/api/admin/users/${u.id}`, { name: control(f, 'name').value, role: control(f, 'role').value, active: control(f, 'active').checked }, 'บันทึกบัญชีแล้ว'), formError));
 }
 function createUser() {
   const target = dialog(`<h2 id="dialog-title">เพิ่มบัญชีผู้ใช้</h2><p class="muted">ระบบจะสร้างรหัสชั่วคราวให้หนึ่งครั้ง เจ้าของบัญชีต้องตั้งรหัสใหม่เมื่อเข้าสู่ระบบ</p><form id="create-user-form"><div class="field"><label for="create-username">ชื่อผู้ใช้</label><input class="input" id="create-username" name="username" required minlength="3" maxlength="40" pattern="[a-zA-Z0-9._-]{3,40}" autocomplete="off"></div><div class="field"><label for="create-name">ชื่อที่แสดง</label><input class="input" id="create-name" name="name" required maxlength="100"></div><div class="field"><label for="create-role">บทบาท</label><select id="create-role" name="role"><option value="technician">ช่างไฟฟ้า</option><option value="admin">ผู้ดูแล</option></select></div><div class="field-error" data-error role="alert"></div><div class="dialog-actions"><button type="button" class="button outline" data-close>กลับ</button><button class="button primary" type="submit">สร้างบัญชี</button></div></form>`);
@@ -428,7 +437,7 @@ function messages() {
   const d = state.data;
   content(`<h1>ข้อความ</h1><p class="muted">ข้อความเกี่ยวกับงานและการมอบหมาย</p>${state.role === 'admin' ? `<section class="staff-section"><h2>ส่งข้อความถึงช่าง</h2><form id="message-form" class="panel staff-form"><div class="field"><label for="message-tech">ช่าง</label><select id="message-tech" name="technicianId" required>${d.users.filter(u => u.role === 'technician' && u.active).map(u => `<option value="${esc(u.id)}">${esc(u.display_name)}</option>`).join('')}</select></div><div class="field"><label for="message-title">หัวข้อ</label><input class="input" id="message-title" name="title" required maxlength="150"></div><div class="field full"><label for="message-body">ข้อความ</label><textarea id="message-body" name="body" rows="3" required maxlength="1000"></textarea></div><div class="field-error full" data-error role="alert"></div><button class="button primary">ส่งข้อความ</button></form></section>` : ''}
     <section class="staff-section"><h2>ข้อความที่ได้รับ</h2>${d.notifications.length ? `<div class="panel">${d.notifications.map(n => `<div class="staff-row"><strong>${esc(n.title)}</strong><div>${esc(n.body)}<p>${date(n.created_at)}</p></div>${n.read_at ? '<span class="small muted">อ่านแล้ว</span>' : `<button class="button outline small" data-read="${esc(n.id)}">ทำเครื่องหมายว่าอ่าน</button>`}</div>`).join('')}</div>` : '<div class="empty">ยังไม่มีข้อความ</div>'}</section>`);
-  $('#message-form')?.addEventListener('submit', async e => { e.preventDefault(); const f = e.currentTarget; try { await action('/api/admin/notifications', { technicianId: control(f, 'technicianId').value, title: control(f, 'title').value, body: control(f, 'body').value }, 'ส่งข้อความแล้ว'); } catch (error) { formError(f, error); } });
+  $('#message-form')?.addEventListener('submit', event => submitStaffForm(event, f => action('/api/admin/notifications', { technicianId: control(f, 'technicianId').value, title: control(f, 'title').value, body: control(f, 'body').value }, 'ส่งข้อความแล้ว'), formError));
   document.querySelectorAll('[data-read]').forEach(b => b.addEventListener('click', async () => { try { await action(`${base()}/notifications/${b.dataset.read}/read`, {}, 'อ่านแล้ว'); } catch (error) { toast(error.message); } }));
 }
 
@@ -439,5 +448,5 @@ function history() {
 }
 function editHistory(j) {
   const target = dialog(`<h2 id="dialog-title">แก้ไขประวัติเสา ${esc(j.pole)}</h2><form id="history-form"><div class="field"><label for="history-cause">สาเหตุ</label><select id="history-cause" name="cause">${state.data.causes.map(c => `<option value="${esc(c)}" ${j.cause === c ? 'selected' : ''}>${esc(c)}</option>`).join('')}</select></div><div class="field"><label for="history-detail">รายละเอียดสาเหตุ</label><textarea id="history-detail" name="causeDetail" rows="2">${esc(j.cause_detail)}</textarea></div><div class="field"><label for="history-note">บันทึกสาธารณะ</label><textarea id="history-note" name="note" rows="2">${esc(j.public_note)}</textarea></div><div class="field-error" data-error role="alert"></div><div class="dialog-actions"><button type="button" class="button outline" data-close>กลับ</button><button class="button primary">บันทึกการแก้ไข</button></div></form>`);
-  target.querySelector('form').addEventListener('submit', async e => { e.preventDefault(); const f = e.currentTarget; try { await action(`/api/admin/history/${j.id}`, { cause: control(f, 'cause').value, causeDetail: control(f, 'causeDetail').value, note: control(f, 'note').value }, 'แก้ไขประวัติแล้ว'); } catch (error) { formError(f, error); } });
+  target.querySelector('form').addEventListener('submit', event => submitStaffForm(event, f => action(`/api/admin/history/${j.id}`, { cause: control(f, 'cause').value, causeDetail: control(f, 'causeDetail').value, note: control(f, 'note').value }, 'แก้ไขประวัติแล้ว'), formError));
 }

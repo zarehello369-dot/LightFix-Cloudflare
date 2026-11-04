@@ -100,6 +100,14 @@ test('report without callback stores explicit tracking preference in existing sc
   sqlite.close();
 });
 
+test('registration rejects passwords beyond the same limit as password changes', async () => {
+  const {sqlite,request}=fixture();
+  const response=await request('/api/auth/register','POST',{username:'new-tech',name:'ช่างใหม่',role:'technician',contact:'ติดต่อผู้ดูแล',password:'x'.repeat(201)});
+  assert.equal(response.status,400);assert.equal(response.body.error,'INVALID_REGISTRATION');
+  assert.equal(sqlite.prepare('SELECT COUNT(*) AS n FROM users WHERE username=?').get('new-tech').n,0);
+  sqlite.close();
+});
+
 test('concurrent assignments and claims accept one revision and reject the other', async () => {
   const { sqlite, request } = fixture();
   const revision = () => sqlite.prepare('SELECT revision FROM pole_work_state WHERE pole=?').get('T0002').revision;

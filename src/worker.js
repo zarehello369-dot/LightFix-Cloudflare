@@ -322,8 +322,8 @@ async function register(env, data, expectedRole) {
   const password = String(data.password || '');
   const role = clean(data.role, 20);
   const contactInfo = clean(data.contact, 150);
-  if (!/^[a-z0-9._-]{3,40}$/.test(username) || !name || role !== expectedRole || password.length < 12 || !contactInfo) {
-    throw new HttpError(400, 'INVALID_REGISTRATION', 'ตรวจสอบชื่อผู้ใช้ ชื่อแสดง ช่องทางติดต่อ และรหัสผ่านอย่างน้อย 12 ตัวอักษร');
+  if (!/^[a-z0-9._-]{3,40}$/.test(username) || !name || role !== expectedRole || password.length < 12 || password.length > 200 || !contactInfo) {
+    throw new HttpError(400, 'INVALID_REGISTRATION', 'ตรวจสอบชื่อผู้ใช้ ชื่อแสดง ช่องทางติดต่อ และรหัสผ่าน 12 ถึง 200 ตัวอักษร');
   }
   if (await one(env.DB, 'SELECT id FROM users WHERE username=?', username)) throw new HttpError(409, 'USERNAME_EXISTS', 'ชื่อผู้ใช้นี้ถูกใช้แล้ว');
   const salt = bytesToBase64(crypto.getRandomValues(new Uint8Array(16)));

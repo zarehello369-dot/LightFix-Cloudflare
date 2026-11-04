@@ -1,6 +1,7 @@
 import { $, control, esc, date, badge, api, post, shell, toast, showError, photoData, icon, reveal, revealRecords } from './shared.js';
 import { staffPage } from './staff.js';
 import { readRecentReports, rememberReport, clearRecentReports, trackingPath } from './tracking.js';
+import { createLatestRequest } from './requests.js';
 
 const symptoms = ['ไฟไม่ติด', 'ไฟติด ๆ ดับ ๆ', 'ไฟสว่างน้อย', 'เสาหรือโคมชำรุด', 'สายไฟหลุดหรือห้อยต่ำ', 'อื่น ๆ'];
 let reportPhoto = '', photoPending = false, photoFailed = false, photoGeneration = 0, reportRequestId = '';
@@ -171,14 +172,14 @@ async function boardPage() {
   document.title = 'ความคืบหน้าการซ่อม · LightFix';
   shell(`<section class="shell page"><h1 class="page-title">งานซ่อมในชุมชน</h1><p class="lead">ดูเรื่องแจ้งไฟถนนและสถานะล่าสุด ข้อมูลผู้แจ้งจะไม่แสดงที่นี่</p><div class="toolbar"><label class="eyeless" for="board-pole">กรองด้วยหมายเลขเสา</label><input id="board-pole" class="input" placeholder="ค้นหาเสา เช่น T0001"><button class="button outline" id="board-search">ค้นหา</button><button class="button ghost" id="board-clear">แสดงทั้งหมด</button></div><div id="board-list" class="record-list"><p class="loading" role="status">กำลังโหลดรายการ…</p></div></section>`, 'board');
   const list = $('#board-list');
+  const requests = createLatestRequest();
   async function load() {
     const pole = getPole($('#board-pole').value);
     list.innerHTML = '<p class="loading" role="status">กำลังโหลดรายการ…</p>';
-    try {
-      const rows = await api(`/api/reports${pole ? `?pole=${encodeURIComponent(pole)}` : ''}`);
+    await requests.run(() => api(`/api/reports${pole ? `?pole=${encodeURIComponent(pole)}` : ''}`), rows => {
       list.innerHTML = rows.length ? rows.map(r => `<a class="record" href="/track?id=${esc(r.id)}"><span class="record-title number">${esc(r.pole)}</span><span class="record-detail">${esc(r.symptom)} · ${date(r.at)}</span>${badge(r.status)}</a>`).join('') : '<div class="empty">ยังไม่มีเรื่องแจ้งในรายการนี้ <a href="/">แจ้งไฟเสีย</a></div>';
       revealRecords(list);
-    } catch (error) { showError(list, error); }
+    }, error => showError(list, error));
   }
   $('#board-search').addEventListener('click', load);
   $('#board-pole').addEventListener('keydown', e => { if (e.key === 'Enter') load(); });
@@ -192,16 +193,16 @@ async function trackPage() {
   shell(`<section class="shell page"><h1 class="page-title">ติดตามเรื่องแจ้ง</h1><p class="lead">เปิดลิงก์ที่ได้หลังส่งเรื่อง หรือใส่รหัสจากลิงก์เพื่อตรวจสถานะ</p><div class="toolbar"><label class="eyeless" for="track-id">รหัสเรื่องแจ้ง</label><input id="track-id" class="input number" placeholder="รหัสเรื่องแจ้ง" value="${esc(id)}"><button class="button primary" id="track-search">ดูสถานะ</button></div><div id="track-detail"></div><section class="recent-section" id="recent-reports" aria-label="เรื่องล่าสุดในอุปกรณ์นี้"></section></section>`, 'track');
   renderRecentReports($('#recent-reports'));
   const target = $('#track-detail');
+  const requests = createLatestRequest();
   async function load() {
     const value = $('#track-id').value.trim().toLowerCase();
-    if (!/^[a-f0-9]{32}$/.test(value)) { target.innerHTML = '<div class="error-box" role="alert">กรุณาใช้ลิงก์ติดตามจากหน้าส่งเรื่องสำเร็จ</div>'; return; }
+    if (!/^[a-f0-9]{32}$/.test(value)) { requests.invalidate(); target.innerHTML = '<div class="error-box" role="alert">กรุณาใช้ลิงก์ติดตามจากหน้าส่งเรื่องสำเร็จ</div>'; return; }
     target.innerHTML = '<p class="loading" role="status">กำลังตรวจสถานะ…</p>';
-    try {
-      const r = await api(`/api/reports/${value}`);
+    await requests.run(() => api(`/api/reports/${value}`), r => {
       history.replaceState({}, '', `/track?id=${value}`);
       const steps = [{ title: 'รับเรื่องแจ้ง', time: r.at }, { title: 'เริ่มงานซ่อม', time: r.startedAt }, { title: 'ซ่อมเสร็จ', time: r.doneAt }];
       target.innerHTML = `<div class="detail-grid"><article class="panel"><div class="inline" style="justify-content:space-between"><h2 class="section-heading number" style="margin:0">เสา ${esc(r.pole)}</h2>${badge(r.status)}</div><p>${esc(r.symptom)}</p>${r.note ? `<p><strong>บันทึกงาน:</strong> ${esc(r.note)}</p>` : ''}${r.cause ? `<p><strong>สาเหตุ:</strong> ${esc(r.cause)} ${esc(r.causeDetail)}</p>` : ''}<div class="photo-pair">${r.hasBefore ? `<figure><a href="/media/${value}/before" target="_blank" rel="noopener" aria-label="เปิดรูปก่อนซ่อมเสา ${esc(r.pole)} ขนาดเต็มในแท็บใหม่"><img src="/media/${value}/before" alt="รูปก่อนซ่อมเสา ${esc(r.pole)}"></a><figcaption>ก่อนซ่อม · เลือกภาพเพื่อเปิดขนาดเต็ม</figcaption></figure>` : ''}${r.hasAfter ? `<figure><a href="/media/${value}/after" target="_blank" rel="noopener" aria-label="เปิดรูปหลังซ่อมเสา ${esc(r.pole)} ขนาดเต็มในแท็บใหม่"><img src="/media/${value}/after" alt="รูปหลังซ่อมเสา ${esc(r.pole)}"></a><figcaption>หลังซ่อม · เลือกภาพเพื่อเปิดขนาดเต็ม</figcaption></figure>` : ''}</div></article><aside class="panel"><h2 class="section-heading">เส้นทางของเรื่องนี้</h2><ol class="timeline">${steps.map((s, i) => `<li><strong>${s.title}</strong><div class="small muted">${s.time ? date(s.time) : 'รอดำเนินการ'}</div></li>`).join('')}</ol><div class="road-line"></div></aside></div>`;
-    } catch (error) { showError(target, error); }
+    }, error => showError(target, error));
   }
   $('#track-search').addEventListener('click', load);
   $('#track-id').addEventListener('keydown', e => { if (e.key === 'Enter') load(); });

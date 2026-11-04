@@ -55,7 +55,6 @@ export function shell(content, current = '') {
     <a class="brand" href="/" aria-label="LightFix หน้าแรก">${icon}</a>
     <a class="site-name" href="/">LightFix</a>
     <span class="area-label">${areaLabel}</span>
-    <a class="header-track" href="/track">ติดตามเรื่อง</a>
     <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="site-nav" aria-label="เปิดเมนู">เมนู</button>
     <nav id="site-nav" class="site-nav" aria-label="เมนูหลัก">
       <a href="/" ${current === 'report' ? 'aria-current="page"' : ''}>แจ้งไฟเสีย</a>
@@ -72,7 +71,6 @@ export function shell(content, current = '') {
     event.currentTarget.setAttribute('aria-label', open ? 'ปิดเมนู' : 'เปิดเมนู');
     if (open) reveal($('#site-nav'),'sheet');
   });
-  if (!staff) reveal($('#main'));
 }
 export function showError(target, error) {
   target.innerHTML = `<div class="error-box" role="alert">${esc(error.message || error)} <button type="button" class="button small outline">ลองใหม่</button></div>`;

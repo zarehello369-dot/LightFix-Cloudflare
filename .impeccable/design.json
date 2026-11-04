@@ -129,6 +129,11 @@
         "name": "report-signal",
         "value": "620ms, once after committed report",
         "purpose": "Draw and illuminate the success bulb; static bulb with reduced motion."
+      },
+      {
+        "name": "page-text-stability",
+        "value": "No whole-page snapshot blend or main-region arrival",
+        "purpose": "Keep a single text layer during navigation and font loading; local motion remains."
       }
     ],
     "breakpoints": [
@@ -148,7 +153,16 @@
         "name": "table-rows",
         "value": "1100px"
       }
-    ]
+    ],
+    "fontLoading": {
+      "display": "optional",
+      "preload": [
+        "/fonts/IBMPlexSansThai-Regular.ttf",
+        "/fonts/IBMPlexSansThai-Bold.ttf",
+        "/fonts/Urbanist-Variable.ttf"
+      ],
+      "purpose": "Avoid late font-metric swaps during reading on slow first visits."
+    }
   },
   "components": [
     {
