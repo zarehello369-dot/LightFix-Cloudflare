@@ -1,4 +1,4 @@
-import { $, control, esc, date, badge, api, post, shell, toast, showError, photoData } from './shared.js';
+import { $, control, esc, date, badge, api, post, shell, toast, showError, photoData, icon, reveal, revealRecords } from './shared.js';
 import { staffPage } from './staff.js';
 import { readRecentReports, rememberReport, clearRecentReports, trackingPath } from './tracking.js';
 
@@ -21,7 +21,7 @@ function reportPage() {
     <section class="report-main" aria-labelledby="report-heading">
       <h1 id="report-heading" class="page-title">แจ้งเหตุใหม่</h1>
       <p class="lead">ใช้หมายเลขบนเสาแจ้งไฟถนนเสียได้ทันที ไม่ต้องสมัครบัญชี เมื่อส่งแล้วจะได้ลิงก์ติดตามงานซ่อม</p>
-      <ol class="report-steps" aria-label="ข้อมูลที่ใช้แจ้งเหตุ"><li>เลขเสา</li><li>อาการ</li><li>ส่งเรื่อง</li></ol>
+      <ol class="report-steps" aria-label="ข้อมูลที่ใช้แจ้งเหตุ">${['เลขเสา','อาการ','ข้อมูลครบ'].map((label,index)=>`<li><span class="report-step-marker" aria-hidden="true">${index+1}</span>${label}<span class="visually-hidden" data-progress-state>ยังไม่ครบ</span></li>`).join('')}</ol>
       <form id="report-form" novalidate>
         <div class="form-grid">
           <div class="field full" id="pole-field"><label for="pole">หมายเลขเสา <span class="required">*</span></label>
@@ -50,11 +50,24 @@ function reportPage() {
   const form = $('#report-form');
   const pole = $('#pole');
   const contact = $('#contact-value');
-  const summary = () => { const picked = form.querySelector('input[name=symptom]:checked')?.value; $('#report-summary').textContent = `${getPole(pole.value) || 'ยังไม่ระบุเสา'} · ${picked || 'ยังไม่เลือกอาการ'} · ${$('#contact-type').value === 'none' ? 'ติดตามผ่านลิงก์' : 'ให้เจ้าหน้าที่ติดต่อกลับ'}`; };
+  const summary = () => {
+    const picked = form.querySelector('input[name=symptom]:checked')?.value;
+    const hasPole = /^T\d{4}$/.test(getPole(pole.value));
+    const hasSymptom = !!picked && (picked !== 'อื่น ๆ' || !!$('#other-symptom').value.trim());
+    const hasContact = $('#contact-type').value === 'none' || !!contact.value.trim();
+    $('#report-summary').textContent = `${getPole(pole.value) || 'ยังไม่ระบุเสา'} · ${picked || 'ยังไม่เลือกอาการ'} · ${$('#contact-type').value === 'none' ? 'ติดตามผ่านลิงก์' : 'ให้เจ้าหน้าที่ติดต่อกลับ'}`;
+    document.querySelectorAll('.report-steps li').forEach((step,index)=>{
+      const complete=[hasPole,hasSymptom,hasPole&&hasSymptom&&hasContact][index];
+      step.dataset.complete=String(complete);
+      step.querySelector('.report-step-marker').textContent=complete?'✓':String(index+1);
+      step.querySelector('[data-progress-state]').textContent=complete?'กรอกแล้ว':'ยังไม่ครบ';
+    });
+  };
+  form.addEventListener('input',summary);
   const selectPhoto = async event => {
     const file = event.target.files[0]; if (!file) return;
     const generation = ++photoGeneration; reportPhoto = ''; photoFailed = false; photoPending = true; $('#photo-preview').hidden = true; $('#preview-image')?.remove(); $('#photo-name').textContent = 'กำลังย่อรูป…';
-    try { const data = await photoData(file); if (generation !== photoGeneration) return; reportPhoto = data; const image = document.createElement('img'); image.id = 'preview-image'; image.alt = 'รูปจุดที่เสียที่เลือกไว้'; image.src = data; $('#photo-preview').prepend(image); $('#photo-preview').hidden = false; $('#photo-name').textContent = 'รูปพร้อมส่ง · ย่อรูปแล้ว'; }
+    try { const data = await photoData(file); if (generation !== photoGeneration) return; reportPhoto = data; const image = document.createElement('img'); image.id = 'preview-image'; image.alt = 'รูปจุดที่เสียที่เลือกไว้'; image.src = data; $('#photo-preview').prepend(image); $('#photo-preview').hidden = false; $('#photo-name').textContent = 'รูปพร้อมส่ง · ย่อรูปแล้ว'; reveal($('#photo-preview')); }
     catch (error) { if (generation === photoGeneration) { photoFailed = true; $('#photo-name').textContent = error.message + ' หรือกดเอารูปออกเพื่อส่งโดยไม่แนบรูป'; $('#photo-preview').hidden = false; } }
     finally { if (generation === photoGeneration) photoPending = false; }
   };
@@ -138,7 +151,7 @@ async function submitReport(event) {
     const url = `${location.origin}${trackingPath(data.id)}`;
     const saved = rememberReport({ id: data.id, pole });
     history.replaceState({}, '', trackingPath(data.id));
-    shell(`<section class="shell report-result"><div class="success-panel"><div class="success-icon" aria-hidden="true">✓</div><h1 class="page-title" style="margin-top:22px">ส่งเรื่องเรียบร้อย</h1><p class="lead">เราได้รับแจ้งเสา <strong>${esc(pole)}</strong> แล้ว เก็บลิงก์นี้ไว้เพื่อติดตามงาน</p><div class="track-link number">${esc(url)}</div><div class="inline"><a class="button primary" href="${esc(url)}">ดูสถานะเรื่องนี้</a><button class="button outline" id="copy-track" type="button">คัดลอกลิงก์</button>${typeof navigator.share === 'function' ? '<button class="button outline" id="share-track" type="button">แชร์ลิงก์</button>' : ''}</div><p class="small muted">${saved ? 'บันทึกลิงก์ในเรื่องล่าสุดของอุปกรณ์นี้แล้ว เก็บไว้ไม่เกิน 30 วัน หากใช้เครื่องร่วมกับผู้อื่น สามารถล้างประวัติได้ที่หน้าติดตาม' : 'เบราว์เซอร์นี้บันทึกประวัติไม่ได้ กรุณาคัดลอกลิงก์หรือเพิ่มหน้านี้ในบุ๊กมาร์ก'}</p><p class="small muted">หากไม่เห็นสถานะใหม่ทันที โปรดกลับมาตรวจอีกครั้งภายหลัง</p></div></section>`, 'track');
+    shell(`<section class="shell report-result"><div class="success-panel"><div class="success-icon" aria-hidden="true">${icon}</div><h1 class="page-title" style="margin-top:22px">ส่งเรื่องเรียบร้อย</h1><p class="lead">เราได้รับแจ้งเสา <strong>${esc(pole)}</strong> แล้ว เก็บลิงก์นี้ไว้เพื่อติดตามงาน</p><div class="track-link number">${esc(url)}</div><div class="inline"><a class="button primary" href="${esc(url)}">ดูสถานะเรื่องนี้</a><button class="button outline" id="copy-track" type="button">คัดลอกลิงก์</button>${typeof navigator.share === 'function' ? '<button class="button outline" id="share-track" type="button">แชร์ลิงก์</button>' : ''}</div><p class="small muted">${saved ? 'บันทึกลิงก์ในเรื่องล่าสุดของอุปกรณ์นี้แล้ว เก็บไว้ไม่เกิน 30 วัน หากใช้เครื่องร่วมกับผู้อื่น สามารถล้างประวัติได้ที่หน้าติดตาม' : 'เบราว์เซอร์นี้บันทึกประวัติไม่ได้ กรุณาคัดลอกลิงก์หรือเพิ่มหน้านี้ในบุ๊กมาร์ก'}</p><p class="small muted">หากไม่เห็นสถานะใหม่ทันที โปรดกลับมาตรวจอีกครั้งภายหลัง</p></div></section>`, 'track');
     $('#copy-track').addEventListener('click', async () => { try { await navigator.clipboard.writeText(url); toast('คัดลอกลิงก์แล้ว'); } catch { toast('คัดลอกไม่ได้ กรุณาเลือกข้อความลิงก์ด้านบน'); } });
     $('.success-panel .lead').insertAdjacentHTML('afterend', `<p class="report-summary">เลขเรื่อง: <strong class="number">${esc(data.id)}</strong></p>`);
     $('#share-track')?.addEventListener('click', async () => {
@@ -146,7 +159,8 @@ async function submitReport(event) {
       catch (error) { if (error.name !== 'AbortError') toast('แชร์ไม่ได้ กรุณาใช้ปุ่มคัดลอกลิงก์'); }
     });
     document.title = 'ส่งเรื่องเรียบร้อย · LightFix';
-    $('.success-panel h1').tabIndex = -1; $('.success-panel h1').focus();
+    window.scrollTo({top:0,behavior:'instant'});
+    $('.success-panel h1').tabIndex = -1; $('.success-panel h1').focus({preventScroll:true});
   } catch (error) {
     $('#form-error').textContent = error.message;
     button.disabled = false; button.textContent = 'ส่งเรื่องแจ้งไฟเสีย →';
@@ -163,6 +177,7 @@ async function boardPage() {
     try {
       const rows = await api(`/api/reports${pole ? `?pole=${encodeURIComponent(pole)}` : ''}`);
       list.innerHTML = rows.length ? rows.map(r => `<a class="record" href="/track?id=${esc(r.id)}"><span class="record-title number">${esc(r.pole)}</span><span class="record-detail">${esc(r.symptom)} · ${date(r.at)}</span>${badge(r.status)}</a>`).join('') : '<div class="empty">ยังไม่มีเรื่องแจ้งในรายการนี้ <a href="/">แจ้งไฟเสีย</a></div>';
+      revealRecords(list);
     } catch (error) { showError(list, error); }
   }
   $('#board-search').addEventListener('click', load);

@@ -1,6 +1,6 @@
 import { groupReports, readFilters, queueReports } from './workflow.js';
 import { submitStaffForm, readWorkDraft, saveWorkDraft, selectPoleReports } from './staff-forms.js';
-import { $, control, esc, date, badge, api, post, shell, toast, showError, photoData, enhancePasswordFields } from './shared.js';
+import { $, control, esc, date, badge, api, post, shell, toast, showError, photoData, enhancePasswordFields, reveal, revealRecords } from './shared.js';
 
 const state = { role: '', tab: 'overview', data: null, selected: new Set() };
 const roleLabel = role => role === 'admin' ? 'เจ้าหน้าที่' : 'ช่างไฟฟ้า';
@@ -97,7 +97,7 @@ function renderWorkspace() {
   const buttons = tabs => tabs.map(([key,label]) => `<button type="button" data-tab="${key}" ${state.tab === key ? 'aria-current="page"' : ''}>${label}</button>`).join('');
   $('#staff-root').innerHTML = `<div class="staff-layout"><aside class="staff-rail" id="staff-rail"><div class="staff-identity"><h2>${roleLabel(state.role)}<span>${esc(data.user.name)}</span></h2><button id="logout" class="button ghost small" type="button">ออกจากระบบ</button></div><label class="staff-nav-label" for="staff-view">หน้าทำงาน</label><select id="staff-view" class="staff-view-select"><optgroup label="งานหลัก">${options(primary)}</optgroup><optgroup label="ข้อมูลเพิ่มเติม">${options(secondary)}</optgroup></select><nav aria-label="เมนูพื้นที่ทำงาน">${buttons(primary)}<details class="staff-more" ${secondary.some(([key])=>key===state.tab) ? 'open' : ''}><summary>ข้อมูลเพิ่มเติม</summary>${buttons(secondary)}</details></nav></aside><div class="staff-main"><div id="staff-content"></div></div></div><nav class="mobile-work-nav" aria-label="ทางลัดพื้นที่ทำงาน">${buttons(primary.slice(0,3))}<button type="button" data-staff-menu aria-controls="staff-rail" aria-expanded="false">เพิ่มเติม</button></nav><dialog class="dialog" id="task-dialog" aria-labelledby="dialog-title"></dialog>`;
   document.querySelectorAll('[data-tab]').forEach(button => button.addEventListener('click', () => navigateTab(button.dataset.tab)));
-  $('[data-staff-menu]').addEventListener('click', event => { const rail = $('#staff-rail'), open = rail.classList.toggle('mobile-open'); event.currentTarget.setAttribute('aria-expanded', String(open)); if (open) $('#staff-view').focus(); });
+  $('[data-staff-menu]').addEventListener('click', event => { const rail = $('#staff-rail'), open = rail.classList.toggle('mobile-open'); event.currentTarget.setAttribute('aria-expanded', String(open)); if (open) { $('#staff-view').focus(); reveal(rail,'sheet'); } });
   $('#staff-rail').addEventListener('keydown', event => { if (event.key === 'Escape') { $('#staff-rail').classList.remove('mobile-open'); $('[data-staff-menu]').setAttribute('aria-expanded','false'); $('[data-staff-menu]').focus(); } });
   $('#staff-view').addEventListener('change', event => navigateTab(event.currentTarget.value));
   $('#logout').addEventListener('click', async () => {
@@ -126,10 +126,12 @@ function enhanceTables(root = $('#staff-content')) {
 }
 function content(html) {
   $('#staff-content').innerHTML = html; enhanceTables(); bindWorkActions();
+  revealRecords($('#staff-content'));
   $('#staff-content [data-queue]')?.addEventListener('click', () => { state.reportStatus = 'open'; state.reportQuery = ''; saveFilters(); navigateTab('reports'); });
 }
 function dialog(html) {
   const target = $('#task-dialog'); target.innerHTML = html; target.showModal();
+  reveal(target,'sheet');
   const close = event => {
     if (target.querySelector('form[data-preparing="true"]')) { event?.preventDefault(); toast('กำลังเตรียมรูป รอสักครู่ก่อนกลับ'); return; }
     if (event?.type !== 'cancel') target.close();

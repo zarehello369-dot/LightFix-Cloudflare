@@ -132,7 +132,7 @@ Below 900px, the deep teal header is compact and the public and staff areas use 
 
 ## Elevation & Depth
 
-Tonal layering and borders organize resting content. The shared shadow token is `0 12px 32px rgba(20,63,70,.12)`; menu, toast, hover, and dialog treatments carry transient depth. The bottom bar casts a soft upward shadow; the staff rail is a bordered white panel at desktop width. Reduced-motion preference removes transitions and animation.
+Tonal layering and borders organize resting content. The shared shadow token is `0 12px 32px rgba(20,63,70,.12)`; menu, toast, hover, and dialog treatments carry transient depth. The bottom bar casts a soft upward shadow; the staff rail is a bordered white panel at desktop width. Reduced-motion preference removes spatial movement while preserving visible state and a static loading marker.
 
 ## Shapes
 
@@ -151,6 +151,12 @@ White 16px panels sit on the pale ground. Pole cards lead with the pole number, 
 ### Navigation
 
 The deep teal header contains the yellow outline bulb, separate Urbanist wordmark, yellow role label and menu at narrow widths. Public and staff fixed bottom navigation expose the current destination with soft yellow. At 900px, header links and the staff rail replace those bars. Route help uses a dark teal panel with yellow step circles.
+
+### Motion and feedback
+
+The focal moment is a signal becoming a report: the three report information markers fill as the user supplies the required fields; after a committed submission, the outline bulb draws and lights once over 620ms. These markers describe supplied information, not separate wizard pages or server validation. Submission and focus never wait for an animation.
+
+Menus and protected work dialogs arrive over 260ms with a small upward movement and clipped opening. Pole and report lists animate at most six records, with a maximum 120ms stagger regardless of workspace size. Controls respond in 140–220ms. Interrupted Web Animations are canceled before replay; content is visible without animation support. Reduced motion skips spatial and stroke animation, retains completed markers and the success bulb, and replaces the loading spinner with a static dot. No decorative loop runs on idle screens.
 
 ## Do's and Don'ts
 
