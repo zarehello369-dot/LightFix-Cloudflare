@@ -308,6 +308,8 @@ body{background:var(--page)}
 .site-header .shell{position:relative;min-height:70px;height:auto;gap:6px;background:var(--deep);transition:width 320ms var(--motion-ease),transform 320ms var(--motion-ease),border-radius 320ms var(--motion-ease),box-shadow 320ms var(--motion-ease)}
 .site-header.is-scrolled{background:transparent}
 .site-header.is-scrolled>.shell{width:min(calc(100% - 24px),1160px);transform:translateY(12px);border-radius:16px;box-shadow:0 12px 30px rgba(7,30,34,.22)}
+.site-header.is-scrolled.menu-open>.shell{border-radius:16px 16px 0 0;box-shadow:none}
+.site-header.is-scrolled.menu-open .site-nav{box-shadow:0 12px 30px rgba(7,30,34,.22)}
 .site-header.is-scrolled .site-nav.open{border-radius:0 0 16px 16px}
 .brand{width:44px;height:48px;color:var(--gold)}
 .brand:hover{background:var(--deep-hover)}

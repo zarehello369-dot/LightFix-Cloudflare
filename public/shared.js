@@ -72,6 +72,7 @@ export function shell(content, current = '') {
   headerScrollListener();
   $('.menu-toggle')?.addEventListener('click', event => {
     const open = $('#site-nav').classList.toggle('open');
+    header.classList.toggle('menu-open', open);
     event.currentTarget.setAttribute('aria-expanded', String(open));
     event.currentTarget.setAttribute('aria-label', open ? 'ปิดเมนู' : 'เปิดเมนู');
   });
