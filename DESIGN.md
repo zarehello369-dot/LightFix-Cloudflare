@@ -130,7 +130,7 @@ Preload the regular and bold Thai faces and the Urbanist wordmark. Font faces us
 
 The shell tops out at 1200px. Side gutters are 16px on phones, 24px from 640px, and 28px from 900px. The public report starts directly on the page ground without a large enclosing white form card. Pole input precedes symptom choices; its primary submit button fills the phone width.
 
-Below 900px, the deep teal header is compact and the public and staff areas use fixed, white bottom navigation with safe-area padding. Staff navigation opens as an overlay with direct buttons grouped by task; it has no native view select. Below 640px, form selects present a short choice sheet while retaining the native select as the form value. At 640px, report fields and supporting details gain columns, the submit button returns to intrinsic width, and the three metrics align in one row. From 768px through 899px, the public report and help form a two-column layout and staff work cards form a two-column grid. At 900px, header links become inline, bottom navigation disappears, the public route/help panel sits beside the form, and a 220px sticky staff rail appears. From 1100px, conventional staff table rows replace labeled cards and work cards use two columns.
+Below 900px, the deep teal header is compact and its menu contains public routes and, after staff login, the workspace tabs and sign out. The menu scrolls within the viewport when needed. Below 640px, form selects present a short choice sheet while retaining the native select as the form value. At 640px, report fields and supporting details gain columns, the submit button returns to intrinsic width, and the three metrics align in one row. From 768px through 899px, the public report and help form a two-column layout and staff work cards form a two-column grid. At 900px, header links become inline, the public route/help panel sits beside the form, and a 220px sticky staff rail appears. From 1100px, conventional staff table rows replace labeled cards and work cards use two columns.
 
 ## Elevation & Depth
 
@@ -152,7 +152,7 @@ White 16px panels sit on the pale ground. Pole cards lead with the pole number, 
 
 ### Navigation
 
-The deep teal header contains the yellow outline bulb, separate Urbanist wordmark and menu at narrow widths. Public and staff fixed bottom navigation expose the current destination with soft yellow. At 900px, header links and the staff rail replace those bars. Route help uses a dark teal panel with yellow step circles.
+The deep teal header contains the yellow outline bulb, separate Urbanist wordmark and menu at narrow widths. The mobile menu holds public routes and staff workspace tabs. At 900px, header links and the staff rail replace the mobile menu. Route help uses a dark teal panel with yellow step circles.
 
 ### Motion and feedback
 

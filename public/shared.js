@@ -64,7 +64,6 @@ export function shell(content, current = '') {
       <a class="nav-cta" href="/admin" ${current === 'admin' ? 'aria-current="page"' : ''}>เจ้าหน้าที่</a>
     </nav></div></header><main id="main">${content}</main>
     <footer class="site-footer"><div class="shell"><span>LightFix · แจ้งไฟถนนเสีย ติดตามงานซ่อม</span><span><a href="/board">ดูความคืบหน้า</a><a href="/technician">พื้นที่ช่างไฟฟ้า</a></span></div></footer>`;
-  if (!staff) $('#app').insertAdjacentHTML('beforeend', `<nav class="mobile-site-nav" aria-label="ทางลัดบนมือถือ"><a href="/" ${current === 'report' ? 'aria-current="page"' : ''}>แจ้งเหตุ</a><a href="/track" ${current === 'track' ? 'aria-current="page"' : ''}>ติดตาม</a><a href="/board" ${current === 'board' ? 'aria-current="page"' : ''}>ความคืบหน้า</a></nav>`);
   if (headerScrollListener) window.removeEventListener('scroll', headerScrollListener);
   const header = $('.site-header');
   headerScrollListener = () => header.classList.toggle('is-scrolled', window.scrollY > 24);

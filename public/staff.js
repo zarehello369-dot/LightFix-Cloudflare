@@ -35,6 +35,8 @@ export async function staffPage(role) {
 }
 
 function loginPage(message = '') {
+  if ($('#site-nav.open')) $('.menu-toggle').click();
+  $('#site-nav .mobile-staff-nav')?.remove();
   $('#staff-root').innerHTML = `<div class="login-wrap"><div class="panel"><h1>เข้าสู่พื้นที่${roleLabel(state.role)}</h1>
     <p class="muted">${state.role === 'admin' ? 'ใช้ชื่อผู้ใช้และรหัสผ่าน LightFix เพื่อจัดการเรื่องแจ้งและงานซ่อม' : 'ใช้ชื่อผู้ใช้ LightFix เพื่อดูงานและอัปเดตการซ่อม'}</p>
     ${message ? `<div class="error-box" role="alert">${esc(message)}</div>` : ''}
@@ -75,6 +77,7 @@ function registerPage() {
 }
 
 function changePasswordPage(me) {
+  $('#site-nav .mobile-staff-nav')?.remove();
   $('#staff-root').innerHTML = `<div class="login-wrap"><div class="panel"><h1>ตั้งรหัสผ่านใหม่</h1><p class="muted">บัญชี ${esc(me.username)} ใช้รหัสชั่วคราวอยู่ กรุณาตั้งรหัสของคุณก่อนเริ่มงาน</p>
     <form id="change-form"><div class="field"><label for="new-password">รหัสผ่านใหม่</label><input class="input" id="new-password" name="password" type="password" minlength="12" maxlength="200" required autocomplete="new-password"></div>
       <div class="field"><label for="confirm-password">ยืนยันรหัสผ่าน</label><input class="input" id="confirm-password" name="confirm" type="password" minlength="12" required autocomplete="new-password"></div>
@@ -105,22 +108,19 @@ function renderWorkspace() {
   const primary = admin ? [['overview','งานรอ'],['reports','คิวงาน'],['jobs','กำลังซ่อม'],['messages','ข้อความ']] : [['mywork','งานของฉัน'],['reports','คิวงานที่รับได้'],['messages','ข้อความ']];
   const secondary = admin ? [['poles','ข้อมูลเสา'],['users','บัญชีผู้ใช้'],['history','ประวัติซ่อม']] : [['poles','ข้อมูลเสา'],['history','ประวัติซ่อม']];
   const buttons = tabs => tabs.map(([key,label]) => `<button type="button" data-tab="${key}" ${state.tab === key ? 'aria-current="page"' : ''}>${label}</button>`).join('');
-  $('#staff-root').innerHTML = `<div class="staff-layout"><aside class="staff-rail" id="staff-rail"><div class="staff-identity"><h2>${roleLabel(state.role)}<span>${esc(data.user.name)}</span></h2><button id="logout" class="button ghost small" type="button">ออกจากระบบ</button></div><nav class="staff-rail-links" aria-label="เมนูพื้นที่ทำงาน"><div class="staff-nav-group"><h3>งานหลัก</h3>${buttons(primary)}</div><div class="staff-nav-group"><h3>ข้อมูลเพิ่มเติม</h3>${buttons(secondary)}</div></nav></aside><div class="staff-main"><div id="staff-content"></div></div></div><button class="staff-menu-scrim" type="button" aria-label="ปิดเมนู" hidden></button><nav class="mobile-work-nav" aria-label="ทางลัดพื้นที่ทำงาน">${buttons(primary.slice(0,3))}<button type="button" data-staff-menu aria-controls="staff-rail" aria-expanded="false">เพิ่มเติม</button></nav><dialog class="dialog" id="task-dialog" aria-labelledby="dialog-title"></dialog>`;
-  document.querySelectorAll('[data-tab]').forEach(button => button.addEventListener('click', () => navigateTab(button.dataset.tab)));
-  const closeMenu = () => { $('#staff-rail').classList.remove('mobile-open'); $('.staff-menu-scrim').hidden = true; $('[data-staff-menu]').setAttribute('aria-expanded','false'); $('[data-staff-menu]').focus(); };
-  $('[data-staff-menu]').addEventListener('click', event => { const rail = $('#staff-rail'), open = rail.classList.toggle('mobile-open'); event.currentTarget.setAttribute('aria-expanded', String(open)); $('.staff-menu-scrim').hidden = !open; if (open) rail.querySelector('[aria-current="page"]')?.focus(); });
-  $('.staff-menu-scrim').addEventListener('click', closeMenu);
-  $('#staff-rail').addEventListener('keydown', event => {
-    if (event.key === 'Escape') { closeMenu(); return; }
-    if (event.key !== 'Tab') return;
-    const items = [...$('#staff-rail').querySelectorAll('button:not(:disabled)')];
-    if (event.shiftKey && document.activeElement === items[0]) { event.preventDefault(); items.at(-1).focus(); }
-    else if (!event.shiftKey && document.activeElement === items.at(-1)) { event.preventDefault(); items[0].focus(); }
-  });
-  $('#logout').addEventListener('click', async () => {
+  $('#staff-root').innerHTML = `<div class="staff-layout"><aside class="staff-rail" id="staff-rail"><div class="staff-identity"><h2>${roleLabel(state.role)}<span>${esc(data.user.name)}</span></h2><button id="logout" class="button ghost small" type="button">ออกจากระบบ</button></div><nav class="staff-rail-links" aria-label="เมนูพื้นที่ทำงาน"><div class="staff-nav-group"><h3>งานหลัก</h3>${buttons(primary)}</div><div class="staff-nav-group"><h3>ข้อมูลเพิ่มเติม</h3>${buttons(secondary)}</div></nav></aside><div class="staff-main"><div id="staff-content"></div></div></div><dialog class="dialog" id="task-dialog" aria-labelledby="dialog-title"></dialog>`;
+  $('#site-nav .mobile-staff-nav')?.remove();
+  $('#site-nav').insertAdjacentHTML('beforeend', `<div class="mobile-staff-nav" role="group" aria-label="เมนูพื้นที่${roleLabel(state.role)}"><p>พื้นที่${roleLabel(state.role)}</p>${buttons(primary)}${buttons(secondary)}<button type="button" data-mobile-logout>ออกจากระบบ</button></div>`);
+  document.querySelectorAll('[data-tab]').forEach(button => button.addEventListener('click', () => {
+    if (button.closest('.mobile-staff-nav')) $('.menu-toggle').click();
+    navigateTab(button.dataset.tab);
+  }));
+  const logout = async () => {
     await post(`${base()}/auth/logout`);
     clearAccountDrafts(); loginPage();
-  });
+  };
+  $('#logout').addEventListener('click', logout);
+  $('[data-mobile-logout]').addEventListener('click', logout);
   renderTab();
   focusViewHeading();
 }
