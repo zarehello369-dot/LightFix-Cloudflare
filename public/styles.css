@@ -314,8 +314,7 @@ body{background:var(--page)}
 .brand svg{width:33px;height:33px}
 .site-name{font:800 1.55rem/1 Urbanist,var(--font);letter-spacing:-.035em;text-decoration:none;white-space:nowrap}
 .site-name:hover{text-decoration:underline;text-decoration-color:var(--gold)}
-.area-label{display:inline-flex;align-items:center;min-height:34px;margin-left:auto;padding:5px 11px;border-radius:999px;background:var(--gold);color:var(--ink);font-size:.75rem;font-weight:700;white-space:nowrap}
-.menu-toggle{min-width:48px;min-height:48px;margin-left:4px;padding:7px;border-color:#7e9da0;background:transparent;color:#fff}
+.menu-toggle{min-width:48px;min-height:48px;margin-left:auto;padding:7px;border-color:#7e9da0;background:transparent;color:#fff}
 .menu-toggle:hover{background:var(--deep-hover)}
 
 .site-nav{top:69px;background:var(--deep);border-color:#55757a;box-shadow:0 16px 28px rgba(20,46,50,.22)}
@@ -411,7 +410,7 @@ body[data-area=public] #app,body[data-area=staff] #app{padding-bottom:calc(64px 
 @media(min-width:900px){
   .site-header .shell{height:76px}.site-name{font-size:1.75rem;margin-right:0}
   .site-header.is-scrolled>.shell{width:min(calc(100% - 40px),1160px);transform:translateY(18px)}
-  .area-label{margin-left:12px}.site-nav{margin-left:auto;background:transparent;box-shadow:none}
+  .site-nav{margin-left:auto;background:transparent;box-shadow:none}
   .mobile-site-nav,.mobile-work-nav{display:none}
   body[data-area=public] #app,body[data-area=staff] #app{padding-bottom:0}
   #toast{bottom:16px}
@@ -426,7 +425,7 @@ body[data-area=public] #app,body[data-area=staff] #app{padding-bottom:calc(64px 
   .work-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 @media(max-width:390px){
-  .site-name{font-size:1.38rem}.area-label{padding-inline:8px;font-size:.7rem}
+  .site-name{font-size:1.38rem}
   .report-steps{padding-inline:9px}.report-steps li{font-size:.75rem}
   .report-steps li+li:before{margin-inline:7px}
   .mobile-work-nav button{font-size:.7rem}

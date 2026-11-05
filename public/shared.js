@@ -52,11 +52,9 @@ export function shell(content, current = '') {
   installMotion();
   const staff = current === 'admin' || current === 'technician';
   document.body.dataset.area = staff ? 'staff' : 'public';
-  const areaLabel = current === 'admin' ? 'เจ้าหน้าที่' : current === 'technician' ? 'ช่างไฟฟ้า' : 'ประชาชน';
   $('#app').innerHTML = `<header class="site-header"><div class="shell">
     <a class="brand" href="/" aria-label="LightFix หน้าแรก">${icon}</a>
     <a class="site-name" href="/">LightFix</a>
-    <span class="area-label">${areaLabel}</span>
     <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="site-nav" aria-label="เปิดเมนู">เมนู</button>
     <nav id="site-nav" class="site-nav" aria-label="เมนูหลัก">
       <a href="/" ${current === 'report' ? 'aria-current="page"' : ''}>แจ้งไฟเสีย</a>

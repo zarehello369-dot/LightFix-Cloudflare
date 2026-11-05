@@ -152,7 +152,7 @@ White 16px panels sit on the pale ground. Pole cards lead with the pole number, 
 
 ### Navigation
 
-The deep teal header contains the yellow outline bulb, separate Urbanist wordmark, yellow role label and menu at narrow widths. Public and staff fixed bottom navigation expose the current destination with soft yellow. At 900px, header links and the staff rail replace those bars. Route help uses a dark teal panel with yellow step circles.
+The deep teal header contains the yellow outline bulb, separate Urbanist wordmark and menu at narrow widths. Public and staff fixed bottom navigation expose the current destination with soft yellow. At 900px, header links and the staff rail replace those bars. Route help uses a dark teal panel with yellow step circles.
 
 ### Motion and feedback
 
