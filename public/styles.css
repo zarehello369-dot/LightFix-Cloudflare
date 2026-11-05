@@ -33,6 +33,8 @@ button{cursor:pointer}
 a{color:inherit;text-underline-offset:.2em;text-decoration-thickness:1px}
 ::selection{background:var(--gold-soft);color:var(--ink)}
 :focus-visible{outline:3px solid var(--green);outline-offset:3px}
+/* Staff view headings receive script focus for screen readers, but are not tab stops. */
+#staff-root h1[tabindex="-1"]:focus{outline:none}
 input,textarea,select{caret-color:var(--green)}
 *{scrollbar-color:#9caeaa var(--page);scrollbar-width:thin}
 .skip{position:absolute;top:-5rem;left:1rem;z-index:99;background:var(--gold);padding:.5rem 1rem}
@@ -103,9 +105,7 @@ details.manage-menu summary{cursor:pointer;min-height:42px;padding:10px;font-wei
 .button:hover:not(:disabled){box-shadow:0 4px 14px rgba(24,43,45,.10)}
 .button:disabled{opacity:.55;cursor:wait}
 
-.button.dark{color:white}
 .button.outline{background:var(--surface)}
-.button.ghost{background:transparent}
 
 .button.danger{color:white}
 .button.small{min-height:44px;padding:8px 12px;font-size:.88rem}
@@ -121,7 +121,6 @@ details.manage-menu summary{cursor:pointer;min-height:42px;padding:10px;font-wei
 .help-statuses a{display:inline-flex;align-items:center;min-height:44px;color:var(--gold-soft)}
 .help-statuses p{font-size:.875rem;line-height:1.6}
 .recent-section{margin-top:28px}
-.recent-section[hidden]{display:none}
 .recent-section .section-head{align-items:flex-start}
 .recent-section .record-detail{font-size:.875rem}
 .password-control{position:relative}
@@ -247,7 +246,7 @@ details.manage-menu summary{cursor:pointer;min-height:42px;padding:10px;font-wei
   .staff-identity{display:block}.staff-identity .button{width:100%;margin-top:14px}
   .staff-main h1{font-size:2rem}.panel{padding:21px}
 }
-@media(min-width:1100px){.report-hero{gap:32px}.report-main{padding:44px}.route-panel{padding:32px}.staff-layout{grid-template-columns:220px minmax(0,1fr);gap:32px}}
+@media(min-width:1100px){.report-hero{gap:32px}.route-panel{padding:32px}.staff-layout{grid-template-columns:220px minmax(0,1fr);gap:32px}}
 @media(min-width:1100px){
   .panel.table-wrap{padding:21px;border:1px solid var(--line);background:var(--surface)}
   .data-table thead{position:static;display:table-header-group;width:auto;height:auto;margin:0;overflow:visible;clip:auto;white-space:normal}.data-table tbody{display:table-row-group}.data-table tr{display:table-row;padding:0;border:0;border-radius:0;background:transparent}
@@ -329,7 +328,6 @@ body{background:var(--page)}
 .button:active:not(:disabled){transform:scale(.985)}
 .button.primary{border-color:#be9700;background:var(--gold);color:var(--ink)}
 .button.primary:hover:not(:disabled){background:#ffdb4a}
-.button.dark{background:var(--deep)}
 .button.outline{border-color:var(--control-line)}
 .button.ghost:hover{background:#dfece6}
 .button.danger{background:#a1372c}
@@ -361,7 +359,7 @@ body{background:var(--page)}
 .report-summary,.latest-work{background:#dfece7}
 .form-actions{margin-top:21px}
 .form-actions .button.primary{width:100%}
-.report-help>summary,.login-help>summary{border-color:var(--control-line);border-radius:12px}
+.report-help>summary,.login-help>summary{border-radius:12px}
 .route-panel{background:var(--deep)}
 .route-panel p,.route-steps span{color:#d9e9e8}
 .page{padding-top:27px}
@@ -402,7 +400,7 @@ body{background:var(--page)}
 body[data-area=public] #app,body[data-area=staff] #app{padding-bottom:calc(64px + env(safe-area-inset-bottom))}
 #toast{bottom:calc(76px + env(safe-area-inset-bottom))}
 @media(min-width:640px){
-  .report-hero{padding-top:38px}.report-main{padding:0}.page-title{font-size:2.35rem}
+  .report-hero{padding-top:38px}.page-title{font-size:2.35rem}
   .form-actions .button.primary{width:auto;min-width:250px}
   .metric:nth-child(3){display:block;grid-column:auto}.metric:nth-child(3) strong{font-size:1.95rem}
   .metric-row{grid-template-columns:repeat(3,minmax(0,1fr))}
@@ -410,12 +408,10 @@ body[data-area=public] #app,body[data-area=staff] #app{padding-bottom:calc(64px 
 @media(min-width:900px){
   .site-header .shell{height:76px}.site-name{font-size:1.75rem;margin-right:0}
   .area-label{margin-left:12px}.site-nav{margin-left:auto;background:transparent;box-shadow:none}
-  .site-nav a{color:#fff}.site-nav a:hover,.site-nav a[aria-current=page]{background:var(--deep-hover)}
-  .site-nav .nav-cta{color:var(--ink)}
   .mobile-site-nav,.mobile-work-nav{display:none}
   body[data-area=public] #app,body[data-area=staff] #app{padding-bottom:0}
   #toast{bottom:16px}
-  .report-hero{padding-top:48px}.report-main{padding:0}
+  .report-hero{padding-top:48px}
   .staff-layout{grid-template-columns:220px minmax(0,1fr);gap:28px}
   .staff-rail{padding:18px;background:var(--surface);border:1px solid var(--line);border-radius:16px}
 }
