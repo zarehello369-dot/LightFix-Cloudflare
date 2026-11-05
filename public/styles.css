@@ -44,7 +44,7 @@ input,textarea,select{caret-color:var(--green)}
 .muted{color:var(--muted)}.small{font-size:.875rem}.strong{font-weight:700}.number{font-variant-numeric:tabular-nums}
 
 /* Shared header: the bulb is the mark, the name is ordinary interface text. */
-.site-header{position:relative;z-index:20;}
+.site-header{position:sticky;top:0;z-index:20;}
 .site-header .shell{display:flex;align-items:center;}
 .brand{flex:none;display:grid;place-items:center;border-radius:11px;text-decoration:none}
 
@@ -305,7 +305,10 @@ body{background:var(--page)}
 #app{display:flex;flex-direction:column;min-height:100dvh}
 #app>main{flex:1}
 .site-header{background:var(--deep);border-bottom:0;color:#fff}
-.site-header .shell{min-height:70px;height:auto;gap:6px}
+.site-header .shell{position:relative;min-height:70px;height:auto;gap:6px;background:var(--deep);transition:width 320ms var(--motion-ease),transform 320ms var(--motion-ease),border-radius 320ms var(--motion-ease),box-shadow 320ms var(--motion-ease)}
+.site-header.is-scrolled{background:transparent}
+.site-header.is-scrolled>.shell{width:min(calc(100% - 24px),1160px);transform:translateY(12px);border-radius:16px;box-shadow:0 12px 30px rgba(7,30,34,.22)}
+.site-header.is-scrolled .site-nav.open{border-radius:0 0 16px 16px}
 .brand{width:44px;height:48px;color:var(--gold)}
 .brand:hover{background:var(--deep-hover)}
 .brand svg{width:33px;height:33px}
@@ -407,6 +410,7 @@ body[data-area=public] #app,body[data-area=staff] #app{padding-bottom:calc(64px 
 }
 @media(min-width:900px){
   .site-header .shell{height:76px}.site-name{font-size:1.75rem;margin-right:0}
+  .site-header.is-scrolled>.shell{width:min(calc(100% - 40px),1160px);transform:translateY(18px)}
   .area-label{margin-left:12px}.site-nav{margin-left:auto;background:transparent;box-shadow:none}
   .mobile-site-nav,.mobile-work-nav{display:none}
   body[data-area=public] #app,body[data-area=staff] #app{padding-bottom:0}
@@ -526,6 +530,7 @@ details[open]>.route-panel,details[open]>.complaint-detail,details[open]>.draft-
 }
 [data-motion-paused] .loading:before{animation-play-state:paused}
 @media(prefers-reduced-motion:reduce){
+  .site-header>.shell{transition:none}
   *,*:before,*:after{scroll-behavior:auto!important}
   button,.button,.site-nav a,.mobile-site-nav a,.mobile-work-nav button,.upload-button,
   .symptom>span,.input,select,textarea,details>summary,.report-steps li,.report-step-marker,.record,.work-card{
