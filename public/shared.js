@@ -1,5 +1,5 @@
-import { reveal } from './motion.js';
-export { reveal };
+import { reveal, settle, installMotion } from './motion.js';
+export { reveal, settle };
 export const $ = selector => document.querySelector(selector);
 export const control = (form, name) => form.elements.namedItem(name);
 export const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
@@ -48,6 +48,7 @@ export function toast(message) {
 }
 
 export function shell(content, current = '') {
+  installMotion();
   const staff = current === 'admin' || current === 'technician';
   document.body.dataset.area = staff ? 'staff' : 'public';
   const areaLabel = current === 'admin' ? 'เจ้าหน้าที่' : current === 'technician' ? 'ช่างไฟฟ้า' : 'ประชาชน';

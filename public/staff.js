@@ -1,6 +1,6 @@
 import { groupReports, readFilters, queueReports } from './workflow.js';
 import { submitStaffForm, readWorkDraft, saveWorkDraft, selectPoleReports } from './staff-forms.js';
-import { $, control, esc, date, badge, api, post, shell, toast, showError, photoData, enhancePasswordFields } from './shared.js';
+import { $, control, esc, date, badge, api, post, shell, toast, showError, photoData, enhancePasswordFields, settle } from './shared.js';
 
 const state = { role: '', tab: 'overview', data: null, selected: new Set() };
 const roleLabel = role => role === 'admin' ? 'เจ้าหน้าที่' : 'ช่างไฟฟ้า';
@@ -126,6 +126,7 @@ function renderWorkspace() {
 }
 function navigateTab(tab) {
   state.tab = tab; state.selected.clear(); renderWorkspace();
+  settle($('#staff-content h1'));
 }
 
 function renderTab() {

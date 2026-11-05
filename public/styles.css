@@ -258,7 +258,7 @@ details.manage-menu summary{cursor:pointer;min-height:42px;padding:10px;font-wei
   .user-identity{justify-items:start;text-align:left}.actions .button{flex:0 0 auto}
 }
 @media(max-width:390px){.menu-toggle{min-width:52px;padding-inline:8px}.metric span{font-size:.72rem}}
-@media(prefers-reduced-motion:reduce){*,*:before,*:after{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
 .upload{display:flex;flex-wrap:wrap}.upload .upload-name,.upload .field-note{width:100%}#preview-image:not([src]){display:none}
 .upload:has(#photo:focus-visible) label[for=photo],.upload:has(#camera:focus-visible) label[for=camera]{outline:3px solid var(--green);outline-offset:3px}
 .photo-pair img{height:auto;aspect-ratio:auto;object-fit:contain}.photo-pair figure a{display:block}.photo-pair figure a:focus-visible{outline-offset:4px}
@@ -485,4 +485,60 @@ details[open]>summary{color:var(--deep)}
   .report-step-marker{box-shadow:none}
   .success-icon{background:var(--gold-soft)}
   .loading:before{content:'';display:inline-block;width:8px;height:8px;margin-right:10px;border-radius:50%;background:var(--deep)}
+}
+
+/* Local continuity: controls respond immediately; work and text never wait for motion. */
+button,.site-nav a,.mobile-site-nav a,.upload-button{
+  transition:background-color var(--motion-fast),border-color var(--motion-fast),color var(--motion-fast),transform var(--motion-fast) var(--motion-ease);
+}
+.mobile-picker-trigger:after{transition:transform var(--motion-state) var(--motion-ease)}
+.mobile-picker-trigger:active:not(:disabled),.mobile-picker-options button:active:not(:disabled),.site-nav a:active,.password-toggle:active{transform:scale(.98)}
+.record,.work-card{transition:border-color var(--motion-fast),box-shadow var(--motion-state)}
+.password-toggle svg{transition:transform var(--motion-fast) var(--motion-ease)}
+.password-toggle[aria-pressed=true] svg{transform:scale(.94)}
+details[open]>.route-panel,details[open]>.complaint-detail,details[open]>.draft-status,
+.login-help[open]>p,.login-help[open]>a,.manage-menu[open]>.button{animation:detail-unfold 200ms var(--motion-ease)}
+@keyframes detail-unfold{from{opacity:.85;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+
+/* Discrete display/overlay transitions keep native focus, Escape and dialog semantics. */
+@supports(transition-behavior:allow-discrete){
+  dialog.dialog,dialog.mobile-picker-dialog{
+    opacity:0;transform:translateY(14px) scale(.99);
+    transition:opacity 160ms var(--motion-ease),transform 220ms var(--motion-ease),display 220ms allow-discrete,overlay 220ms allow-discrete;
+  }
+  dialog.dialog[open],dialog.mobile-picker-dialog[open]{opacity:1;transform:translateY(0) scale(1)}
+  dialog.dialog::backdrop,dialog.mobile-picker-dialog::backdrop{
+    opacity:0;transition:opacity 160ms var(--motion-ease),display 220ms allow-discrete,overlay 220ms allow-discrete;
+  }
+  dialog.dialog[open]::backdrop,dialog.mobile-picker-dialog[open]::backdrop{opacity:1}
+  @starting-style{
+    dialog.dialog[open],dialog.mobile-picker-dialog[open]{opacity:0;transform:translateY(14px) scale(.99)}
+    dialog.dialog[open]::backdrop,dialog.mobile-picker-dialog[open]::backdrop{opacity:0}
+  }
+  @media(max-width:899px){
+    .site-nav,.staff-rail{
+      opacity:0;transform:translateY(-6px);pointer-events:none;
+      transition:opacity 140ms var(--motion-ease),transform 200ms var(--motion-ease),display 200ms allow-discrete;
+    }
+    .staff-rail{transform:translateY(12px)}
+    .site-nav.open,.staff-rail.mobile-open{opacity:1;transform:translateY(0);pointer-events:auto}
+    @starting-style{
+      .site-nav.open{opacity:0;transform:translateY(-6px)}
+      .staff-rail.mobile-open{opacity:0;transform:translateY(12px)}
+    }
+  }
+}
+[data-motion-paused] .loading:before{animation-play-state:paused}
+@media(prefers-reduced-motion:reduce){
+  *,*:before,*:after{scroll-behavior:auto!important}
+  button,.button,.site-nav a,.mobile-site-nav a,.mobile-work-nav button,.upload-button,
+  .symptom>span,.input,select,textarea,details>summary,.report-steps li,.report-step-marker,.record,.work-card{
+    transition:background-color 100ms linear,border-color 100ms linear,color 100ms linear;
+  }
+  .button:active:not(:disabled),button:active:not(:disabled),.site-nav a:active,.mobile-site-nav a:active,
+  .upload-button:active,.mobile-work-nav button:active,.symptom-check,.password-toggle svg{transform:none!important}
+  .success-icon,.success-icon svg path,.loading:before,details[open]>.route-panel,
+  details[open]>.complaint-detail,details[open]>.draft-status,.login-help[open]>p,.login-help[open]>a,.manage-menu[open]>.button{animation:none}
+  dialog.dialog,dialog.mobile-picker-dialog,.site-nav,.staff-rail,dialog.dialog::backdrop,dialog.mobile-picker-dialog::backdrop{transition:none;transform:none}
+  #toast{transform:none;transition:opacity 100ms linear}
 }
