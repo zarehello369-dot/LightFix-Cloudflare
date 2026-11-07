@@ -75,3 +75,7 @@ The workflow centers on the pole number: a resident enters it when reporting, an
 ## Pole details — 7 November 2026
 
 Both authenticated roles can open a pole dossier from the pole-number button in the pole registry. It loads independent per-pole totals on demand, not from the workspace500-record snapshot: completed repairs, waiting/working complaints, all complaints including cancellations, latest report/repair and average start-to-completion duration. The screen ranks non-canceled complaint symptoms and completed repair causes, shows registry metadata, technician/public notes and before/after photo links when available. Repair and complaint histories are each paged20 rows at a time. Counts describe retained records, not a lifetime estimate. The endpoint excludes reporter contacts and requires an active staff session.
+
+## Pole browser presentation — 7 November 2026
+
+The pole registry now opens a docked reader beside a searchable list at desktop widths. Below1100px the selected pole uses the full content area with a back-to-list control; the query and list position are retained. Summary, repair-history and complaint tabs share the existing authenticated dossier API. List rows use separate yellow pending-complaint and mint completed-repair counts, updated after loading the selected pole. Lists are rendered50 rows at a time from the loaded registry; backend workspace limits remain unchanged. Admin edit/delete actions remain permission scoped. No modal is used for reading; edit/delete dialogs retain their existing validation and behavior.

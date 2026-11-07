@@ -359,53 +359,67 @@ function finishJob(jobId) {
 
 function poles() {
   const rows = state.data.poles;
-  content(`<h1>ข้อมูลเสา</h1><p class="muted">ดูตำแหน่งและจำนวนงานของเสา${state.role === 'admin' ? ' เพิ่ม แก้ไข ปิดใช้ หรือลบเสาที่ยังไม่มีประวัติ' : ''}</p>
-    <div class="toolbar"><label class="eyeless" for="pole-filter">ค้นหาหมายเลขเสา</label><input class="input" id="pole-filter" placeholder="ค้นหาเสา"><span class="small muted">${rows.length} เสา</span>${state.role === 'admin' ? '<button class="button primary" id="new-pole">เพิ่มเสา</button>' : ''}</div>
-    <div class="panel table-wrap"><table class="data-table"><thead><tr><th>หมายเลข</th><th>ตำแหน่ง</th><th>เรื่องเปิด</th><th>ซ่อมแล้ว</th>${state.role === 'admin' ? '<th>จัดการ</th>' : ''}</tr></thead><tbody id="pole-rows"></tbody></table></div>`);
+  let listPage = 1, selected = '', detailTab = 'summary', requestVersion = 0, detailData, listScroll = 0;
+  content(`<div class="pole-browser"><section class="pole-master" aria-labelledby="poles-title"><h1 id="poles-title">ข้อมูลเสา</h1><p class="muted">เลือกเสาเพื่อดูสรุปและประวัติการซ่อม</p>
+    <div class="pole-search"><label class="eyeless" for="pole-filter">ค้นหาเลขเสาหรือตำแหน่ง</label><input class="input" id="pole-filter" placeholder="ค้นหาเลขเสาหรือตำแหน่ง">${state.role === 'admin' ? '<button class="button primary" id="new-pole">เพิ่มเสา</button>' : ''}</div>
+    <p class="small muted" id="pole-count"></p><div class="pole-list" id="pole-rows" aria-label="รายการเสา"></div><div class="pole-pagination" id="pole-list-pages"></div></section>
+    <section class="pole-reader" aria-label="รายละเอียดเสา"><div class="empty">เลือกเสาจากรายการเพื่อดูข้อมูล</div></section></div>`);
+  const root = $('#staff-content .pole-browser'), reader = root.querySelector('.pole-reader');
   const draw = () => {
-    const filter = $('#pole-filter').value.trim().toUpperCase();
-    $('#pole-rows').innerHTML = rows.filter(p => !filter || p.pole.includes(filter) || p.location?.includes(filter)).map(p => `<tr><td class="number"><button class="pole-detail-link" data-pole-detail="${esc(p.pole)}" aria-label="ดูรายละเอียดเสา ${esc(p.pole)}">${esc(p.pole)} <span class="small">ดูข้อมูล</span></button>${p.active ? '' : '<br><span class="small muted">ปิดใช้</span>'}</td><td>${esc(p.location || 'ไม่ระบุตำแหน่ง')}</td><td class="number">${p.open_count}</td><td class="number">${p.repair_count}</td>${state.role === 'admin' ? `<td><div class="actions"><button class="button outline small" data-edit-pole="${esc(p.pole)}">แก้ไข</button>${p.total_report_count || p.job_count ? '<span class="small muted">มีประวัติ · ปิดใช้ในหน้าแก้ไข</span>' : `<details class="manage-menu"><summary>เพิ่มเติม</summary><button class="button danger small" data-delete-pole="${esc(p.pole)}">ลบเสา</button></details>`}</div></td>` : ''}</tr>`).join('') || `<tr><td colspan="${state.role === 'admin' ? 5 : 4}" class="muted">ไม่พบเสาที่ค้นหา</td></tr>`;
-    enhanceTables();
-    document.querySelectorAll('[data-pole-detail]').forEach(b => b.addEventListener('click', () => poleDetail(b.dataset.poleDetail)));
-    document.querySelectorAll('[data-edit-pole]').forEach(b => b.addEventListener('click', () => poleForm(rows.find(p => p.pole === b.dataset.editPole))));
-    document.querySelectorAll('[data-delete-pole]').forEach(b => b.addEventListener('click', () => deletePole(rows.find(p => p.pole === b.dataset.deletePole))));
+    const filter = $('#pole-filter').value.trim().toLocaleLowerCase('th');
+    const filtered = rows.filter(p => !filter || `${p.pole} ${p.location || ''}`.toLocaleLowerCase('th').includes(filter));
+    listPage = Math.min(listPage, Math.max(1,Math.ceil(filtered.length/50)));
+    $('#pole-count').textContent = `${filtered.length} เสา${filter ? ` จากทั้งหมด ${rows.length} เสา` : ''}`;
+    $('#pole-rows').innerHTML = filtered.slice((listPage-1)*50,listPage*50).map(p => `<button type="button" class="pole-row ${selected === p.pole ? 'selected' : ''}" data-pole-detail="${esc(p.pole)}" aria-label="ดูรายละเอียดเสา ${esc(p.pole)}" ${selected === p.pole ? 'aria-current="true"' : ''}><span class="pole-row-identity"><strong class="number">${esc(p.pole)}</strong><span>${esc(p.location || 'ไม่ระบุตำแหน่ง')}</span>${p.active ? '' : '<small>ปิดใช้งาน</small>'}</span><span class="pole-row-counts"><span class="pole-count-open">ค้าง <b>${p.open_count}</b> เรื่อง</span><span class="pole-count-done">ซ่อมแล้ว <b>${p.repair_count}</b> ครั้ง</span></span><span class="pole-chevron" aria-hidden="true">›</span></button>`).join('') || '<p class="empty">ไม่พบเสาที่ค้นหา ลองเปลี่ยนคำค้น</p>';
+    $('#pole-list-pages').innerHTML = filtered.length > 50 ? `<button class="button outline small" data-list-page="${listPage-1}" ${listPage===1?'disabled':''}>ก่อนหน้า</button><span>หน้า ${listPage} / ${Math.ceil(filtered.length/50)}</span><button class="button outline small" data-list-page="${listPage+1}" ${listPage*50>=filtered.length?'disabled':''}>ถัดไป</button>` : '';
+    root.querySelectorAll('[data-list-page]').forEach(b=>b.addEventListener('click',()=>{listPage=Number(b.dataset.listPage);draw();}));
+    root.querySelectorAll('[data-pole-detail]').forEach(b=>b.addEventListener('click',()=>{listScroll=window.scrollY;selected=b.dataset.poleDetail;detailTab='summary';detailData=null;root.classList.add('show-detail');draw();load(1,true);}));
   };
-  $('#pole-filter').value = state.poleQuery || ''; $('#pole-filter').addEventListener('input', () => { state.poleQuery = $('#pole-filter').value; saveFilters(); draw(); }); draw();
-  $('#new-pole')?.addEventListener('click', () => poleForm());
-}
-async function poleDetail(pole) {
-  const target = dialog(`<div class="pole-detail-head"><h2 id="dialog-title">ข้อมูลเสา ${esc(pole)}</h2><button class="button outline small" data-close>ปิด</button></div><div id="pole-detail-body" class="loading" role="status">กำลังโหลดข้อมูลเสา…</div>`);
-  target.classList.add('pole-detail-dialog');
-  target.addEventListener('close', () => target.classList.remove('pole-detail-dialog'), {once:true});
-  let loadVersion = 0;
-  const load = async (page = 1) => {
-    const version = ++loadVersion;
-    const body = target.querySelector('#pole-detail-body');
-    body.setAttribute('aria-busy', 'true');
-    try {
-      const d = await api(`/api/staff/poles/${encodeURIComponent(pole)}?page=${page}`);
-      if (version !== loadVersion || !target.open || !target.classList.contains('pole-detail-dialog') || !body.isConnected) return;
-      const p = d.pole, r = d.reports, j = d.repairs;
-      const duration = j.average_duration_ms == null ? 'ยังไม่มีข้อมูล' : j.average_duration_ms < 3600000 ? `${Math.max(1,Math.round(j.average_duration_ms/60000))} นาที` : `${(j.average_duration_ms/3600000).toFixed(1)} ชั่วโมง`;
-      const rank = list => list.length ? `<ol class="pole-ranking">${list.map(x=>`<li><span>${esc(x.label)}</span><strong>${x.count} ครั้ง</strong></li>`).join('')}</ol>` : '<p class="muted">ยังไม่มีข้อมูล</p>';
-      body.classList.remove('loading');
-      body.innerHTML = `<p class="lead">${esc(p.location || 'ยังไม่ระบุตำแหน่ง')} · ${p.active ? 'เปิดใช้งาน' : 'ปิดใช้งาน'}</p>
-        <p class="small muted">นับจากข้อมูลที่ยังเก็บในระบบนี้ เรื่องแจ้งหลายเรื่องอาจรวมเป็นงานซ่อมเดียว · ยกเลิก ${r.canceled || 0} เรื่อง</p>
-        <dl class="pole-facts"><div><dt>ซ่อมเสร็จ</dt><dd>${j.completed} ครั้ง</dd></div><div><dt>เรื่องรอรับ</dt><dd>${r.waiting} เรื่อง</dd></div><div><dt>เรื่องกำลังซ่อม</dt><dd>${r.working} เรื่อง</dd></div><div><dt>เรื่องแจ้งทั้งหมด</dt><dd>${r.total} เรื่อง</dd></div></dl>
-        <dl class="pole-registry"><div><dt>ซ่อมเสร็จล่าสุด</dt><dd>${j.last_completed_at ? date(j.last_completed_at) : 'ยังไม่มีประวัติ'}</dd></div><div><dt>แจ้งล่าสุด</dt><dd>${r.last_at ? date(r.last_at) : 'ยังไม่มีเรื่องแจ้ง'}</dd></div><div><dt>เวลาซ่อมเฉลี่ย</dt><dd>${duration}<small>จากเริ่มงานถึงบันทึกซ่อมเสร็จ</small></dd></div><div><dt>รุ่นโคม / ติดตั้ง</dt><dd>${esc(p.model || 'ไม่ระบุรุ่น')} / ${esc(p.installed_at || 'ไม่ระบุวันติดตั้ง')}</dd></div><div><dt>พิกัด</dt><dd>${p.lat != null && p.lng != null ? `${esc(p.lat)}, ${esc(p.lng)}` : 'ยังไม่ระบุพิกัด'}</dd></div><div><dt>หมายเหตุทะเบียนเสา</dt><dd>${esc(p.notes || 'ไม่มีหมายเหตุ')}</dd></div></dl>
-        <div class="pole-insights"><section><h3>อาการที่แจ้งบ่อย</h3><p class="small muted">นับเรื่องที่ไม่ถูกยกเลิก อันดับเท่ากันถือว่าพบบ่อยเท่ากัน</p>${rank(d.symptoms)}</section><section><h3>สาเหตุที่ซ่อมพบบ่อย</h3><p class="small muted">นับงานซ่อมเสร็จที่มีการบันทึกสาเหตุ</p>${rank(d.causes)}</section></div>
-        <h3>ประวัติงานซ่อม · ${j.total} งาน</h3>${d.jobs.length ? d.jobs.map(job=>`<article class="pole-history-item"><div class="inline"><strong>${job.status === 2 ? 'ซ่อมเสร็จ' : job.status === 1 ? 'กำลังซ่อม' : 'ยกเลิกงาน'}</strong><span>${esc(job.technician_name || 'ไม่ระบุช่าง')}</span></div><p class="small">เริ่ม ${date(job.started_at)}${job.completed_at ? ` · เสร็จ ${date(job.completed_at)}` : ''}</p><p><strong>สาเหตุ:</strong> ${esc(job.cause || 'ยังไม่บันทึก')} ${esc(job.cause_detail)}</p>${job.public_note ? `<p class="pole-note">${esc(job.public_note)}</p>` : ''}<div class="actions">${job.before_report_id ? `<a class="button outline small" href="/media/${esc(job.before_report_id)}/before" target="_blank" rel="noopener">รูปก่อนซ่อม ↗</a>` : ''}${job.has_after && job.report_id ? `<a class="button outline small" href="/media/${esc(job.report_id)}/after" target="_blank" rel="noopener">รูปหลังซ่อม ↗</a>` : ''}</div></article>`).join('') : '<p class="empty">ยังไม่มีงานซ่อมในหน้านี้</p>'}
-        <h3>เรื่องแจ้ง · ${r.total} เรื่อง</h3>${d.complaints.length ? d.complaints.map(report=>`<article class="pole-history-item"><div class="inline">${badge(report.status)}<span class="small">${date(report.created_at)}</span></div><p>${esc(report.symptom)}</p><a href="/track?id=${esc(report.id)}" target="_blank" rel="noopener">ดูรายละเอียดเรื่อง ↗</a></article>`).join('') : '<p class="empty">ยังไม่มีเรื่องแจ้งในหน้านี้</p>'}
-        <div class="pole-pagination"><button class="button outline small" data-page="${d.page-1}" ${d.page===1?'disabled':''}>ก่อนหน้า</button><span>หน้า ${d.page} / ${Math.max(1,Math.ceil(Math.max(r.total,j.total)/d.pageSize))}</span><button class="button outline small" data-page="${d.page+1}" ${d.page*d.pageSize>=Math.max(r.total,j.total)?'disabled':''}>ถัดไป</button></div>`;
-      body.querySelectorAll('[data-page]').forEach(b=>b.addEventListener('click',()=>{target.scrollTop=0;load(Number(b.dataset.page));}));
-    } catch(error) {
-      if (version !== loadVersion || !body.isConnected) return;
-      body.classList.remove('loading');
-      body.innerHTML=`<p class="field-error" role="alert">${esc(error.message)}</p><button class="button outline" data-retry>ลองอีกครั้ง</button>`;
-      body.querySelector('[data-retry]').addEventListener('click',()=>load(page));
-    } finally { if (version === loadVersion) body.removeAttribute('aria-busy'); }
+  const close = () => {
+    const previous=selected; requestVersion++;selected='';detailData=null;reader.removeAttribute('aria-busy');root.classList.remove('show-detail');reader.innerHTML='<div class="empty">เลือกเสาจากรายการเพื่อดูข้อมูล</div>';draw();
+    const button=Array.from(root.querySelectorAll('[data-pole-detail]')).find(b=>b.dataset.poleDetail===previous);button?.focus({preventScroll:true});window.scrollTo({top:listScroll,behavior:'instant'});
   };
-  await load();
+  const rank = (list,unit) => list.length ? `<ol class="pole-ranking">${list.map(x=>`<li><span>${esc(x.label)}</span><strong>${x.count} ${unit}</strong></li>`).join('')}</ol>` : '<p class="muted">ยังไม่มีข้อมูล</p>';
+  const render = () => {
+    const d=detailData,p=d.pole,r=d.reports,j=d.repairs;
+    const duration=j.average_duration_ms==null?'ยังไม่มีข้อมูล':j.average_duration_ms<3600000?`${Math.max(1,Math.round(j.average_duration_ms/60000))} นาที`:`${(j.average_duration_ms/3600000).toFixed(1)} ชั่วโมง`;
+    let body;
+    if(detailTab==='summary') body=`<dl class="pole-summary-counts"><div><dt>ซ่อมเสร็จ</dt><dd>${j.completed} ครั้ง</dd></div><div><dt>เรื่องค้าง</dt><dd>${r.waiting+r.working} เรื่อง</dd></div></dl>
+      <section><h3>อาการที่แจ้งบ่อย</h3>${rank(d.symptoms,'เรื่อง')}</section><dl class="pole-summary-lines"><div><dt>ซ่อมล่าสุด</dt><dd>${j.last_completed_at?date(j.last_completed_at):'ยังไม่มีประวัติ'}</dd></div><div><dt>แจ้งล่าสุด</dt><dd>${r.last_at?date(r.last_at):'ยังไม่มีเรื่องแจ้ง'}</dd></div><div><dt>เวลาซ่อมเฉลี่ย</dt><dd>${duration}<small>จากเริ่มงานถึงบันทึกซ่อมเสร็จ</small></dd></div><div><dt>เรื่องค้างแยกสถานะ</dt><dd>รอรับ ${r.waiting} · กำลังซ่อม ${r.working}</dd></div></dl>
+      <details class="pole-disclosure"><summary>สาเหตุที่ซ่อมพบบ่อย</summary>${rank(d.causes,'ครั้ง')}</details><details class="pole-disclosure"><summary>ทะเบียนและพิกัด</summary><dl class="pole-registry"><div><dt>สถานะทะเบียน</dt><dd>${p.active?'เปิดใช้งาน':'ปิดใช้งาน'}</dd></div><div><dt>รุ่นโคม / ติดตั้ง</dt><dd>${esc(p.model||'ไม่ระบุรุ่น')} / ${esc(p.installed_at||'ไม่ระบุวันติดตั้ง')}</dd></div><div><dt>พิกัด</dt><dd>${p.lat!=null&&p.lng!=null?`${esc(p.lat)}, ${esc(p.lng)}`:'ยังไม่ระบุพิกัด'}</dd></div><div><dt>หมายเหตุ</dt><dd>${esc(p.notes||'ไม่มีหมายเหตุ')}</dd></div></dl></details>`;
+    else if(detailTab==='repairs') body=`<h3>ประวัติงานซ่อม · ${j.total} งาน</h3>${d.jobs.length?d.jobs.map(job=>`<article class="pole-history-item"><div class="inline"><strong>${job.status===2?'ซ่อมเสร็จ':job.status===1?'กำลังซ่อม':'ยกเลิกงาน'}</strong><span>${esc(job.technician_name||'ไม่ระบุช่าง')}</span></div><p class="small">เริ่ม ${date(job.started_at)}${job.completed_at?` · เสร็จ ${date(job.completed_at)}`:''}</p><p><strong>สาเหตุ:</strong> ${esc(job.cause||'ยังไม่บันทึก')} ${esc(job.cause_detail)}</p>${job.public_note?`<p class="pole-note">${esc(job.public_note)}</p>`:''}<div class="actions">${job.before_report_id?`<a class="button outline small" href="/media/${esc(job.before_report_id)}/before" target="_blank" rel="noopener">รูปก่อนซ่อม ↗</a>`:''}${job.has_after&&job.report_id?`<a class="button outline small" href="/media/${esc(job.report_id)}/after" target="_blank" rel="noopener">รูปหลังซ่อม ↗</a>`:''}</div></article>`).join(''):'<p class="empty">ยังไม่มีงานซ่อมในหน้านี้</p>'}`;
+    else body=`<h3>เรื่องแจ้ง · ${r.total} เรื่อง</h3><p class="small muted">รวมเรื่องที่ยกเลิก ${r.canceled||0} เรื่อง</p>${d.complaints.length?d.complaints.map(report=>`<article class="pole-history-item"><div class="inline">${badge(report.status)}<span class="small">${date(report.created_at)}</span></div><p>${esc(report.symptom)}</p><a href="/track?id=${esc(report.id)}" target="_blank" rel="noopener">ดูรายละเอียดเรื่อง ↗</a></article>`).join(''):'<p class="empty">ยังไม่มีเรื่องแจ้งในหน้านี้</p>'}`;
+    const total=detailTab==='repairs'?j.total:r.total;
+    reader.innerHTML=`<button type="button" class="button ghost small pole-back" data-pole-close>← กลับรายการเสา</button><div class="pole-reader-heading"><div><h2 tabindex="-1" id="pole-reader-title">เสา ${esc(p.pole)}</h2><p>${esc(p.location||'ไม่ระบุตำแหน่ง')}</p></div>${state.role==='admin'?'<button type="button" class="button outline small" data-edit-pole>แก้ไขทะเบียน</button>':''}</div>
+      <div class="pole-reader-tabs" role="group" aria-label="หมวดข้อมูลเสา">${[['summary','สรุป'],['repairs','ประวัติซ่อม'],['reports','เรื่องแจ้ง']].map(([key,label])=>`<button type="button" data-pole-tab="${key}" aria-pressed="${detailTab===key}">${label}</button>`).join('')}</div>
+      <p class="small muted">สถิติจากข้อมูลที่เก็บในระบบ เรื่องแจ้งหลายเรื่องอาจรวมเป็นงานซ่อมเดียว</p><div class="pole-tab-content">${body}</div>
+      ${detailTab!=='summary'&&total>d.pageSize?`<div class="pole-pagination"><button class="button outline small" data-page="${d.page-1}" ${d.page===1?'disabled':''}>ก่อนหน้า</button><span>หน้า ${d.page} / ${Math.ceil(total/d.pageSize)}</span><button class="button outline small" data-page="${d.page+1}" ${d.page*d.pageSize>=total?'disabled':''}>ถัดไป</button></div>`:''}
+      ${state.role==='admin'&&!p.total_report_count&&!p.job_count&&!r.total&&!j.total?'<details class="pole-disclosure pole-danger"><summary>จัดการเสาที่ไม่มีประวัติ</summary><button class="button danger small" data-delete-pole>ลบเสา</button></details>':''}`;
+    reader.querySelector('[data-pole-close]').addEventListener('click',close);
+    reader.querySelector('[data-edit-pole]')?.addEventListener('click',()=>poleForm(p));
+    reader.querySelector('[data-delete-pole]')?.addEventListener('click',()=>deletePole(p));
+    reader.querySelectorAll('[data-pole-tab]').forEach(b=>b.addEventListener('click',()=>{detailTab=b.dataset.poleTab;if(detailData.page!==1)load(1);else{render();reader.querySelector(`[data-pole-tab="${detailTab}"]`).focus({preventScroll:true});}}));
+    reader.querySelectorAll('[data-page]').forEach(b=>b.addEventListener('click',()=>load(Number(b.dataset.page))));
+  };
+  const load = async (page=1,focus=false) => {
+    const version=++requestVersion,pole=selected;
+    reader.setAttribute('aria-busy','true');
+    reader.innerHTML='<button class="button ghost small" data-pole-close>← กลับรายการเสา</button><p class="loading" role="status">กำลังโหลดข้อมูลเสา…</p>';
+    reader.querySelector('[data-pole-close]').addEventListener('click',close);
+    try{
+      const data=await api(`/api/staff/poles/${encodeURIComponent(pole)}?page=${page}`);
+      if(version!==requestVersion||!root.isConnected||selected!==pole)return;
+      detailData=data;
+      const row=rows.find(p=>p.pole===pole);if(row){row.open_count=data.reports.waiting+data.reports.working;row.repair_count=data.repairs.completed;draw();}
+      render();
+      if(focus&&matchMedia('(max-width:1099px)').matches){window.scrollTo({top:0,behavior:'instant'});reader.querySelector('h2').focus({preventScroll:true});}
+      else if(!focus)reader.querySelector(`[data-pole-tab="${detailTab}"]`)?.focus({preventScroll:true});
+    }catch(error){if(version!==requestVersion||!root.isConnected)return;reader.innerHTML=`<button class="button ghost small" data-pole-close>← กลับรายการเสา</button><p class="field-error" role="alert">${esc(error.message)}</p><button class="button outline" data-retry>ลองอีกครั้ง</button>`;reader.querySelector('[data-pole-close]').addEventListener('click',close);reader.querySelector('[data-retry]').addEventListener('click',()=>load(page,focus));}
+    finally{if(version===requestVersion)reader.removeAttribute('aria-busy');}
+  };
+  $('#pole-filter').value=state.poleQuery||'';
+  $('#pole-filter').addEventListener('input',()=>{state.poleQuery=$('#pole-filter').value;listPage=1;saveFilters();draw();});
+  $('#new-pole')?.addEventListener('click',()=>poleForm());draw();
 }
 
 function deletePole(p) {
