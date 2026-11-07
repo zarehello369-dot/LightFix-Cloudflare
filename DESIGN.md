@@ -177,3 +177,7 @@ Page text has one rendered layer. Do not crossfade old and new document snapshot
 - **Don't** return to a white header or a large framed form that delays the first task.
 - **Don't** make mobile data depend on an unlabeled wide table.
 
+
+## Public reporting refinement — 7 November 2026
+
+The approved report surface uses a single form with two-column symptom choices. Four heading badges have pale yellow backgrounds, thin gold outlines, teal numerals and 8px corners. The existing completeness markers use the same shape and retain their completed check feedback. At900px the form gains a text summary beside it, while help stays collapsed at the upper right; mobile uses one column with help after the form. Camera/gallery controls, callback field reveal, validation, hazard warnings and all existing motion behavior remain active. CSS is scoped to `.report-redesign`.

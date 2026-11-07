@@ -19,35 +19,36 @@ const getPole = value => {
 function reportPage() {
   reportPhoto = ''; photoPending = false; photoFailed = false; reportRequestId = crypto.randomUUID();
   document.title = 'แจ้งไฟถนนเสีย · LightFix';
-  shell(`<div class="shell report-hero">
+  shell(`<div class="shell report-hero report-redesign">
     <section class="report-main" aria-labelledby="report-heading">
-      <h1 id="report-heading" class="page-title">แจ้งเหตุใหม่</h1>
-      <p class="lead">ใช้หมายเลขบนเสาแจ้งไฟถนนเสียได้ทันที ไม่ต้องสมัครบัญชี เมื่อส่งแล้วจะได้ลิงก์ติดตามงานซ่อม</p>
+      <h1 id="report-heading" class="page-title">แจ้งไฟเสีย</h1>
+      <p class="lead">ระบุเสา เลือกอาการ แล้วส่งเรื่องได้เลย ไม่ต้องสมัครบัญชี</p>
       <ol class="report-steps" aria-label="ข้อมูลที่ใช้แจ้งเหตุ">${['เลขเสา','อาการ','ข้อมูลครบ'].map((label,index)=>`<li><span class="report-step-marker" aria-hidden="true">${index+1}</span>${label}<span class="visually-hidden" data-progress-state>ยังไม่ครบ</span></li>`).join('')}</ol>
       <form id="report-form" novalidate>
         <div class="form-grid">
-          <div class="field full" id="pole-field"><label for="pole">หมายเลขเสา <span class="required">*</span></label>
+          <div class="field full" id="pole-field"><label for="pole"><span class="section-number" aria-hidden="true">1</span> หมายเลขเสา <span class="required">*</span></label>
             <input class="input pole-input" id="pole" name="pole" placeholder="T0001" autocomplete="off" inputmode="text" maxlength="5" required aria-describedby="pole-help pole-error">
             <span id="pole-help" class="field-note">ดูหมายเลขบนป้ายที่เสาไฟ เช่น T0001</span><span id="pole-error" class="field-error" role="status"></span></div>
-          <div class="field full"><span class="label" id="symptom-label">อาการที่พบ <span class="required">*</span></span>
-            <div class="symptoms" role="radiogroup" aria-labelledby="symptom-label">${symptoms.map(s => `<label class="symptom"><input type="radio" name="symptom" value="${esc(s)}"><span><svg class="symptom-check" viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m4 10 4 4 8-8"/></svg><span class="symptom-text">${esc(s)}</span></span></label>`).join('')}</div>
+          <div class="field full"><span class="label" id="symptom-label"><span class="section-number" aria-hidden="true">2</span> อาการที่พบ <span class="required">*</span></span>
+            <div class="symptoms" role="radiogroup" aria-labelledby="symptom-label">${symptoms.map((s, index) => `<label class="symptom"><input type="radio" name="symptom" value="${esc(s)}"><span><svg class="symptom-check" viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m4 10 4 4 8-8"/></svg><span class="symptom-icon" aria-hidden="true"><img src="/icons/${['lightbulb-off','lightbulb','sun-dim','lamp-wall-down','cable','ellipsis'][index]}.svg" alt="" width="28" height="28"></span><span class="symptom-text">${esc(s)}</span></span></label>`).join('')}</div>
             <span id="symptom-error" class="field-error" role="status"></span></div>
           <div class="emergency-warning full" id="emergency-warning" hidden role="status"><strong>อย่าเข้าใกล้หรือสัมผัสเสาและสายไฟ</strong><p>ถอยออกจากจุดอันตรายและแจ้งหน่วยงานฉุกเฉินในพื้นที่ทันที แบบฟอร์มนี้เป็นการแจ้งซ่อม ไม่ใช่ช่องทางรับเหตุฉุกเฉิน</p><span class="small">หากสะดวก โปรดให้เบอร์หรือ LINE เพื่อให้เจ้าหน้าที่สอบถามตำแหน่งเพิ่มเติม</span></div>
           <div class="field full" id="other-symptom-field" hidden><label for="other-symptom">อธิบายอาการเพิ่มเติม <span class="required">*</span></label><textarea id="other-symptom" rows="2" maxlength="250" placeholder="เช่น โคมหลุดจากแขนเสา" aria-describedby="other-symptom-error"></textarea><span id="other-symptom-error" class="field-error" role="status"></span></div>
-          <div class="field"><label for="contact-type">ให้เจ้าหน้าที่ติดต่อกลับทางไหน?</label><select id="contact-type" name="contactType"><option value="none">ติดตามผ่านลิงก์ ไม่ขอรับการติดต่อกลับ</option><option value="phone">เบอร์โทรศัพท์</option><option value="line">LINE ID</option><option value="email">อีเมล</option></select><span class="field-note" id="contact-help">ทุกเรื่องจะได้รับลิงก์ติดตามหลังส่งสำเร็จ</span></div>
+          <div class="field"><label for="contact-type"><span class="section-number" aria-hidden="true">3</span> ช่องทางติดต่อ</label><select id="contact-type" name="contactType"><option value="none">ติดตามผ่านลิงก์ ไม่ขอรับการติดต่อกลับ</option><option value="phone">เบอร์โทรศัพท์</option><option value="line">LINE ID</option><option value="email">อีเมล</option></select><span class="field-note" id="contact-help">ทุกเรื่องจะได้รับลิงก์ติดตามหลังส่งสำเร็จ</span></div>
           <div class="field" id="contact-value-field" hidden><label for="contact-value" id="contact-value-label">เบอร์โทรศัพท์</label><input class="input" id="contact-value" name="contactValue" autocomplete="tel" inputmode="tel" placeholder="เบอร์ที่ติดต่อได้" aria-describedby="contact-error"><span id="contact-error" class="field-error" role="status"></span></div>
-          <div class="field full"><span class="label">รูปจุดที่เสีย <span class="muted small">(ถ้ามี)</span></span><p class="field-note" id="photo-privacy">รูปที่แนบจะแสดงบนหน้าสาธารณะ กรุณาหลีกเลี่ยงใบหน้า เอกสาร และข้อมูลบัญชี</p><div class="upload"><input aria-describedby="photo-privacy" class="visually-hidden" id="photo" name="photo" type="file" accept="image/jpeg,image/png,image/webp"><input class="visually-hidden" id="camera" aria-describedby="photo-privacy" type="file" accept="image/*" capture="environment"><label class="upload-button" for="camera">ถ่ายรูป</label><label class="upload-button" for="photo">เลือกรูป</label><span class="upload-name" id="photo-name" role="status">ยังไม่ได้เลือกรูป</span><span class="field-note">ระบบย่อรูปให้ก่อนส่ง · JPG, PNG หรือ WebP สูงสุด 25 MB</span><div id="photo-preview" hidden><button class="button ghost small" id="remove-photo" type="button">เอารูปออก</button></div></div></div>
+          <div class="field full"><span class="label"><span class="section-number" aria-hidden="true">4</span> รูปประกอบ <span class="muted small">(ถ้ามี)</span></span><p class="field-note" id="photo-privacy">รูปที่แนบจะแสดงบนหน้าสาธารณะ กรุณาหลีกเลี่ยงใบหน้า เอกสาร และข้อมูลบัญชี</p><div class="upload"><input aria-describedby="photo-privacy" class="visually-hidden" id="photo" name="photo" type="file" accept="image/jpeg,image/png,image/webp"><input class="visually-hidden" id="camera" aria-describedby="photo-privacy" type="file" accept="image/*" capture="environment"><label class="upload-button" for="camera">ถ่ายรูป</label><label class="upload-button" for="photo">เลือกรูป</label><span class="upload-name" id="photo-name" role="status">ยังไม่ได้เลือกรูป</span><span class="field-note">ระบบย่อรูปให้ก่อนส่ง · JPG, PNG หรือ WebP สูงสุด 25 MB</span><div id="photo-preview" hidden><button class="button ghost small" id="remove-photo" type="button">เอารูปออก</button></div></div></div>
           <div class="report-summary full" id="report-summary" role="status">เลือกเสาและอาการเพื่อดูสรุปก่อนส่ง</div>
         </div>
         <div id="form-error" class="field-error" role="alert"></div>
         <div class="form-actions"><button class="button primary" type="submit" id="submit-report">ส่งเรื่องแจ้งไฟเสีย <span aria-hidden="true">→</span></button><span class="small muted">อาการและรูปอาจแสดงบนหน้าสาธารณะ ข้อมูลผู้แจ้งเห็นเฉพาะเจ้าหน้าที่</span></div>
       </form>
     </section>
+    <aside class="report-overview" aria-labelledby="overview-title"><h2 id="overview-title">สรุปก่อนส่ง</h2><dl><div><dt>หมายเลขเสา</dt><dd id="overview-pole">ยังไม่ระบุเสา</dd></div><div><dt>อาการที่พบ</dt><dd id="overview-symptom">ยังไม่เลือกอาการ</dd></div><div><dt>การติดต่อกลับ</dt><dd id="overview-contact">ติดตามผ่านลิงก์</dd></div><div><dt>รูปประกอบ</dt><dd id="overview-photo">ยังไม่ได้แนบรูป</dd></div></dl><p class="overview-privacy"><strong>ข้อมูลติดต่อเห็นเฉพาะเจ้าหน้าที่</strong><br>อาการและรูปอาจแสดงบนหน้าสาธารณะ</p></aside>
     <details class="report-help"><summary>วิธีใช้งานและสถานะการซ่อม</summary><div class="route-panel"><h2>จากเสาที่เสีย<br>ไปสู่งานซ่อม</h2>
       <ol class="route-steps"><li><b>1</b><div><strong>ระบุเสา</strong><span>ใส่หมายเลขบนป้าย</span></div></li><li><b>2</b><div><strong>บอกอาการ</strong><span>เลือกสิ่งที่พบและช่องทางติดต่อ</span></div></li><li><b>3</b><div><strong>เก็บลิงก์</strong><span>ดูสถานะได้หลังส่งเรื่อง</span></div></li></ol>
       <div class="help-statuses"><h3>สถานะของเรื่องแจ้ง</h3><div class="status-legend">${[0,1,2].map(badge).join('')}</div><p>เก็บลิงก์หลังส่งเรื่องไว้ หรือเปิดเรื่องล่าสุดในอุปกรณ์นี้จากหน้าติดตาม</p><a href="/track">ไปหน้าติดตามเรื่อง</a></div></div></details>
   </div><section class="shell recent-section" id="recent-reports" aria-label="เรื่องล่าสุดในอุปกรณ์นี้"></section>`, 'report');
-  $('.report-help').open = matchMedia('(min-width: 768px)').matches;
+  $('.report-help').open = false;
   renderRecentReports($('#recent-reports'), true);
   const form = $('#report-form');
   const pole = $('#pole');
@@ -57,6 +58,10 @@ function reportPage() {
     const hasPole = /^T\d{4}$/.test(getPole(pole.value));
     const hasSymptom = !!picked && (picked !== 'อื่น ๆ' || !!$('#other-symptom').value.trim());
     const hasContact = $('#contact-type').value === 'none' || !!contact.value.trim();
+    $('#overview-pole').textContent = getPole(pole.value) || 'ยังไม่ระบุเสา';
+    $('#overview-symptom').textContent = picked || 'ยังไม่เลือกอาการ';
+    $('#overview-contact').textContent = $('#contact-type').value === 'none' ? 'ติดตามผ่านลิงก์' : $('#contact-type').selectedOptions[0].textContent;
+    $('#overview-photo').textContent = photoPending ? 'กำลังย่อรูป…' : reportPhoto ? 'แนบรูปแล้ว' : photoFailed ? 'รูปยังไม่พร้อมส่ง' : 'ยังไม่ได้แนบรูป';
     $('#report-summary').textContent = `${getPole(pole.value) || 'ยังไม่ระบุเสา'} · ${picked || 'ยังไม่เลือกอาการ'} · ${$('#contact-type').value === 'none' ? 'ติดตามผ่านลิงก์' : 'ให้เจ้าหน้าที่ติดต่อกลับ'}`;
     document.querySelectorAll('.report-steps li').forEach((step,index)=>{
       const complete=[hasPole,hasSymptom,hasPole&&hasSymptom&&hasContact][index];
@@ -71,10 +76,10 @@ function reportPage() {
     const generation = ++photoGeneration; reportPhoto = ''; photoFailed = false; photoPending = true; $('#photo-preview').hidden = true; $('#preview-image')?.remove(); $('#photo-name').textContent = 'กำลังย่อรูป…';
     try { const data = await photoData(file); if (generation !== photoGeneration) return; reportPhoto = data; const image = document.createElement('img'); image.id = 'preview-image'; image.alt = 'รูปจุดที่เสียที่เลือกไว้'; image.src = data; $('#photo-preview').prepend(image); $('#photo-preview').hidden = false; $('#photo-name').textContent = 'รูปพร้อมส่ง · ย่อรูปแล้ว'; reveal($('#photo-preview')); }
     catch (error) { if (generation === photoGeneration) { photoFailed = true; $('#photo-name').textContent = error.message + ' หรือกดเอารูปออกเพื่อส่งโดยไม่แนบรูป'; $('#photo-preview').hidden = false; } }
-    finally { if (generation === photoGeneration) photoPending = false; }
+    finally { if (generation === photoGeneration) { photoPending = false; summary(); } }
   };
   $('#photo').addEventListener('change', selectPhoto); $('#camera').addEventListener('change', selectPhoto);
-  $('#remove-photo').addEventListener('click', () => { photoGeneration++; photoPending = false; photoFailed = false; reportPhoto = ''; $('#photo').value = ''; $('#camera').value = ''; $('#photo-preview').hidden = true; $('#preview-image')?.remove(); $('#photo-name').textContent = 'ยังไม่ได้เลือกรูป'; });
+  $('#remove-photo').addEventListener('click', () => { photoGeneration++; photoPending = false; photoFailed = false; reportPhoto = ''; $('#photo').value = ''; $('#camera').value = ''; $('#photo-preview').hidden = true; $('#preview-image')?.remove(); $('#photo-name').textContent = 'ยังไม่ได้เลือกรูป'; summary(); });
   $('#contact-type').addEventListener('change', e => {
     const type = e.target.value;
     $('#contact-value-field').hidden = type === 'none'; contact.required = type !== 'none'; $('#contact-error').textContent = ''; contact.setAttribute('aria-invalid', 'false');
