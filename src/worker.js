@@ -179,6 +179,35 @@ async function poleHistory(env, value) {
   return { pole, location: found.location, jobs };
 }
 
+async function staffPoleDetail(request, env, value, pageValue) {
+  await actor(request, env);
+  const pole = poleNumber(value);
+  const registry = await one(env.DB, 'SELECT * FROM poles WHERE pole=?', pole);
+  if (!registry) throw new HttpError(404, 'NO_POLE', 'ไม่พบหมายเลขเสานี้');
+  const page = Math.min(100000, Math.max(1, Math.trunc(Number(pageValue) || 1)));
+  const offset = (page - 1) * 20;
+  const [reports, repairs, symptoms, causes, jobs, complaints] = await Promise.all([
+    one(env.DB, `SELECT COUNT(*) AS total,COALESCE(SUM(status=0),0) AS waiting,COALESCE(SUM(status=1),0) AS working,
+      COALESCE(SUM(status=3),0) AS canceled,MIN(created_at) AS first_at,MAX(created_at) AS last_at FROM reports WHERE pole=?`, pole),
+    one(env.DB, `SELECT COUNT(*) AS total,COALESCE(SUM(status=2),0) AS completed,
+      COALESCE(SUM(status=1),0) AS working,MAX(CASE WHEN status=2 THEN completed_at END) AS last_completed_at,
+      AVG(CASE WHEN status=2 AND completed_at>=started_at THEN completed_at-started_at END) AS average_duration_ms
+      FROM jobs WHERE pole=?`, pole),
+    all(env.DB, `SELECT CASE WHEN symptom LIKE 'อื่น ๆ:%' THEN 'อื่น ๆ' ELSE symptom END AS label,COUNT(*) AS count
+      FROM reports WHERE pole=? AND status<>3 GROUP BY label ORDER BY count DESC,label LIMIT 5`, pole),
+    all(env.DB, `SELECT cause AS label,COUNT(*) AS count FROM jobs WHERE pole=? AND status=2 AND cause<>''
+      GROUP BY cause ORDER BY count DESC,cause LIMIT 5`, pole),
+    all(env.DB, `SELECT j.id,j.status,j.started_at,j.completed_at,j.cause,j.cause_detail,j.public_note,
+      u.display_name AS technician_name,(SELECT r.id FROM reports r WHERE r.job_id=j.id ORDER BY r.created_at LIMIT 1) AS report_id,
+      (SELECT r.id FROM reports r WHERE r.job_id=j.id AND r.before_photo_key IS NOT NULL ORDER BY r.created_at LIMIT 1) AS before_report_id,
+      CASE WHEN j.after_photo_key IS NOT NULL THEN 1 ELSE 0 END AS has_after
+      FROM jobs j LEFT JOIN users u ON u.id=j.technician_id WHERE j.pole=? ORDER BY j.started_at DESC,j.id LIMIT 20 OFFSET ?`, pole, offset),
+    all(env.DB, `SELECT id,symptom,status,created_at,job_id,CASE WHEN before_photo_key IS NOT NULL THEN 1 ELSE 0 END AS has_before
+      FROM reports WHERE pole=? ORDER BY created_at DESC,id LIMIT 20 OFFSET ?`, pole, offset)
+  ]);
+  return { pole: registry, reports, repairs, symptoms, causes, jobs, complaints, page, pageSize: 20 };
+}
+
 async function createReport(env, data) {
   const pole = poleNumber(data.pole);
   const symptom = clean(data.symptom, 300);
@@ -662,6 +691,7 @@ export default {
         if (u.role !== (url.pathname.startsWith('/api/admin/') ? 'admin' : 'technician')) throw new HttpError(403, 'FORBIDDEN', 'ไม่มีสิทธิ์ใช้ทางเข้านี้');
         return ok({ id: u.id, username: u.username, name: u.display_name, role: u.role, mustChangePassword: !!u.must_change_password });
       }
+      if (request.method === 'GET' && /^\/api\/staff\/poles\/T\d{4}$/.test(url.pathname)) return ok(await staffPoleDetail(request, env, url.pathname.split('/')[4], url.searchParams.get('page')));
       if (request.method === 'GET' && url.pathname === '/api/workspace') return ok(await workspace(request, env, 'technician'));
       if (request.method === 'GET' && url.pathname === '/api/admin/workspace') return ok(await workspace(request, env, 'admin'));
       if (request.method === 'POST' && url.pathname === '/api/jobs/start') return ok(await startJob(request, env, await body(request)), 201);

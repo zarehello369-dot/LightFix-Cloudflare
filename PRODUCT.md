@@ -71,3 +71,7 @@ The workflow centers on the pole number: a resident enters it when reporting, an
 3. Keep reporter contact information out of public views.
 4. Give staff role-appropriate access to assign, complete, and document repairs.
 5. Keep fictional demonstration data clearly separated from live records.
+
+## Pole details — 7 November 2026
+
+Both authenticated roles can open a pole dossier from the pole-number button in the pole registry. It loads independent per-pole totals on demand, not from the workspace500-record snapshot: completed repairs, waiting/working complaints, all complaints including cancellations, latest report/repair and average start-to-completion duration. The screen ranks non-canceled complaint symptoms and completed repair causes, shows registry metadata, technician/public notes and before/after photo links when available. Repair and complaint histories are each paged20 rows at a time. Counts describe retained records, not a lifetime estimate. The endpoint excludes reporter contacts and requires an active staff session.

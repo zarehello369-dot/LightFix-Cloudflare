@@ -206,3 +206,33 @@ test('admin can create and delete an unused account while assigned work stays pr
   assert.ok(sqlite.prepare('SELECT id FROM users WHERE id=?').get(technicianId));
   sqlite.close();
 });
+
+test('pole dossier counts repairs separately from complaints, excludes canceled symptoms, and pages full history', async () => {
+  const {sqlite,request}=fixture();
+  const job='e'.repeat(32);
+  sqlite.prepare(`INSERT INTO jobs(id,pole,status,started_at,completed_at,cause,technician_id) VALUES(?,?,2,1000,3601000,?,?)`).run(job,'T0002','หลอดไฟหมดอายุ',technicianId);
+  sqlite.prepare('UPDATE reports SET job_id=?,status=2 WHERE pole=?').run(job,'T0002');
+  const insert=sqlite.prepare(`INSERT INTO reports(id,pole,symptom,contact_type,contact_value,status,created_at,request_id) VALUES(?,?,?,'phone','private',?,?,?)`);
+  for(let i=0;i<24;i++) insert.run(i.toString(16).padStart(32,'0'),'T0002',i<22?'ไฟไม่ติด':'ยกเลิกทดสอบ',i<22?2:3,i+10,`request-${i}`);
+  for(const token of [adminToken,technicianToken]) {
+    const res=await request('/api/staff/poles/T0002','GET',undefined,token);
+    assert.equal(res.status,200);
+    const d=res.body.data;
+    assert.equal(d.repairs.completed,1);
+    assert.equal(d.repairs.average_duration_ms,3600000);
+    assert.equal(d.reports.total,25);
+    assert.equal(d.symptoms[0].count,23);
+    assert.equal(d.symptoms.some(x=>x.label==='ยกเลิกทดสอบ'),false);
+    assert.equal(d.complaints.length,20);
+    assert.equal(JSON.stringify(d).includes('private'),false);
+    assert.equal(d.jobs[0].technician_name,'ช่าง');
+  }
+  const page=await request('/api/staff/poles/T0002?page=2');
+  assert.equal(page.body.data.complaints.length,5);
+  const empty=await request('/api/staff/poles/T0001');
+  assert.equal(empty.body.data.repairs.completed,0);
+  assert.equal(empty.body.data.repairs.average_duration_ms,null);
+  const denied=await request('/api/staff/poles/T0002','GET',undefined,'invalid');
+  assert.equal(denied.status,401);
+  assert.equal((await request('/api/staff/poles/T9999')).status,404);
+});
