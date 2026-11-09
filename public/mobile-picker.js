@@ -3,7 +3,9 @@ const phone = matchMedia('(max-width: 639px)');
 let activeTrigger;
 
 function labelFor(select) {
-  return document.querySelector(`label[for="${CSS.escape(select.id)}"]`)?.textContent.trim() || 'เลือกตัวเลือก';
+  const label = document.querySelector(`label[for="${CSS.escape(select.id)}"]`)?.cloneNode(true);
+  label?.querySelectorAll('[aria-hidden="true"]').forEach(node => node.remove());
+  return label?.textContent.trim() || 'เลือกตัวเลือก';
 }
 
 function choices(select) {
@@ -46,6 +48,7 @@ export function installMobilePickers() {
     trigger.className = 'mobile-picker-trigger';
     trigger.id = `${select.id}-mobile`;
     trigger.setAttribute('aria-haspopup', 'dialog');
+    if (select.hasAttribute('aria-describedby')) trigger.setAttribute('aria-describedby', select.getAttribute('aria-describedby'));
     const sync = () => {
       trigger.textContent = select.selectedOptions[0]?.textContent.trim() || 'เลือกตัวเลือก';
       trigger.disabled = select.disabled;
