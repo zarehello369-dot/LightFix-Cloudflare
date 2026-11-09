@@ -546,6 +546,9 @@ details[open]>.route-panel,details[open]>.complaint-detail,details[open]>.draft-
 .report-redesign .form-grid{gap:24px;grid-template-columns:minmax(0,1fr)}
 .report-redesign .field{gap:8px;min-width:0}
 .report-redesign .field>label,.report-redesign .field>.label{display:flex;align-items:center;gap:8px;font-weight:700}
+.report-redesign .field-note{font-size:1rem;line-height:1.6;color:var(--muted)}
+.report-redesign .photo-privacy{padding:10px 12px;border-radius:12px;background:var(--surface);border:1px solid var(--line);color:var(--ink)}
+.report-redesign .photo-privacy strong{display:block}
 .report-redesign .section-number,.report-redesign .report-step-marker{display:inline-grid;place-items:center;flex:none;width:28px;height:28px;border:1px solid #c5a442;border-radius:8px;background:#fff3bf;color:var(--deep);font-size:1rem;font-weight:700;box-shadow:none}
 .report-redesign .report-steps{max-width:none;padding:12px;margin:0;gap:0;justify-content:space-between}
 .report-redesign .report-steps li{gap:7px;font-size:.85rem}
@@ -558,13 +561,15 @@ details[open]>.route-panel,details[open]>.complaint-detail,details[open]>.draft-
 .report-redesign .symptom-icon{flex:none;width:25px;height:30px;display:grid;place-items:center}
 .report-redesign .symptom-icon svg{width:29px;height:29px}
 .report-redesign .symptom-check{position:absolute;right:7px;top:50%;margin-top:-8px;width:16px;height:16px}
+.report-redesign .symptom-hazard>span{border-color:var(--red)}
+.report-redesign .symptom-hazard .symptom-text small{display:block;margin-top:2px;color:var(--red);font-size:.875rem;font-weight:700}
 .report-redesign .field-error:empty{display:none}
 .report-redesign .upload{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;padding:14px;border-style:dashed;border-radius:12px;background:#fafbf9}
 .report-redesign .upload-button{width:100%;gap:8px;min-height:48px;background:var(--surface)}
 .report-redesign .upload-button svg{width:20px;height:20px;flex:none}
 .report-redesign .upload-name,.report-redesign .upload>.field-note,.report-redesign #photo-preview{grid-column:1/-1}
 .report-redesign .upload-name{font-size:.875rem}
-.report-redesign .upload>.field-note{padding-top:10px;border-top:1px solid var(--line);font-size:.8rem;line-height:1.6}
+.report-redesign .upload>.field-note{padding-top:10px;border-top:1px solid var(--line);font-size:1rem;line-height:1.6}
 .report-redesign .form-actions{display:grid;gap:12px;margin-top:20px}
 .report-redesign #submit-report{width:100%;min-height:52px}
 .report-redesign .report-overview{display:none}
@@ -574,8 +579,9 @@ details[open]>.route-panel,details[open]>.complaint-detail,details[open]>.draft-
 .report-redesign #report-summary{display:grid;gap:4px;font-size:.875rem;padding:14px 16px;line-height:1.65}
 .report-redesign #report-summary strong{font-size:.9rem;color:var(--ink)}
 .report-redesign #report-summary span{color:var(--muted)}
-.report-redesign .form-actions>.small{font-size:.8rem;line-height:1.65}
-.report-redesign .emergency-warning{font-size:.9rem;line-height:1.7}
+.report-redesign .form-actions>.small{font-size:1rem;line-height:1.65}
+.report-redesign .emergency-warning{border-width:2px;font-size:1rem;line-height:1.65}
+.report-redesign .emergency-warning strong{display:block;font-size:1rem}
 @media(min-width:900px){
  .report-redesign{grid-template-columns:minmax(0,2fr) minmax(240px,.8fr);column-gap:48px;padding-top:48px}
  .report-redesign .report-intro{grid-column:1;grid-row:1}

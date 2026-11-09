@@ -3,6 +3,7 @@ import { installMobilePickers } from './mobile-picker.js';
 import { staffPage } from './staff.js';
 import { readRecentReports, rememberReport, clearRecentReports, trackingPath } from './tracking.js';
 import { createLatestRequest } from './requests.js';
+import { poleFromPage } from './pole-link.js';
 
 const symptoms = ['ไฟไม่ติด', 'ไฟติด ๆ ดับ ๆ', 'ไฟสว่างน้อย', 'เสาหรือโคมชำรุด', 'สายไฟหลุดหรือห้อยต่ำ', 'อื่น ๆ'];
 let reportPhoto = '', photoPending = false, photoFailed = false, photoGeneration = 0, reportRequestId = '';
@@ -22,7 +23,7 @@ function reportPage() {
   shell(`<div class="shell report-hero report-redesign">
     <header class="report-intro">
       <h1 id="report-heading" class="page-title">แจ้งไฟเสีย</h1>
-      <p class="lead">ระบุเสา เลือกอาการ แล้วส่งเรื่องได้เลย ไม่ต้องสมัครบัญชี</p>
+      <p class="lead">ระบุหมายเลขเสา เลือกอาการ แล้วส่งเรื่องได้เลย ไม่ต้องสมัครบัญชี</p>
       <ol class="report-steps" aria-label="ข้อมูลที่ใช้แจ้งเหตุ">${['เลขเสา','อาการ','ข้อมูลครบ'].map((label,index)=>`<li><span class="report-step-marker" aria-hidden="true">${index+1}</span>${label}<span class="visually-hidden" data-progress-state>ยังไม่ครบ</span></li>`).join('')}</ol>
     </header>
     <section class="report-main" aria-labelledby="report-heading">
@@ -30,15 +31,16 @@ function reportPage() {
         <div class="form-grid">
           <div class="field full" id="pole-field"><label for="pole"><span class="section-number" aria-hidden="true">1</span> หมายเลขเสา <span class="required">*</span></label>
             <input class="input pole-input" id="pole" name="pole" placeholder="T0001" autocomplete="off" inputmode="text" maxlength="5" required aria-describedby="pole-help pole-error">
-            <span id="pole-help" class="field-note">ดูหมายเลขบนป้ายที่เสาไฟ เช่น T0001</span><span id="pole-error" class="field-error" role="status"></span></div>
+            <span id="pole-help" class="field-note">ดูหมายเลขบนป้ายที่เสาไฟ เช่น T0001 หรือเปิดลิงก์/QR ประจำเสาเพื่อตั้งเลขอัตโนมัติ</span>
+            <span id="pole-error" class="field-error" role="status"></span></div>
           <div class="field full"><span class="label" id="symptom-label"><span class="section-number" aria-hidden="true">2</span> อาการที่พบ <span class="required">*</span></span>
-            <div class="symptoms" role="radiogroup" aria-labelledby="symptom-label">${symptoms.map((s, index) => `<label class="symptom"><input type="radio" name="symptom" value="${esc(s)}"><span><svg class="symptom-check" viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m4 10 4 4 8-8"/></svg><span class="symptom-icon" aria-hidden="true"><img src="/icons/${['lightbulb-off','lightbulb','sun-dim','lamp-wall-down','cable','ellipsis'][index]}.svg" alt="" width="28" height="28"></span><span class="symptom-text">${esc(s)}</span></span></label>`).join('')}</div>
+            <div class="symptoms" role="radiogroup" aria-labelledby="symptom-label">${symptoms.map((s, index) => `<label class="symptom${index === 4 ? ' symptom-hazard' : ''}"><input type="radio" name="symptom" value="${esc(s)}"><span><svg class="symptom-check" viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m4 10 4 4 8-8"/></svg><span class="symptom-icon" aria-hidden="true"><img src="/icons/${['lightbulb-off','lightbulb','sun-dim','lamp-wall-down','cable','ellipsis'][index]}.svg" alt="" width="28" height="28"></span><span class="symptom-text">${esc(s)}${index === 4 ? '<small>ระวังอันตราย</small>' : ''}</span></span></label>`).join('')}</div>
             <span id="symptom-error" class="field-error" role="status"></span></div>
-          <div class="emergency-warning full" id="emergency-warning" hidden role="status"><strong>อย่าเข้าใกล้หรือสัมผัสเสาและสายไฟ</strong><p>ถอยออกจากจุดอันตรายและแจ้งหน่วยงานฉุกเฉินในพื้นที่ทันที แบบฟอร์มนี้เป็นการแจ้งซ่อม ไม่ใช่ช่องทางรับเหตุฉุกเฉิน</p><span class="small">หากสะดวก โปรดให้เบอร์หรือ LINE เพื่อให้เจ้าหน้าที่สอบถามตำแหน่งเพิ่มเติม</span></div>
+          <div class="emergency-warning full" id="emergency-warning" hidden role="alert"><strong>อันตราย: อย่าเข้าใกล้หรือสัมผัสเสาและสายไฟ</strong><p>ถอยออกจากจุดอันตรายและแจ้งหน่วยงานฉุกเฉินในพื้นที่ทันที แบบฟอร์มนี้เป็นการแจ้งซ่อม ไม่ใช่ช่องทางรับเหตุฉุกเฉิน</p><span>หากสะดวก โปรดให้เบอร์หรือ LINE เพื่อให้เจ้าหน้าที่สอบถามตำแหน่งเพิ่มเติม</span></div>
           <div class="field full" id="other-symptom-field" hidden><label for="other-symptom">อธิบายอาการเพิ่มเติม <span class="required">*</span></label><textarea id="other-symptom" rows="2" maxlength="250" placeholder="เช่น โคมหลุดจากแขนเสา" aria-describedby="other-symptom-error"></textarea><span id="other-symptom-error" class="field-error" role="status"></span></div>
           <div class="field"><label for="contact-type"><span class="section-number" aria-hidden="true">3</span> ช่องทางติดต่อ</label><select id="contact-type" name="contactType" aria-describedby="contact-help"><option value="none">ติดตามผ่านลิงก์เท่านั้น</option><option value="phone">เบอร์โทรศัพท์</option><option value="line">LINE ID</option><option value="email">อีเมล</option></select><span class="field-note" id="contact-help">ทุกเรื่องจะได้รับลิงก์ติดตามหลังส่งสำเร็จ เลือกเบอร์โทร LINE หรืออีเมล หากต้องการให้ติดต่อกลับ</span></div>
           <div class="field" id="contact-value-field" hidden><label for="contact-value" id="contact-value-label">เบอร์โทรศัพท์</label><input class="input" id="contact-value" name="contactValue" autocomplete="tel" inputmode="tel" placeholder="เบอร์ที่ติดต่อได้" aria-describedby="contact-error"><span id="contact-error" class="field-error" role="status"></span></div>
-          <div class="field full"><span class="label"><span class="section-number" aria-hidden="true">4</span> รูปประกอบ <span class="muted small">(ถ้ามี)</span></span><p class="field-note" id="photo-privacy">รูปที่แนบจะแสดงบนหน้าสาธารณะ กรุณาหลีกเลี่ยงใบหน้า เอกสาร และข้อมูลบัญชี</p><div class="upload"><input aria-describedby="photo-privacy" class="visually-hidden" id="photo" aria-label="เลือกรูปจุดที่เสีย" name="photo" type="file" accept="image/jpeg,image/png,image/webp"><input class="visually-hidden" id="camera" aria-label="ถ่ายรูปจุดที่เสีย" aria-describedby="photo-privacy" type="file" accept="image/*" capture="environment"><label class="upload-button" for="camera"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 6h3l2-3h4l2 3h3a2 2 0 0 1 2 2v11H3V8a2 2 0 0 1 2-2Z"/><circle cx="12" cy="12" r="4"/></svg>ถ่ายรูป</label><label class="upload-button" for="photo"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8" cy="8" r="1.5"/><path d="m3 17 5-5 4 4 4-6 5 7"/></svg>เลือกรูป</label><span class="upload-name" id="photo-name" role="status">ยังไม่ได้เลือกรูป</span><span class="field-note">ระบบย่อรูปให้ก่อนส่ง · JPG, PNG หรือ WebP สูงสุด 25 MB</span><div id="photo-preview" hidden><button class="button ghost small" id="remove-photo" type="button">เอารูปออก</button></div></div></div>
+          <div class="field full"><span class="label"><span class="section-number" aria-hidden="true">4</span> รูปประกอบ <span class="muted small">(ถ้ามี)</span></span><p class="field-note photo-privacy" id="photo-privacy"><strong>รูปจะปรากฏบนหน้าสาธารณะ</strong> กรุณาหลีกเลี่ยงใบหน้า เอกสาร และข้อมูลบัญชี</p><div class="upload"><input aria-describedby="photo-privacy" class="visually-hidden" id="photo" aria-label="เลือกรูปจุดที่เสีย" name="photo" type="file" accept="image/jpeg,image/png,image/webp"><input class="visually-hidden" id="camera" aria-label="ถ่ายรูปจุดที่เสีย" aria-describedby="photo-privacy" type="file" accept="image/*" capture="environment"><label class="upload-button" for="camera"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 6h3l2-3h4l2 3h3a2 2 0 0 1 2 2v11H3V8a2 2 0 0 1 2-2Z"/><circle cx="12" cy="12" r="4"/></svg>ถ่ายรูป</label><label class="upload-button" for="photo"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8" cy="8" r="1.5"/><path d="m3 17 5-5 4 4 4-6 5 7"/></svg>เลือกรูป</label><span class="upload-name" id="photo-name" role="status">ยังไม่ได้เลือกรูป</span><span class="field-note">ระบบย่อรูปให้ก่อนส่ง · JPG, PNG หรือ WebP สูงสุด 25 MB</span><div id="photo-preview" hidden><button class="button ghost small" id="remove-photo" type="button">เอารูปออก</button></div></div></div>
           <div class="report-summary full" id="report-summary" role="status"><strong>สรุปก่อนส่ง</strong><span>เลือกเสาและอาการเพื่อดูข้อมูลที่กรอก</span></div>
         </div>
         <div id="form-error" class="field-error" role="alert"></div>
@@ -125,6 +127,12 @@ function reportPage() {
       message.textContent = 'ยังตรวจหมายเลขเสาไม่ได้ ระบบจะตรวจอีกครั้งเมื่อส่งเรื่อง';
     }
   });
+  const linkedPole = poleFromPage(location.search);
+  if (linkedPole) {
+    pole.value = linkedPole;
+    pole.dispatchEvent(new Event('input', { bubbles: true }));
+    pole.dispatchEvent(new Event('blur'));
+  }
   form.addEventListener('submit', submitReport);
 }
 
