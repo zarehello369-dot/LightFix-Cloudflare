@@ -549,18 +549,6 @@ details[open]>.route-panel,details[open]>.complaint-detail,details[open]>.draft-
 .report-redesign .field-note{font-size:1rem;line-height:1.6;color:var(--muted)}
 .report-redesign .photo-privacy{padding:10px 12px;border-radius:12px;background:var(--surface);border:1px solid var(--line);color:var(--ink)}
 .report-redesign .photo-privacy strong{display:block}
-.pole-search-toggle{align-self:flex-start;border:0;background:transparent;color:var(--deep);padding:4px 0;font-weight:700;text-align:left;text-decoration:underline;text-underline-offset:.2em}
-.pole-search-panel{display:grid;gap:10px;padding:14px;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
-.pole-search-panel label{font-size:.95rem;font-weight:700}
-.pole-search-controls{display:flex;gap:8px}
-.pole-search-controls .input{flex:1}
-.pole-search-controls .button{flex:none}
-.pole-search-results{font-size:1rem;line-height:1.6}
-.pole-search-results p{margin:0 0 8px}
-.pole-search-list{display:grid;gap:6px}
-.pole-search-result{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-height:48px;padding:9px 12px;border:1px solid var(--control-line);border-radius:12px;background:var(--surface);color:var(--ink);text-align:left}
-.pole-search-result:hover,.pole-search-result:focus-visible{background:var(--gold-soft)}
-.pole-search-result span{color:var(--muted);overflow-wrap:anywhere}
 .report-redesign .section-number,.report-redesign .report-step-marker{display:inline-grid;place-items:center;flex:none;width:28px;height:28px;border:1px solid #c5a442;border-radius:8px;background:#fff3bf;color:var(--deep);font-size:1rem;font-weight:700;box-shadow:none}
 .report-redesign .report-steps{max-width:none;padding:12px;margin:0;gap:0;justify-content:space-between}
 .report-redesign .report-steps li{gap:7px;font-size:.85rem}
@@ -611,7 +599,6 @@ details[open]>.route-panel,details[open]>.complaint-detail,details[open]>.draft-
  .report-redesign .form-actions{grid-template-columns:minmax(220px,.8fr) 1fr;align-items:center}
 }
 @media(max-width:380px){.report-redesign .symptom-icon{display:none}.report-redesign .report-steps li{font-size:.75rem}.report-redesign .report-steps li+li:before{margin-inline:5px}.report-redesign .report-step-marker{width:24px;height:24px}.report-redesign .symptom>span{font-size:.9rem}}
-@media(max-width:520px){.pole-search-controls{flex-direction:column}.pole-search-controls .button{width:100%}.pole-search-result{align-items:flex-start;flex-direction:column;gap:2px}}
 .report-redesign .symptom-icon img{width:28px;height:28px;opacity:.85}
 .report-redesign .field>p.field-note{margin:0}.report-redesign .symptom input:checked+span .symptom-check{width:20px;height:20px;margin-top:-10px;padding:3px;border-radius:50%;background:var(--gold);color:var(--deep)}@media(max-width:899px){.report-redesign .form-grid{gap:18px}}
 /* Pole registry: list and docked reader, full-width reading on smaller screens. */

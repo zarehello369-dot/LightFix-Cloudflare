@@ -3,6 +3,7 @@ import { installMobilePickers } from './mobile-picker.js';
 import { staffPage } from './staff.js';
 import { readRecentReports, rememberReport, clearRecentReports, trackingPath } from './tracking.js';
 import { createLatestRequest } from './requests.js';
+import { poleFromPage } from './pole-link.js';
 
 const symptoms = ['ไฟไม่ติด', 'ไฟติด ๆ ดับ ๆ', 'ไฟสว่างน้อย', 'เสาหรือโคมชำรุด', 'สายไฟหลุดหรือห้อยต่ำ', 'อื่น ๆ'];
 let reportPhoto = '', photoPending = false, photoFailed = false, photoGeneration = 0, reportRequestId = '';
@@ -22,7 +23,7 @@ function reportPage() {
   shell(`<div class="shell report-hero report-redesign">
     <header class="report-intro">
       <h1 id="report-heading" class="page-title">แจ้งไฟเสีย</h1>
-      <p class="lead">ระบุเสาหรือค้นหาจากสถานที่ เลือกอาการ แล้วส่งเรื่องได้เลย ไม่ต้องสมัครบัญชี</p>
+      <p class="lead">ระบุหมายเลขเสา เลือกอาการ แล้วส่งเรื่องได้เลย ไม่ต้องสมัครบัญชี</p>
       <ol class="report-steps" aria-label="ข้อมูลที่ใช้แจ้งเหตุ">${['เลขเสา','อาการ','ข้อมูลครบ'].map((label,index)=>`<li><span class="report-step-marker" aria-hidden="true">${index+1}</span>${label}<span class="visually-hidden" data-progress-state>ยังไม่ครบ</span></li>`).join('')}</ol>
     </header>
     <section class="report-main" aria-labelledby="report-heading">
@@ -30,9 +31,7 @@ function reportPage() {
         <div class="form-grid">
           <div class="field full" id="pole-field"><label for="pole"><span class="section-number" aria-hidden="true">1</span> หมายเลขเสา <span class="required">*</span></label>
             <input class="input pole-input" id="pole" name="pole" placeholder="T0001" autocomplete="off" inputmode="text" maxlength="5" required aria-describedby="pole-help pole-error">
-            <span id="pole-help" class="field-note">ดูหมายเลขบนป้ายที่เสาไฟ เช่น T0001 ถ้าป้ายอ่านไม่ได้ ค้นหาจากสถานที่ใกล้เคียง</span>
-            <button class="pole-search-toggle" id="pole-search-toggle" type="button" aria-expanded="false" aria-controls="pole-search-panel">ไม่ทราบเลขเสา? ค้นหาจากสถานที่</button>
-            <div class="pole-search-panel" id="pole-search-panel" hidden><label for="pole-location-query">ชื่อถนนหรือจุดสังเกตใกล้เสา</label><div class="pole-search-controls"><input class="input" id="pole-location-query" type="search" placeholder="เช่น หน้าศาลาชุมชน" autocomplete="off"><button class="button outline" id="pole-location-search" type="button">ค้นหาเสา</button></div><div id="pole-search-results" class="pole-search-results" role="status">ค้นหาเสาในทะเบียน แล้วเลือกหมายเลขที่ตรงกับจุดที่เสีย</div></div>
+            <span id="pole-help" class="field-note">ดูหมายเลขบนป้ายที่เสาไฟ เช่น T0001 หรือเปิดลิงก์/QR ประจำเสาเพื่อตั้งเลขอัตโนมัติ</span>
             <span id="pole-error" class="field-error" role="status"></span></div>
           <div class="field full"><span class="label" id="symptom-label"><span class="section-number" aria-hidden="true">2</span> อาการที่พบ <span class="required">*</span></span>
             <div class="symptoms" role="radiogroup" aria-labelledby="symptom-label">${symptoms.map((s, index) => `<label class="symptom${index === 4 ? ' symptom-hazard' : ''}"><input type="radio" name="symptom" value="${esc(s)}"><span><svg class="symptom-check" viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m4 10 4 4 8-8"/></svg><span class="symptom-icon" aria-hidden="true"><img src="/icons/${['lightbulb-off','lightbulb','sun-dim','lamp-wall-down','cable','ellipsis'][index]}.svg" alt="" width="28" height="28"></span><span class="symptom-text">${esc(s)}${index === 4 ? '<small>ระวังอันตราย</small>' : ''}</span></span></label>`).join('')}</div>
@@ -58,52 +57,6 @@ function reportPage() {
   const form = $('#report-form');
   const pole = $('#pole');
   const contact = $('#contact-value');
-  const poleSearchPanel = $('#pole-search-panel');
-  const poleSearchResults = $('#pole-search-results');
-  const poleSearchRequests = createLatestRequest();
-  $('#pole-search-toggle').addEventListener('click', event => {
-    const open = poleSearchPanel.hidden;
-    poleSearchPanel.hidden = !open;
-    event.currentTarget.setAttribute('aria-expanded', String(open));
-    if (open) $('#pole-location-query').focus();
-    else poleSearchRequests.invalidate();
-  });
-  const searchNearbyPoles = async () => {
-    const query = $('#pole-location-query').value.trim();
-    if (query.length < 2) {
-      poleSearchRequests.invalidate();
-      poleSearchResults.textContent = 'กรอกชื่อถนนหรือจุดสังเกตอย่างน้อย 2 ตัวอักษร';
-      return;
-    }
-    poleSearchResults.textContent = 'กำลังค้นหาเสา…';
-    await poleSearchRequests.run(
-      () => api(`/api/poles/search?q=${encodeURIComponent(query)}`),
-      rows => {
-        poleSearchResults.innerHTML = rows.length
-          ? `<p>เลือกเสาที่ตรงกับจุดที่เสีย</p><div class="pole-search-list">${rows.map(row => `<button type="button" class="pole-search-result" data-pole="${esc(row.pole)}"><strong>${esc(row.pole)}</strong><span>${esc(row.location || 'ไม่มีรายละเอียดสถานที่')}</span></button>`).join('')}</div>`
-          : '<p>ไม่พบเสาในทะเบียน ลองค้นด้วยชื่อถนนหรือจุดสังเกตอื่น หากยังไม่พบ ให้แจ้งหน่วยงานดูแลไฟถนนในพื้นที่พร้อมบอกตำแหน่งที่พบ</p>';
-      },
-      error => { poleSearchResults.textContent = error.message; }
-    );
-  };
-  $('#pole-location-search').addEventListener('click', searchNearbyPoles);
-  $('#pole-location-query').addEventListener('input', () => {
-    poleSearchRequests.invalidate();
-    poleSearchResults.textContent = 'กดค้นหาเสาเพื่อดูหมายเลขที่ตรงกับสถานที่';
-  });
-  $('#pole-location-query').addEventListener('keydown', event => {
-    if (event.key === 'Enter') { event.preventDefault(); searchNearbyPoles(); }
-  });
-  poleSearchResults.addEventListener('click', event => {
-    const choice = event.target.closest('button[data-pole]');
-    if (!choice) return;
-    pole.value = choice.dataset.pole;
-    pole.dispatchEvent(new Event('input', { bubbles: true }));
-    poleSearchPanel.hidden = true;
-    $('#pole-search-toggle').setAttribute('aria-expanded', 'false');
-    pole.focus();
-    pole.dispatchEvent(new Event('blur'));
-  });
   const summary = () => {
     const picked = form.querySelector('input[name=symptom]:checked')?.value;
     const pickedDescription = picked === 'อื่น ๆ' ? `อื่น ๆ: ${$('#other-symptom').value.trim() || 'ยังไม่ระบุรายละเอียด'}` : picked || 'ยังไม่เลือกอาการ';
@@ -174,6 +127,12 @@ function reportPage() {
       message.textContent = 'ยังตรวจหมายเลขเสาไม่ได้ ระบบจะตรวจอีกครั้งเมื่อส่งเรื่อง';
     }
   });
+  const linkedPole = poleFromPage(location.search);
+  if (linkedPole) {
+    pole.value = linkedPole;
+    pole.dispatchEvent(new Event('input', { bubbles: true }));
+    pole.dispatchEvent(new Event('blur'));
+  }
   form.addEventListener('submit', submitReport);
 }
 
