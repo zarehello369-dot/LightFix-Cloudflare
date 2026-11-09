@@ -170,6 +170,14 @@ async function checkPole(env, value) {
   return { found: !!row, location: row?.location || '' };
 }
 
+async function searchPoles(env, value) {
+  const query = clean(value, 80).trim();
+  if (query.length < 2) throw new HttpError(400, 'SEARCH_TOO_SHORT', 'กรอกชื่อถนนหรือจุดสังเกตอย่างน้อย 2 ตัวอักษร');
+  return all(env.DB, `SELECT pole,location FROM poles
+    WHERE active=1 AND (instr(lower(pole),lower(?))>0 OR instr(lower(location),lower(?))>0)
+    ORDER BY pole LIMIT 10`, query, query);
+}
+
 async function poleHistory(env, value) {
   const pole = poleNumber(value);
   const found = await one(env.DB, 'SELECT pole,location FROM poles WHERE pole=?', pole);
@@ -671,6 +679,7 @@ export default {
       }
       if (request.method === 'GET' && url.pathname === '/api/health') return ok(await health(env));
       if (request.method === 'GET' && url.pathname === '/api/poles/check') return ok(await checkPole(env, url.searchParams.get('pole')));
+      if (request.method === 'GET' && url.pathname === '/api/poles/search') return ok(await searchPoles(env, url.searchParams.get('q')));
       if (request.method === 'GET' && /^\/api\/poles\/T\d{4}\/history$/.test(url.pathname)) return ok(await poleHistory(env, url.pathname.split('/')[3]));
       if (request.method === 'GET' && url.pathname === '/api/reports') return ok(await board(env, url.searchParams));
       if (request.method === 'GET' && /^\/api\/reports\/[a-f0-9]{32}$/.test(url.pathname)) return ok(await detail(env, url.pathname.split('/')[3]));

@@ -61,6 +61,16 @@ function fixture() {
   return { sqlite, request, photos };
 }
 
+test('public location search finds active registered poles without exposing report data', async () => {
+  const { sqlite, request } = fixture();
+  const result = await request('/api/poles/search?q=ไม่มี');
+  assert.equal(result.status, 200);
+  assert.deepEqual(result.body.data, [{ pole: 'T0001', location: 'ไม่มีประวัติ' }]);
+  assert.equal((await request('/api/poles/search?q=ม')).status, 400);
+  sqlite.prepare('UPDATE poles SET active=0 WHERE pole=?').run('T0001');
+  assert.deepEqual((await request('/api/poles/search?q=ไม่มี')).body.data, []);
+});
+
 test('photo names identify poles and keep multiple reports and repair rounds separate', async () => {
   const { sqlite, request, photos } = fixture();
   const photo = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=';

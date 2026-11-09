@@ -58,12 +58,12 @@ export function shell(content, current = '') {
     <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="site-nav" aria-label="เปิดเมนู">เมนู</button>
     <nav id="site-nav" class="site-nav" aria-label="เมนูหลัก">
       <a href="/" ${current === 'report' ? 'aria-current="page"' : ''}>แจ้งไฟเสีย</a>
-      <a href="/board" ${current === 'board' ? 'aria-current="page"' : ''}>ความคืบหน้า</a>
-      <a href="/track" ${current === 'track' ? 'aria-current="page"' : ''}>ติดตามเรื่อง</a>
+      <a href="/board" ${current === 'board' ? 'aria-current="page"' : ''}>งานซ่อมในชุมชน</a>
+      <a href="/track" ${current === 'track' ? 'aria-current="page"' : ''}>เรื่องที่ฉันแจ้ง</a>
       <a href="/technician" ${current === 'technician' ? 'aria-current="page"' : ''}>ช่างไฟฟ้า</a>
       <a class="nav-cta" href="/admin" ${current === 'admin' ? 'aria-current="page"' : ''}>เจ้าหน้าที่</a>
     </nav></div></header><main id="main">${content}</main>
-    <footer class="site-footer"><div class="shell"><span>LightFix · แจ้งไฟถนนเสีย ติดตามงานซ่อม</span><span><a href="/board">ดูความคืบหน้า</a><a href="/technician">พื้นที่ช่างไฟฟ้า</a></span></div></footer>`;
+    <footer class="site-footer"><div class="shell"><span>LightFix · แจ้งไฟถนนเสีย ติดตามงานซ่อม</span><span><a href="/board">ดูงานซ่อมในชุมชน</a><a href="/technician">พื้นที่ช่างไฟฟ้า</a></span></div></footer>`;
   if (headerScrollListener) window.removeEventListener('scroll', headerScrollListener);
   const header = $('.site-header');
   headerScrollListener = () => header.classList.toggle('is-scrolled', window.scrollY > 24);
