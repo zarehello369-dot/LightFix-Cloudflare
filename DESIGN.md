@@ -112,7 +112,7 @@ components:
 
 **Creative North Star: “ศูนย์ประสานงาน” (Coordination Centre).** A calm Thai-first workspace connects a numbered streetlight, readable repair status, and the next action. The eight user-supplied mobile mockups received 10 November 2026 are the visual authority for reporting, My Work, available work, pending management, pole registry, pole detail, repair history and accounts. Desktop expands their hierarchy into useful columns.
 
-Deep teal headings and header anchor a warm pale working ground. White rounded records, generous fields, orange waiting states, mint completed states and blue active states support quick scanning. Yellow remains the brand and primary-action cue. Original fonts, outline bulb, animation behavior, functions and data are binding preservation constraints.
+Deep teal headings and header anchor a warm pale working ground. White rounded records, generous fields, orange waiting states, mint completed states and blue active states support quick scanning. Yellow remains the brand and primary-action cue. Original interface fonts, animation behavior, functions and data are binding preservation constraints. The user-approved logo update of 10 November supersedes the earlier bulb/wordmark.
 
 **Key Characteristics:**
 
@@ -147,9 +147,9 @@ Deep teal headings and header anchor a warm pale working ground. White rounded r
 ## Typography
 
 
-**Wordmark:** Self-hosted Urbanist variable, 800 weight, separate from the bulb; 1.55rem on phones and 1.75rem from 900px. **Interface:** Self-hosted IBM Plex Sans Thai (PlexThai), with Noto Sans Thai and sans-serif fallbacks.
+**Wordmark:** User-approved lowercase `lightfix`, self-hosted Nunito variable at 750 weight, with white `light` and gold `fix` (#d4aa00). Live HTML text remains separate from the inline SVG white location pin and gold outline bulb; 1.8–1.95rem on phones and 2.2rem from 900px. **Interface:** Self-hosted IBM Plex Sans Thai (PlexThai), with Noto Sans Thai and sans-serif fallbacks.
 
-Preload the regular and bold Thai faces and the Urbanist wordmark. Font faces use `font-display: optional`: slow first visits retain a readable fallback instead of swapping text metrics after the page is already being read. Warm visits use the cached custom faces.
+Preload the regular and bold Thai faces and the Nunito wordmark. Font faces use `font-display: optional`: slow first visits retain a readable fallback instead of swapping text metrics after the page is already being read. Warm visits use the cached custom faces.
 
 - **Display:** Bold page titles, 2.1rem with a 1.3 line height; public reporting uses 2rem on phones and 2.5rem from 900px.
 - **Headline:** Bold section titles around 1.25–1.4rem; staff titles respond to context.
@@ -194,7 +194,7 @@ My Work uses two equal segments with counts; pole detail uses three. The selecte
 
 ### Navigation
 
-Keep the original yellow outline bulb separate from the Urbanist LightFix name. The deep teal header has a right-aligned rounded menu button and an anchored teal menu. Public navigation, authenticated destinations, role indicators and sign-out retain their existing access and behavior; staff desktop navigation also uses the established rail. The pale footer uses teal links.
+Use the approved white location pin with gold outline bulb beside the lowercase Nunito lightfix wordmark. The deep teal header has a right-aligned rounded menu button and an anchored teal menu. Public navigation, authenticated destinations, role indicators and sign-out retain their existing access and behavior; staff desktop navigation also uses the established rail. The pale footer uses teal links.
 
 ### Motion and feedback
 
@@ -219,3 +219,8 @@ Page text has one rendered layer. Do not crossfade old and new document snapshot
 - **Don't** replace the original typefaces or redraw the logo as combined artwork.
 - **Don't** restore the superseded square yellow form badges, yellow pending counts or pale-yellow selected work segments.
 - **Don't** make mobile records depend on an unlabeled wide table or use the supplied mockups as fixed desktop-width canvases.
+
+
+## Approved logo — 10 November 2026
+
+User screenshot is authoritative for the new logo: white outlined location pin, gold bulb, lowercase white light and gold fix. Implement with inline SVG paths and live HTML text, never a screenshot or raster image. Only the logo font changes; Thai interface typography, motion and workflow remain intact. The favicon uses the same vector symbol.

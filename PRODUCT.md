@@ -55,7 +55,7 @@ The workflow centers on the pole number: a resident enters it when reporting, an
 
 - Product name: LightFix. The public interface is Thai-first, with an English option in source code.
 - The selected visual direction is “ศูนย์ประสานงาน” (Coordination Centre): a deep teal command header, pale green-gray working ground, white records, and selective yellow action cues. Residents and staff share a visual grammar for pole number, status, and next action.
-- The only logo symbol is the yellow outline lightbulb. “LightFix” is separate interface text rendered in self-hosted Urbanist; Thai interface text uses self-hosted IBM Plex Sans Thai.
+- The user-approved logo (10 November 2026) is a white outline location pin with a gold outline bulb and lowercase `lightfix` in self-hosted Nunito, white `light` and gold `fix`. The mark is inline SVG and the name live HTML text; Thai interface text retains self-hosted IBM Plex Sans Thai.
 - The public first priority remains completing a report quickly without an account. Status and progress must remain understandable in words as well as color.
 
 ## Evidence on Hand

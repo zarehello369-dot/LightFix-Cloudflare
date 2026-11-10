@@ -53,8 +53,8 @@ export function shell(content, current = '') {
   const staff = current === 'admin' || current === 'technician';
   document.body.dataset.area = staff ? 'staff' : 'public';
   $('#app').innerHTML = `<header class="site-header"><div class="shell">
-    <a class="brand" href="/" aria-label="LightFix หน้าแรก">${icon}</a>
-    <a class="site-name" href="/">LightFix</a>
+    <a class="brand" href="/" aria-label="LightFix หน้าแรก"><svg viewBox="0 0 96 96" aria-hidden="true" focusable="false"><path d="M77 35c0 21-29 53-29 53S19 56 19 35a29 29 0 0 1 58 0Z" fill="none" stroke="currentColor" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"/><g fill="none" stroke="var(--logo-gold)" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"><path d="M41 42c0-5-7-7-7-15a14 14 0 0 1 28 0c0 8-7 10-7 15Z"/><path d="M42 50h12M46 57h4"/></g></svg></a>
+    <a class="site-name" href="/" aria-label="LightFix หน้าแรก">light<span>fix</span></a>
     <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="site-nav" aria-label="เปิดเมนู">เมนู</button>
     <nav id="site-nav" class="site-nav" aria-label="เมนูหลัก">
       <a href="/" ${current === 'report' ? 'aria-current="page"' : ''}>แจ้งไฟเสีย</a>
