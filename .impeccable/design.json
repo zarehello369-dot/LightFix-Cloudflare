@@ -1,13 +1,13 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-11-04T14:14:00.026273Z",
+  "generatedAt": "2026-11-10T10:21:05.028660+00:00",
   "title": "Design System: LightFix",
   "extensions": {
     "colorMeta": {
       "deep": {
         "role": "primary",
         "displayName": "Command Teal",
-        "canonical": "#143f46"
+        "canonical": "#0e3b42"
       },
       "deep-hover": {
         "role": "primary",
@@ -17,17 +17,17 @@
       "ink": {
         "role": "neutral",
         "displayName": "Ink",
-        "canonical": "#142e32"
+        "canonical": "#182d31"
       },
       "muted": {
         "role": "neutral",
         "displayName": "Muted",
-        "canonical": "#52676b"
+        "canonical": "#4e656a"
       },
       "gold": {
         "role": "primary",
         "displayName": "Action Yellow",
-        "canonical": "#f1c62b"
+        "canonical": "#f6c72c"
       },
       "gold-soft": {
         "role": "primary",
@@ -42,12 +42,12 @@
       "page": {
         "role": "neutral",
         "displayName": "Working Ground",
-        "canonical": "#eff4f1"
+        "canonical": "#f4f6ef"
       },
       "line": {
         "role": "neutral",
         "displayName": "Record Line",
-        "canonical": "#cbdad5"
+        "canonical": "#ced9d4"
       },
       "green": {
         "role": "secondary",
@@ -73,6 +73,41 @@
         "role": "primary",
         "displayName": "Selected Line",
         "canonical": "#806100"
+      },
+      "pending": {
+        "role": "secondary",
+        "displayName": "Pending Orange",
+        "canonical": "#ffe4c7"
+      },
+      "pending-ink": {
+        "role": "secondary",
+        "displayName": "Pending Text",
+        "canonical": "#854100"
+      },
+      "complete": {
+        "role": "secondary",
+        "displayName": "Complete Mint",
+        "canonical": "#dceee5"
+      },
+      "complete-ink": {
+        "role": "secondary",
+        "displayName": "Complete Text",
+        "canonical": "#205a45"
+      },
+      "working": {
+        "role": "secondary",
+        "displayName": "Working Blue",
+        "canonical": "#dceafa"
+      },
+      "working-ink": {
+        "role": "secondary",
+        "displayName": "Working Text",
+        "canonical": "#155786"
+      },
+      "subtle": {
+        "role": "neutral",
+        "displayName": "Subtle Ground",
+        "canonical": "#e6ebe3"
       }
     },
     "typographyMeta": {
@@ -102,11 +137,6 @@
         "name": "shared",
         "value": "0 12px 32px rgba(20,63,70,.12)",
         "purpose": "Transient surface depth."
-      },
-      {
-        "name": "bottom-nav",
-        "value": "0 -8px 28px rgba(20,63,70,.08)",
-        "purpose": "Separate fixed mobile navigation from content."
       }
     ],
     "motion": [
@@ -134,23 +164,34 @@
         "name": "page-text-stability",
         "value": "No whole-page snapshot blend or main-region arrival",
         "purpose": "Keep a single text layer during navigation and font loading; local motion remains."
+      },
+      {
+        "name": "inset-header",
+        "value": "320ms after 24px scrolling",
+        "purpose": "Retain original full-width-to-inset header motion; static inset state with reduced motion."
+      },
+      {
+        "name": "local-record-arrival",
+        "value": "8px / 260ms, once; stagger at most 100ms",
+        "purpose": "Retain existing local entrance while never holding initially visible content."
+      },
+      {
+        "name": "disclosure",
+        "value": "200ms",
+        "purpose": "Retain existing disclosure feedback; no spatial animation with reduced motion."
       }
     ],
     "breakpoints": [
       {
-        "name": "field-layout",
+        "name": "phone-choice-sheet",
         "value": "640px"
       },
       {
-        "name": "tablet-split",
-        "value": "768px"
-      },
-      {
-        "name": "desktop-nav",
+        "name": "staff-rail-and-card-grid",
         "value": "900px"
       },
       {
-        "name": "table-rows",
+        "name": "docked-pole-reader",
         "value": "1100px"
       }
     ],
@@ -162,6 +203,27 @@
         "/fonts/Urbanist-Variable.ttf"
       ],
       "purpose": "Avoid late font-metric swaps during reading on slow first visits."
+    },
+    "referenceAuthority": {
+      "date": "2026-11-10",
+      "files": [
+        "ประวัติซ่อม@2x.png",
+        "เสา T0001@2x.png",
+        "ข้อมูลเสา@2x.png",
+        "แจ้งไฟเสีย · มือถือ@2x.png",
+        "งานของฉัน@2x.png",
+        "คิวงานที่รับได้@2x.png",
+        "บัญชีผู้ใช้@2x.png",
+        "งานรอจัดการ@2x.png"
+      ],
+      "source": "User-supplied mobile mockups in Downloads; desktop adapts their hierarchy.",
+      "implementation": "public/styles.css final user-supplied mobile references block; public/app.js; public/staff.js",
+      "preserve": [
+        "Original self-hosted fonts",
+        "Original outline bulb and separate wordmark",
+        "Existing motion and reduced-motion behavior",
+        "All functions and data"
+      ]
     }
   },
   "components": [
@@ -171,59 +233,67 @@
       "refersTo": "button-primary",
       "description": "Yellow next action with a dark label.",
       "html": "<button class=\"ds-primary\">แจ้งปัญหา</button>",
-      "css": ".ds-primary{min-height:48px;padding:9px 16px;border:1px solid #be9700;border-radius:12px;background:#f1c62b;color:#142e32;font:700 16px/1.35 PlexThai,\"Noto Sans Thai\",sans-serif;cursor:pointer;transition:background .18s ease-out,transform .18s ease-out}.ds-primary:hover{background:#ffdb4a}.ds-primary:focus-visible{outline:3px solid #176851;outline-offset:3px}.ds-primary:active{transform:scale(.985)}"
+      "css": ".ds-primary{min-height:48px;padding:9px 16px;border:1px solid transparent;border-radius:12px;background:#f6c72c;color:#182d31;font:700 16px/1.35 PlexThai,\"Noto Sans Thai\",sans-serif;cursor:pointer;transition:background .18s ease-out,transform .18s ease-out}.ds-primary:hover{background:#ffdb4a}.ds-primary:focus-visible{outline:3px solid #176851;outline-offset:3px}.ds-primary:active{transform:scale(.985)}"
     },
     {
       "name": "Pole Field",
       "kind": "input",
       "refersTo": "field",
       "description": "Prominent first field in public reporting.",
-      "html": "<label class=\"ds-pole\">หมายเลขเสา<input placeholder=\"เช่น LF-001\"></label>",
-      "css": ".ds-pole{display:grid;gap:6px;color:#142e32;font:700 16px PlexThai,\"Noto Sans Thai\",sans-serif}.ds-pole input{min-height:58px;padding:10px 13px;border:1px solid #768d89;border-radius:12px;background:#fff;color:#142e32;font:700 1.65rem PlexThai,\"Noto Sans Thai\",sans-serif;text-transform:uppercase}.ds-pole input:focus{border-color:#176851;box-shadow:0 0 0 3px rgba(23,104,81,.14);outline:none}.ds-pole input:focus-visible{outline:3px solid #176851;outline-offset:3px}"
+      "html": "<label class=\"ds-pole\">หมายเลขเสา<input placeholder=\"เช่น T0001\"></label>",
+      "css": ".ds-pole{display:grid;gap:6px;color:#182d31;font:700 16px PlexThai,\"Noto Sans Thai\",sans-serif}.ds-pole input{min-height:56px;padding:10px 13px;border:1.5px solid #0e3b42;border-radius:14px;background:#fff;color:#182d31;font:700 1.6rem PlexThai,\"Noto Sans Thai\",sans-serif;text-transform:uppercase}.ds-pole input:focus{border-color:#176851;box-shadow:0 0 0 3px rgba(23,104,81,.14);outline:none}.ds-pole input:focus-visible{outline:3px solid #176851;outline-offset:3px}"
     },
     {
       "name": "Symptom Choice",
       "kind": "chip",
       "description": "Selected choice has a yellow fill and visible check.",
       "html": "<label class=\"ds-choice\"><input type=\"checkbox\" checked><span>ไฟไม่ติด ✓</span></label>",
-      "css": ".ds-choice{display:inline-flex;font:600 15px PlexThai,\"Noto Sans Thai\",sans-serif}.ds-choice input{position:absolute;opacity:0}.ds-choice span{display:grid;place-items:center;min-height:54px;padding:9px 13px;border:1px solid #806100;border-radius:12px;background:#fff3bd;color:#142e32}.ds-choice input:focus-visible+span{outline:3px solid #176851;outline-offset:3px}"
+      "css": ".ds-choice{display:inline-flex;font:600 15px PlexThai,\"Noto Sans Thai\",sans-serif}.ds-choice input{position:absolute;opacity:0}.ds-choice span{display:grid;place-items:center;min-height:64px;padding:9px 13px;border:1px solid #806100;border-radius:14px;background:#fff3bd;color:#182d31}.ds-choice input:focus-visible+span{outline:3px solid #176851;outline-offset:3px}"
     },
     {
       "name": "Status Badge",
       "kind": "chip",
       "description": "Progress color always appears with a readable word.",
       "html": "<span class=\"ds-status\">กำลังดำเนินการ</span>",
-      "css": ".ds-status{display:inline-flex;align-items:center;min-height:30px;padding:5px 10px;border-radius:999px;background:#deedf1;color:#174f62;font:700 13px PlexThai,\"Noto Sans Thai\",sans-serif}"
+      "css": ".ds-status{display:inline-flex;align-items:center;min-height:30px;padding:5px 10px;border-radius:999px;background:#dceafa;color:#155786;font:700 13px PlexThai,\"Noto Sans Thai\",sans-serif}"
     },
     {
       "name": "Record Card",
       "kind": "card",
-      "description": "White pole record over pale working ground.",
-      "html": "<article class=\"ds-card\"><strong>เสา LF-001</strong><span>กำลังดำเนินการ</span><p>ถนนหลัก · ไฟไม่ติด</p></article>",
-      "css": ".ds-card{display:grid;gap:7px;padding:18px;border:1px solid #cbdad5;border-radius:16px;background:#fff;color:#142e32;font:400 16px/1.5 PlexThai,\"Noto Sans Thai\",sans-serif;max-width:340px}.ds-card strong{font-size:1.35rem}.ds-card span{color:#174f62;font-weight:700}.ds-card p{margin:0;color:#52676b}.ds-card:hover{border-color:#143f46;box-shadow:0 12px 32px rgba(20,63,70,.12)}"
+      "description": "Flat outlined white record with rounded corners; identity leads supporting details.",
+      "html": "<article class=\"ds-card\"><strong>เสา T0001</strong><span>กำลังดำเนินการ</span><p>ถนนหลัก · ไฟไม่ติด</p></article>",
+      "css": ".ds-card{display:grid;gap:7px;padding:18px;border:1px solid #ced9d4;border-radius:18px;background:#fff;color:#182d31;font:400 16px/1.5 PlexThai,\"Noto Sans Thai\",sans-serif;max-width:340px}.ds-card strong{font-size:1.35rem}.ds-card span{color:#155786;font-weight:700}.ds-card p{margin:0;color:#4e656a}.ds-card:hover{border-color:#0e3b42;box-shadow:0 12px 32px rgba(20,63,70,.12)}"
     },
     {
       "name": "Command Header",
       "kind": "nav",
       "description": "Deep teal header with separate bulb and Urbanist wordmark.",
       "html": "<nav class=\"ds-head\" aria-label=\"หลัก\"><a class=\"ds-bulb\" href=\"#\" aria-label=\"หน้าแรก\"><svg viewBox=\"0 0 48 48\" aria-hidden=\"true\"><g fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" stroke-linecap=\"round\"><path d=\"M17.5 31.5c0-3.1-1.4-4.5-3-6.6a11.5 11.5 0 1 1 19 0c-1.6 2.1-3 3.5-3 6.6H17.5Z\"/><path d=\"M18 36h12M20 40h8M24 3v3\"/></g></svg></a><span class=\"ds-name\">LightFix</span><span class=\"ds-role\">ประชาชน</span></nav>",
-      "css": ".ds-head{display:flex;align-items:center;gap:6px;min-height:70px;padding:0 16px;background:#143f46;color:#fff}.ds-bulb{display:grid;place-items:center;width:44px;height:48px;color:#f1c62b}.ds-bulb svg{width:33px;height:33px}.ds-bulb:hover{background:#1e535b}.ds-name{font:800 25px/1 Urbanist,PlexThai,sans-serif;letter-spacing:-.035em}.ds-role{margin-left:auto;padding:5px 11px;border-radius:999px;background:#f1c62b;color:#142e32;font:700 12px PlexThai,sans-serif}.ds-bulb:focus-visible{outline:3px solid #f1c62b;outline-offset:3px}"
+      "css": ".ds-head{display:flex;align-items:center;gap:6px;min-height:64px;padding:0 20px;background:#0e3b42;color:#fff}.ds-bulb{display:grid;place-items:center;width:44px;height:48px;color:#f6c72c}.ds-bulb svg{width:33px;height:33px}.ds-bulb:hover{background:#1e535b}.ds-name{font:800 25px/1 Urbanist,PlexThai,sans-serif;letter-spacing:-.035em}.ds-role{margin-left:auto;padding:5px 11px;border-radius:999px;background:#f6c72c;color:#182d31;font:700 12px PlexThai,sans-serif}.ds-bulb:focus-visible{outline:3px solid #f6c72c;outline-offset:3px}"
     },
     {
-      "name": "Mobile Navigation",
-      "kind": "nav",
-      "description": "Fixed white navigation with a soft yellow current destination below 900px.",
-      "html": "<nav class=\"ds-bottom\" aria-label=\"หน้าหลัก\"><a class=\"current\" href=\"#\">แจ้งปัญหา</a><a href=\"#\">ติดตามเรื่อง</a><a href=\"#\">ความคืบหน้า</a></nav>",
-      "css": ".ds-bottom{display:flex;min-height:64px;padding:5px 6px;border-top:1px solid #cbdad5;background:#fff;box-shadow:0 -8px 28px rgba(20,63,70,.08);font:600 12px PlexThai,sans-serif}.ds-bottom a{display:grid;place-items:center;flex:1;min-height:48px;padding:4px 6px;border-radius:10px;color:#52676b;text-align:center;text-decoration:none}.ds-bottom a.current{background:#fff3bd;color:#142e32;font-weight:700}.ds-bottom a:hover{background:#e8f0eb}.ds-bottom a:focus-visible{outline:3px solid #176851;outline-offset:3px}"
+      "name": "Work Switch",
+      "kind": "custom",
+      "description": "Two equal segments on a subtle track; active segment is deep teal.",
+      "html": "<div class=\"ds-switch\"><button aria-pressed=\"true\">กำลังซ่อม 2</button><button aria-pressed=\"false\">รอเริ่มงาน 1</button></div>",
+      "css": ".ds-switch{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px;border-radius:18px;background:#e6ebe3;font-family:PlexThai,\"Noto Sans Thai\",sans-serif}.ds-switch button{min-height:48px;padding:10px;border:0;border-radius:13px;background:transparent;color:#0e3b42;font:inherit;font-size:16px;font-weight:700}.ds-switch button[aria-pressed=true]{background:#0e3b42;color:white}.ds-switch button:focus-visible{outline:3px solid #176851;outline-offset:3px}"
+    },
+    {
+      "name": "Status Family",
+      "kind": "chip",
+      "description": "Waiting orange, working blue and completed mint always carry words.",
+      "html": "<div class=\"ds-statuses\"><span class=\"wait\">รอดำเนินการ</span><span class=\"work\">กำลังซ่อม</span><span class=\"done\">ซ่อมเสร็จ</span></div>",
+      "css": ".ds-statuses{display:flex;gap:8px;flex-wrap:wrap;font:600 14px/1.6 PlexThai,\"Noto Sans Thai\",sans-serif}.ds-statuses span{padding:6px 12px;border-radius:999px}.wait{background:#ffe4c7;color:#854100}.work{background:#dceafa;color:#155786}.done{background:#dceee5;color:#205a45}"
     }
   ],
   "narrative": {
     "northStar": "ศูนย์ประสานงาน (Coordination Centre)",
-    "overview": "One visual grammar connects a numbered streetlight, its status, and the next action across residents and staff. Deep teal anchors pale green-gray working space and white records; yellow marks the outline bulb, role context, selected controls, and primary actions. Urbanist renders the separate LightFix wordmark while Thai interface copy uses IBM Plex Sans Thai.",
+    "overview": "User-supplied mobile mockups define the current LightFix visual system. Deep teal headings and header anchor a warm pale working ground; white outlined rounded records, orange waiting, mint completed and blue working states support direct task scanning. Preserve original fonts, logo, motion, functions and data.",
     "keyCharacteristics": [
-      "Pole identifiers and readable status words lead records.",
-      "The phone viewport begins the current task.",
-      "Tablet layouts use two columns; desktop staff work adds a rail."
+      "Pole identity and readable status lead records.",
+      "Mobile tasks follow the eight approved reference screens.",
+      "Selected work and pole-detail segments use deep teal.",
+      "Desktop adds card columns and a docked pole reader."
     ],
     "rules": [
       {
@@ -245,7 +315,8 @@
     "donts": [
       "Don't merge LightFix into bulb artwork or fill the bulb.",
       "Don't return to a white header or large framed report form.",
-      "Don't make mobile data depend on an unlabeled wide table."
+      "Don't make mobile data depend on an unlabeled wide table.",
+      "Do not restore superseded square yellow form badges or yellow pending counts."
     ]
   }
 }

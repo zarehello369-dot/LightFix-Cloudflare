@@ -2,20 +2,27 @@
 name: LightFix
 description: A Thai-first coordination centre for streetlight reporting and repair.
 colors:
-  deep: "#143f46"
+  deep: "#0e3b42"
   deep-hover: "#1e535b"
-  ink: "#142e32"
-  muted: "#52676b"
-  gold: "#f1c62b"
+  ink: "#182d31"
+  muted: "#4e656a"
+  gold: "#f6c72c"
   gold-soft: "#fff3bd"
   surface: "#ffffff"
-  page: "#eff4f1"
-  line: "#cbdad5"
+  page: "#f4f6ef"
+  line: "#ced9d4"
   green: "#176851"
   blue: "#205e72"
   red: "#9c3c2e"
   control-line: "#768d89"
   selected-line: "#806100"
+  pending: "#ffe4c7"
+  pending-ink: "#854100"
+  complete: "#dceee5"
+  complete-ink: "#205a45"
+  working: "#dceafa"
+  working-ink: "#155786"
+  subtle: "#e6ebe3"
 typography:
   wordmark:
     fontFamily: "Urbanist, PlexThai, Noto Sans Thai, sans-serif"
@@ -25,13 +32,13 @@ typography:
     letterSpacing: "-.035em"
   display:
     fontFamily: "PlexThai, Noto Sans Thai, sans-serif"
-    fontSize: "clamp(1.8rem, 7vw, 2.55rem)"
+    fontSize: "2.1rem"
     fontWeight: 700
-    lineHeight: 1.24
-    letterSpacing: "-.025em"
+    lineHeight: 1.3
+    letterSpacing: "-.02em"
   headline:
     fontFamily: "PlexThai, Noto Sans Thai, sans-serif"
-    fontSize: "1.45rem"
+    fontSize: "1.28rem"
     fontWeight: 700
     lineHeight: 1.35
   body:
@@ -45,13 +52,14 @@ typography:
     fontWeight: 700
 rounded:
   control: "12px"
-  panel: "16px"
+  field: "14px"
+  summary: "20px"
+  panel: "18px"
   pill: "999px"
 spacing:
   compact: "8px"
-  field-gap: "20px"
-  mobile-gutter: "16px"
-  tablet-gutter: "24px"
+  field-gap: "24px"
+  mobile-gutter: "20px"
   desktop-gutter: "28px"
 components:
   button-primary:
@@ -62,65 +70,89 @@ components:
     height: "48px"
   button-outline:
     backgroundColor: "{colors.surface}"
-    textColor: "{colors.ink}"
+    textColor: "{colors.deep}"
     rounded: "{rounded.control}"
     padding: "9px 16px"
     height: "48px"
   field:
     backgroundColor: "{colors.surface}"
     textColor: "{colors.ink}"
-    rounded: "{rounded.control}"
+    rounded: "{rounded.field}"
     padding: "10px 13px"
-    height: "48px"
+    height: "56px"
   panel:
     backgroundColor: "{colors.surface}"
     textColor: "{colors.ink}"
     rounded: "{rounded.panel}"
+  segmented-selected:
+    backgroundColor: "{colors.deep}"
+    textColor: "{colors.surface}"
+    rounded: "13px"
+    height: "48px"
+  status-pending:
+    backgroundColor: "{colors.pending}"
+    textColor: "{colors.pending-ink}"
+    rounded: "{rounded.pill}"
+    padding: "6px 12px"
+  status-working:
+    backgroundColor: "{colors.working}"
+    textColor: "{colors.working-ink}"
+    rounded: "{rounded.pill}"
+    padding: "6px 12px"
+  status-complete:
+    backgroundColor: "{colors.complete}"
+    textColor: "{colors.complete-ink}"
+    rounded: "{rounded.pill}"
+    padding: "6px 12px"
 ---
 
 # Design System: LightFix
 
 ## Overview
 
-**Creative North Star: “ศูนย์ประสานงาน” (Coordination Centre).** One visual grammar connects a numbered streetlight, its status, and the next action across resident, technician, and administrator journeys. The public form remains the quickest route to submit a report.
+**Creative North Star: “ศูนย์ประสานงาน” (Coordination Centre).** A calm Thai-first workspace connects a numbered streetlight, readable repair status, and the next action. The eight user-supplied mobile mockups received 10 November 2026 are the visual authority for reporting, My Work, available work, pending management, pole registry, pole detail, repair history and accounts. Desktop expands their hierarchy into useful columns.
 
-A deep teal command header anchors pale green-gray working space and white records. Yellow identifies the outline bulb, role context, selected controls, and primary actions. “LightFix” is separate Urbanist text, never part of the bulb artwork. Thai interface copy uses self-hosted IBM Plex Sans Thai.
+Deep teal headings and header anchor a warm pale working ground. White rounded records, generous fields, orange waiting states, mint completed states and blue active states support quick scanning. Yellow remains the brand and primary-action cue. Original fonts, outline bulb, animation behavior, functions and data are binding preservation constraints.
 
 **Key Characteristics:**
 
-- Pole identifiers and readable status words lead each record.
-- The first phone viewport starts the current task immediately.
-- Shared cards and controls connect public and staff surfaces.
-- Layout grows into two columns at tablet width and a staff rail at desktop width.
+- Pole identity and status precede secondary detail.
+- The phone viewport begins the task directly.
+- Segmented switches use a deep teal selected segment.
+- Desktop adds room for side-by-side records and a docked pole reader.
 
 ## Colors
 
 ### Primary
 
-- **Command Teal** (`#143f46`): header, route panel, dark action; `#1e535b` on hover.
-- **Action Yellow** (`#f1c62b`): bulb outline, role pill, primary buttons and route numbers.
-- **Soft Yellow** (`#fff3bd`): selected symptom, switch and navigation states.
+- **Command Teal:** header, titles, selected segments, numbered form circles and dark controls.
+- **Action Yellow:** outline bulb, role context and primary submission; soft yellow marks selected ordinary symptoms.
 
 ### Secondary
 
-- **Green** (`#176851`): focus and success; **Blue** (`#205e72`): work in progress; **Red** (`#9c3c2e`): errors and danger actions. Status badges pair color with words.
+- **Pending Orange:** waiting badges, pending complaint counts and waiting summaries.
+- **Complete Mint:** completed repair counts and success badges.
+- **Working Blue:** in-progress badges and active-work summaries.
+- **Focus Green:** keyboard focus and success feedback. **Error Red:** validation and danger actions; hazardous symptoms receive a red border and pale red surface.
 
 ### Neutral
 
-- **Ink** (`#142e32`) and **Muted** (`#52676b`): main and supporting text.
-- **Page** (`#eff4f1`), **Surface** (`#ffffff`), and **Line** (`#cbdad5`): canvas, records and boundaries.
-- **Control Line** (`#768d89`) and **Selected Line** (`#806100`): field borders and selected controls.
+- **Ink** and **Muted:** main text and supporting details.
+- **Working Ground**, **White Surface** and **Record Line:** page, records and dividers.
+- **Subtle Ground:** segmented-switch tracks, footer and mobile report summary.
+- **Control Line** and **Selected Line:** retained base control and selected-symptom strokes; reference-styled fields use a gray-green stroke, strengthened to teal for pole entry/search.
 
-**The Selective Yellow Rule.** Use yellow to mark the brand and a clear next action, rather than coloring routine copy.
+**The Status Words Rule.** Pair status color with readable words or an explicit count label; do not rely on color alone.
 
 ## Typography
+
 
 **Wordmark:** Self-hosted Urbanist variable, 800 weight, separate from the bulb; 1.55rem on phones and 1.75rem from 900px. **Interface:** Self-hosted IBM Plex Sans Thai (PlexThai), with Noto Sans Thai and sans-serif fallbacks.
 
 Preload the regular and bold Thai faces and the Urbanist wordmark. Font faces use `font-display: optional`: slow first visits retain a readable fallback instead of swapping text metrics after the page is already being read. Warm visits use the cached custom faces.
 
-- **Display:** Bold page titles, `clamp(1.8rem, 7vw, 2.55rem)` on phones, 2.35rem from 640px, with a 1.24 line height.
-- **Headline:** Bold section titles around 1.45rem; staff titles respond to context.
+- **Display:** Bold page titles, 2.1rem with a 1.3 line height; public reporting uses 2rem on phones and 2.5rem from 900px.
+- **Headline:** Bold section titles around 1.25–1.4rem; staff titles respond to context.
 - **Body:** 16px / 1.6; introductory copy stays near 58ch on the report surface.
 - **Label:** Bold, approximately .96rem. Pole numbers and metric counts are prominent; counts use tabular numerals.
 
@@ -128,37 +160,48 @@ Preload the regular and bold Thai faces and the Urbanist wordmark. Font faces us
 
 ## Layout
 
-The shell tops out at 1200px. Side gutters are 16px on phones, 24px from 640px, and 28px from 900px. The public report starts directly on the page ground without a large enclosing white form card. Pole input precedes symptom choices; its primary submit button fills the phone width.
+The shared shell is at most 1200px wide, with 20px side gutters below 900px and 28px above. The header is 64px tall on phones and 76px on desktop; its menu control remains present at both sizes. Staff work uses the existing desktop rail from 900px. Page content generally starts 30px below the header.
 
-Below 900px, the deep teal header is compact and its menu contains public routes and, after staff login, the workspace tabs and sign out. The menu scrolls within the viewport when needed. Below 640px, form selects present a short choice sheet while retaining the native select as the form value. At 640px, report fields and supporting details gain columns, the submit button returns to intrinsic width, and the three metrics align in one row. From 768px through 899px, the public report and help form a two-column layout and staff work cards form a two-column grid. At 900px, header links become inline, the public route/help panel sits beside the form, and a 220px sticky staff rail appears. From 1100px, conventional staff table rows replace labeled cards and work cards use two columns.
+Public reporting stays a single-column four-section form on phones, with two-column ordinary symptom choices, full-width hazardous/other options, two photo-source buttons and a full-width yellow submit action. Four 6px completeness bars sit under the introduction. From 900px, a sticky white report overview sits beside the form, replacing the inline mobile summary; help sits at the upper right.
+
+Pole registry rows share one white list surface with dividers, pole identity at left and vertically stacked orange/mint count pills at right. Below 1100px, selection opens a full-area reader with a back control that preserves list context. From 1100px, list and sticky reader sit side by side. The reader has three segmented tabs, two summary tiles and a registry disclosure. Repair-history cards and account cards become two-column grids from 900px. Account actions wrap within each card. Staff overview uses two colored metric tiles and a full-width neutral total tile.
 
 ## Elevation & Depth
 
-Tonal layering and borders organize resting content. The shared shadow token is `0 12px 32px rgba(20,63,70,.12)`; menu, toast, hover, and dialog treatments carry transient depth. The bottom bar casts a soft upward shadow; the staff rail is a bordered white panel at desktop width. Reduced-motion preference removes spatial movement while preserving visible state and a static loading marker.
+Resting records, work cards and panels are flat, outlined white surfaces. Tonal backgrounds and thin dividers do most of the grouping. The retained shared shadow is `0 12px 32px rgba(20,63,70,.12)` for transient surfaces and record hover feedback; menus, toasts and dialogs keep their established depth. Avoid adding decorative elevation to the reference cards.
 
 ## Shapes
 
-Buttons, fields, symptom choices and disclosures use 12px corners. Panels, records, work cards and dialogs use 16px corners. Role and status labels are pill-shaped. The bulb remains an outlined symbol, route steps are numbered circles, and empty states have a dashed boundary.
+Standard buttons use 12px corners, fields and ordinary symptom choices 14px, and panels, records, work cards, history cards and account cards 18px. Summary/empty-state shapes use 18–20px corners. Status labels and count chips are pills. Segmented tracks have 18px corners, 4px inner padding and 13px selected segments. Form section numbers are 28px deep teal circles. Photo upload has a dashed outline and 16px corners; empty states also have dashed boundaries.
 
 ## Components
 
 ### Buttons and fields
 
-Primary buttons have a yellow fill, dark bold text, a minimum 48px height and a brighter hover state. Dark buttons use command teal; outline controls have a visible gray-green stroke; danger buttons are red. Active buttons compress slightly. Inputs, selects and textareas use 12px corners, a visible border, green focus ring and text errors. Phone choice sheets use the same yellow selected state and restore focus to their trigger. The pole input remains 58px high. Selected symptoms use soft yellow and a stronger border.
+Primary actions use yellow with dark bold text; outline actions use teal text and stroke on white. Standard buttons are at least 48px tall, compact actions at least 44px. The report submit action is 60px tall with 16px corners. Inputs, selects and textareas have a 56px minimum height; pole entry is bold and uppercase with a stronger teal stroke. Preserve visible focus, error copy, native form semantics and phone choice-sheet behavior.
 
-### Records and work cards
+### Report sections and completeness
 
-White 16px panels sit on the pale ground. Pole cards lead with the pole number, status, location and symptoms, then show instructions and evidence. Status badges always contain a word. Staff actions sit on the relevant pole card; disclosures hold additional contact and photo evidence. Preserve the established reporting, drafts, conflict recovery, and management behavior described in PRODUCT.md.
+Each of the four section labels begins with a teal numbered circle. Four slim bars indicate supplied information and readiness, with teal completed segments and accessible textual state. They do not represent wizard pages. Ordinary symptom cards use white backgrounds and soft-yellow selection; the hazardous symptom spans the form width with explicit red warning text. Photo privacy copy, callback reveal, preview/removal, validation, summary and successful submission remain functional.
+
+### Work, history and account records
+
+White outlined cards lead with pole identity and readable status. Symptoms, location, instructions, contact/photo disclosures and relevant role-scoped actions retain their behavior. History cards put completion status opposite the date, then use labeled divider rows and photo actions. Account cards use labeled rows with status and role, followed by wrapping management controls. Empty work lists use a spacious dashed panel with contextual actions.
+
+### Segmented switches and summaries
+
+My Work uses two equal segments with counts; pole detail uses three. The selected segment is deep teal with white text on a subtle neutral track. Orange waiting and blue working metric tiles use matching dark text. Pole summaries use mint completed and orange pending tiles. Counts use tabular numerals and explain whether they count poles, complaints or repairs.
 
 ### Navigation
 
-The deep teal header contains the yellow outline bulb, separate Urbanist wordmark and menu at narrow widths. The mobile menu holds public routes and staff workspace tabs. At 900px, header links and the staff rail replace the mobile menu. Route help uses a dark teal panel with yellow step circles.
+Keep the original yellow outline bulb separate from the Urbanist LightFix name. The deep teal header has a right-aligned rounded menu button and an anchored teal menu. Public navigation, authenticated destinations, role indicators and sign-out retain their existing access and behavior; staff desktop navigation also uses the established rail. The pale footer uses teal links.
 
 ### Motion and feedback
 
-The focal moment is a signal becoming a report: the three report information markers fill as the user supplies the required fields; after a committed submission, the outline bulb draws and lights once over 620ms. These markers describe supplied information, not separate wizard pages or server validation. Submission and focus never wait for an animation.
 
-The shared header stays in reach while scrolling. Crossing 24px settles it into an inset, rounded deep-teal bar over 320ms; scrolling back restores the full-width header. Reduced Motion keeps the inset state without the spatial transition. Menus and choice/work dialogs settle from their anchor in 140–220ms, with native focus and Escape behavior unchanged. Local records appear with an 8px, 260ms settle when they enter the viewport; each record runs once and list staggering is capped at 100ms. Initially visible content is not held back. Staff tab headings acknowledge the change locally, while controls respond in 140–220ms and disclosures unfold over 200ms. Photo preview retains its 180ms fade. Interrupted Web Animations are canceled before replay, and active animations are canceled when the page is hidden or Reduce Motion is enabled. Reduced motion keeps short color/opacity feedback, skips spatial entrances and bulb strokes, retains completed markers and the static success bulb, and replaces the loading spinner with a static dot. No decorative loop runs on idle screens.
+The focal moment is a signal becoming a report: the four slim report completeness segments fill as the user supplies the required fields; after a committed submission, the outline bulb draws and lights once over 620ms. These segments describe supplied information, not separate wizard pages or server validation. Submission and focus never wait for an animation.
+
+The shared header stays in reach while scrolling. Crossing 24px settles it into an inset, rounded deep-teal bar over 320ms; scrolling back restores the full-width header. Reduced Motion keeps the inset state without the spatial transition. Menus and choice/work dialogs settle from their anchor in 140–220ms, with native focus and Escape behavior unchanged. Local records appear with an 8px, 260ms settle when they enter the viewport; each record runs once and list staggering is capped at 100ms. Initially visible content is not held back. Staff tab headings acknowledge the change locally, while controls respond in 140–220ms and disclosures unfold over 200ms. Photo preview retains its 180ms fade. Interrupted Web Animations are canceled before replay, and active animations are canceled when the page is hidden or Reduce Motion is enabled. Reduced motion keeps short color/opacity feedback, skips spatial entrances and bulb strokes, retains completed segments and the static success bulb, and replaces the loading spinner with a static dot. No decorative loop runs on idle screens.
 
 Page text has one rendered layer. Do not crossfade old and new document snapshots or animate the whole main text region during font loading. Keep motion on local controls, photo feedback and the committed success state.
 
@@ -166,18 +209,13 @@ Page text has one rendered layer. Do not crossfade old and new document snapshot
 
 ### Do:
 
-- **Do** put the pole number and current status before secondary record details.
-- **Do** keep the first public action visible early and use one clear yellow submit action.
-- **Do** label progress, selections, errors, and status in words as well as color.
-- **Do** keep the outline bulb and Urbanist wordmark as separate elements.
+- **Do** use the eight supplied mobile mockups as visual authority and adapt their hierarchy to desktop.
+- **Do** preserve the original font files, separate bulb/wordmark, animations and reduced-motion behavior.
+- **Do** retain every existing function and data path while styling records, tabs and forms.
+- **Do** keep status words and labels visible alongside color.
 
 ### Don't:
 
-- **Don't** merge “LightFix” into the bulb artwork or fill the bulb symbol.
-- **Don't** return to a white header or a large framed form that delays the first task.
-- **Don't** make mobile data depend on an unlabeled wide table.
-
-
-## Public reporting refinement — 7 November 2026
-
-The approved report surface uses a single form with two-column symptom choices. Four heading badges have pale yellow backgrounds, thin gold outlines, teal numerals and 8px corners. The existing completeness markers use the same shape and retain their completed check feedback. At900px the form gains a text summary beside it, while help stays collapsed at the upper right; mobile uses one column with help after the form. Camera/gallery controls, callback field reveal, validation, hazard warnings and all existing motion behavior remain active. CSS is scoped to `.report-redesign`.
+- **Don't** replace the original typefaces or redraw the logo as combined artwork.
+- **Don't** restore the superseded square yellow form badges, yellow pending counts or pale-yellow selected work segments.
+- **Don't** make mobile records depend on an unlabeled wide table or use the supplied mockups as fixed desktop-width canvases.

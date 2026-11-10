@@ -79,3 +79,7 @@ Both authenticated roles can open a pole dossier from the pole-number button in 
 ## Pole browser presentation — 7 November 2026
 
 The pole registry now opens a docked reader beside a searchable list at desktop widths. Below1100px the selected pole uses the full content area with a back-to-list control; the query and list position are retained. Summary, repair-history and complaint tabs share the existing authenticated dossier API. List rows use separate yellow pending-complaint and mint completed-repair counts, updated after loading the selected pole. Lists are rendered50 rows at a time from the loaded registry; backend workspace limits remain unchanged. Admin edit/delete actions remain permission scoped. No modal is used for reading; edit/delete dialogs retain their existing validation and behavior.
+
+## User-supplied reference direction — 10 November 2026
+
+Eight mobile mockups supplied by the user define the visual direction for public reporting, My Work, available queue, pending management, pole registry, pole detail, repair history and accounts. Match those mobile references and adapt their hierarchy for desktop. Preserve the original self-hosted IBM Plex Sans Thai and Urbanist fonts, yellow outline bulb, animations and reduced-motion support, and every existing function and data path. The refreshed system uses deep teal, a warm pale working ground, white outlined records, orange waiting, mint completed and blue active-work states; DESIGN.md and its sidecar record the built tokens and components.

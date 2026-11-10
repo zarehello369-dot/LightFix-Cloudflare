@@ -1,16 +1,20 @@
-# Public report design QA
+# LightFix supplied-reference implementation — 10 November 2026
 
 final result: passed
 
-Source: C:/Users/watha/.codex/generated_images/01a190cb-56c9-71d0-b97c-1f36e8c89a29/exec-fb28f97a-8f08-4194-b0ce-8a5890d94ff8.png (1536x1024 composite desktop/mobile mock).
-Implementation: .impeccable/review/report-live-desktop.jpg and report-live-mobile.jpg. CSS viewports: desktop 1280x900, mobile390x844; additional320x720 overflow check. Full-page captures retain natural scrolling rather than compressing the form into the mock canvas. Comparison: .impeccable/review/report-comparison.jpg, source above implementation. This collage was inspected; final live captures verify the spacing refinement.
+## Authority and scope
+Eight user-supplied mobile designs: public report, My Work, available queue, administrator overview, accounts, pole registry, pole detail and completed repair history. The user explicitly preserves the original PlexThai/Urbanist fonts, original outline bulb and existing animations. Desktop adapts the same language into the existing workspace rail, card grids and docked pole reader. No backend/schema/data edits.
 
-State: T0001, symptom selected, link-only tracking. The source shows empty completion markers; implementation intentionally shows completed checks using existing progress behavior.
+## Evidence
+Authoritative side-by-side boards: ../LightFix-reference-proof/{report,mywork,queue,overview,users,poles,pole-detail,history}-comparison.png (source left, implementation right). Each pair was opened as a combined input during review. Corresponding *-mobile.png captures use 390px width, and source heights where applicable. Additional report-desktop.png, users-desktop.png, poles-desktop.png, work-populated-desktop.png and pole-tablet.png cover desktop and tablet.
 
-Findings and resolution: selected state received a yellow check background; photo privacy paragraph margins were tightened. Desktop summary, single-column mobile form, 2-column symptoms, numbered rounded-square badges, yellow completion strip and collapsed help are present. Latest shared header/menu navigation, camera/gallery controls and the contact selector are retained to preserve working behavior. These account for the natural page height difference from the mock.
+Retained original fonts/logo differ intentionally from the mock assets. The 50 loaded registry records remain available rather than limiting the list to the four rows illustrated. Existing device history and administrator add/delete actions remain. All fixture records are local synthetic test data.
 
-Verification: 29 existing tests pass, including motion interruption/reduced-motion behavior. Local browser verified hazardous symptom warning, Other detail field and empty-form validation; live browser verified pole lookup, selected state, callback-field reveal, summary updates, six loaded icons and no console errors. No test report was sent to production. Mobile widths390 and320 show no horizontal overflow. Latest staff and motion modules from origin/main were preserved during rebase.
+## Verification
+No horizontal overflow at 320, 390, 768 or1280px. Verified page=19 prefills T0019 and a synthetic report submits successfully, Other description and progress update, empty/active work states, work-note dialog, account edit, history edit, pole search, summary/history tabs, history pagination and keyboard Enter on registry disclosure. No production mutation was used for verification. All32 tests pass; JavaScript syntax and git diff --check pass.
 
-P3: library icons differ slightly from generated illustrations; summary uses text labels rather than decorative icons. No outstanding P0/P1/P2 issue found within this reporting-page scope. Photo compression and actual submission remain covered by existing tests/code; no new production record was created for QA.
+## Independent finish review
+Initial disposition: fix. Desktop account labels were hidden by an inherited table rule; history edit action was stretched by inherited flex. Fixed with scoped display:block and flex:none/width:auto. Post-fix captures reviewed: both resolved; remaining clear; final disposition ship for the scored fixes. Browser measurements: history edit69.46px within350.4px card; desktop account pseudo-label display:block.
 
-Final integration: rebased onto58b5ef2 before deployment; latest floating header and mobile header-menu navigation preserved. Final deployment d5a3f791-b745-47ed-a4ec-e6db1818f8d3; live390px check shows four badges, no horizontal overflow, no legacy bottom navigation.
+## Detector and preservation
+Detector ran once. Native disclosure chevron border-right was classified as a side-tab false positive; existing header width transition is deliberately retained per the user's animation instruction. Existing type/radius advisories are not a reason to replace the approved source. Animation module, font assets, logo symbol and backend remain unchanged. DESIGN.md and design.json now document the supplied-reference palette and components.
