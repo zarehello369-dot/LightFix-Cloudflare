@@ -83,3 +83,8 @@ The pole registry now opens a docked reader beside a searchable list at desktop 
 ## User-supplied reference direction — 10 November 2026
 
 Eight mobile mockups supplied by the user define the visual direction for public reporting, My Work, available queue, pending management, pole registry, pole detail, repair history and accounts. Match those mobile references and adapt their hierarchy for desktop. Preserve the original self-hosted IBM Plex Sans Thai and Urbanist fonts, yellow outline bulb, animations and reduced-motion support, and every existing function and data path. The refreshed system uses deep teal, a warm pale working ground, white outlined records, orange waiting, mint completed and blue active-work states; DESIGN.md and its sidecar record the built tokens and components.
+
+
+## Public receipt and tracking — 12 November 2026
+
+The approved public receipt and tracking redesign preserves the report submission, report-specific link, recent-device history and original API/media paths. Both screens share dated repair milestones. Copy-reference copies the report identifier; share carries the full tracking URL. Photo thumbnails are square and can open the original uncropped image in a separate tab. The system shows absent or failed images explicitly without substituting fictional repair evidence.

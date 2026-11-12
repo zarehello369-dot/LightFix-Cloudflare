@@ -1,9 +1,11 @@
-import { $, control, esc, date, badge, api, post, shell, toast, showError, photoData, icon, reveal } from './shared.js';
+import { $, control, esc, date, badge, api, post, shell, toast, showError, photoData, reveal } from './shared.js';
 import { installMobilePickers } from './mobile-picker.js';
 import { staffPage } from './staff.js';
 import { readRecentReports, rememberReport, clearRecentReports, trackingPath } from './tracking.js';
 import { createLatestRequest } from './requests.js';
 import { poleFromPage } from './pole-link.js';
+import { showReportReceipt } from './report-receipt.js';
+import { trackingDetailMarkup, wireTrackingDetail } from './tracking-view.js';
 
 const symptoms = ['ไฟไม่ติด', 'ไฟติด ๆ ดับ ๆ', 'ไฟสว่างน้อย', 'เสาหรือโคมชำรุด', 'สายไฟหลุดหรือห้อยต่ำ', 'อื่น ๆ'];
 let reportPhoto = '', photoPending = false, photoFailed = false, photoGeneration = 0, reportRequestId = '';
@@ -171,16 +173,7 @@ async function submitReport(event) {
     const url = `${location.origin}${trackingPath(data.id)}`;
     const saved = rememberReport({ id: data.id, pole });
     history.replaceState({}, '', trackingPath(data.id));
-    shell(`<section class="shell report-result"><div class="success-panel"><div class="success-icon" aria-hidden="true">${icon}</div><h1 class="page-title" style="margin-top:22px">ส่งเรื่องเรียบร้อย</h1><p class="lead">เราได้รับแจ้งเสา <strong>${esc(pole)}</strong> แล้ว เก็บลิงก์นี้ไว้เพื่อติดตามงาน</p><div class="track-link number">${esc(url)}</div><div class="inline"><a class="button primary" href="${esc(url)}">ดูสถานะเรื่องนี้</a><button class="button outline" id="copy-track" type="button">คัดลอกลิงก์</button>${typeof navigator.share === 'function' ? '<button class="button outline" id="share-track" type="button">แชร์ลิงก์</button>' : ''}</div><p class="small muted">${saved ? 'บันทึกลิงก์ในเรื่องล่าสุดของอุปกรณ์นี้แล้ว เก็บไว้ไม่เกิน 30 วัน หากใช้เครื่องร่วมกับผู้อื่น สามารถล้างประวัติได้ที่หน้าติดตาม' : 'เบราว์เซอร์นี้บันทึกประวัติไม่ได้ กรุณาคัดลอกลิงก์หรือเพิ่มหน้านี้ในบุ๊กมาร์ก'}</p><p class="small muted">หากไม่เห็นสถานะใหม่ทันที โปรดกลับมาตรวจอีกครั้งภายหลัง</p></div></section>`, 'track');
-    $('#copy-track').addEventListener('click', async () => { try { await navigator.clipboard.writeText(url); toast('คัดลอกลิงก์แล้ว'); } catch { toast('คัดลอกไม่ได้ กรุณาเลือกข้อความลิงก์ด้านบน'); } });
-    $('.success-panel .lead').insertAdjacentHTML('afterend', `<p class="report-summary">เลขเรื่อง: <strong class="number">${esc(data.id)}</strong></p>`);
-    $('#share-track')?.addEventListener('click', async () => {
-      try { await navigator.share({ title: `ติดตามเรื่องแจ้งเสา ${pole} · LightFix`, url }); }
-      catch (error) { if (error.name !== 'AbortError') toast('แชร์ไม่ได้ กรุณาใช้ปุ่มคัดลอกลิงก์'); }
-    });
-    document.title = 'ส่งเรื่องเรียบร้อย · LightFix';
-    window.scrollTo({top:0,behavior:'instant'});
-    $('.success-panel h1').tabIndex = -1; $('.success-panel h1').focus({preventScroll:true});
+    showReportReceipt({ id: data.id, pole, url, saved, sentAt: Date.now() });
   } catch (error) {
     $('#form-error').textContent = error.message;
     button.disabled = false; button.textContent = 'ส่งเรื่องแจ้งไฟเสีย →';
@@ -208,33 +201,36 @@ async function boardPage() {
 async function trackPage() {
   document.title = 'ติดตามเรื่อง · LightFix';
   const id = new URLSearchParams(location.search).get('id') || '';
-  shell(`<section class="shell page"><h1 class="page-title">ติดตามเรื่องแจ้ง</h1><p class="lead">เปิดลิงก์ที่ได้หลังส่งเรื่อง หรือใส่รหัสจากลิงก์เพื่อตรวจสถานะ</p><div class="toolbar"><label class="eyeless" for="track-id">รหัสเรื่องแจ้ง</label><input id="track-id" class="input number" placeholder="รหัสเรื่องแจ้ง" value="${esc(id)}"><button class="button primary" id="track-search">ดูสถานะ</button></div><div id="track-detail"></div><section class="recent-section" id="recent-reports" aria-label="เรื่องล่าสุดในอุปกรณ์นี้"></section></section>`, 'track');
-  renderRecentReports($('#recent-reports'));
+  shell(`<section class="shell page tracking-page"><h1 class="page-title">ติดตามเรื่องแจ้ง</h1><p class="lead">ตรวจสอบสถานะและผลการซ่อมไฟถนน</p><div class="tracking-search"><label for="track-id">เลขอ้างอิง</label><div><input id="track-id" class="input number" placeholder="วางเลขอ้างอิงจากหน้าส่งเรื่องสำเร็จ" value="${esc(id)}" spellcheck="false" autocapitalize="off" aria-describedby="track-search-help"><button class="button primary" id="track-search">ดูสถานะ</button></div><p id="track-search-help" class="visually-hidden">ใส่เลขอ้างอิง 32 ตัวอักษร หรือเปิดลิงก์ติดตามที่เก็บไว้</p></div><div id="track-detail" aria-live="polite" aria-busy="false"></div><section class="recent-section" id="recent-reports" aria-label="เรื่องล่าสุดในอุปกรณ์นี้"></section></section>`, 'track');
+  document.body.dataset.view = 'tracking';
+  renderRecentReports($('#recent-reports'), false, true);
   const target = $('#track-detail');
   const requests = createLatestRequest();
   async function load() {
     const value = $('#track-id').value.trim().toLowerCase();
-    if (!/^[a-f0-9]{32}$/.test(value)) { requests.invalidate(); target.innerHTML = '<div class="error-box" role="alert">กรุณาใช้ลิงก์ติดตามจากหน้าส่งเรื่องสำเร็จ</div>'; return; }
+    if (!/^[a-f0-9]{32}$/.test(value)) { requests.invalidate(); target.setAttribute('aria-busy', 'false'); target.innerHTML = '<div class="error-box" role="alert">กรุณาใส่เลขอ้างอิง 32 ตัวอักษร หรือเปิดลิงก์จากหน้าส่งเรื่องสำเร็จ</div>'; return; }
+    target.setAttribute('aria-busy', 'true');
     target.innerHTML = '<p class="loading" role="status">กำลังตรวจสถานะ…</p>';
     await requests.run(() => api(`/api/reports/${value}`), r => {
       history.replaceState({}, '', `/track?id=${value}`);
-      const steps = [{ title: 'รับเรื่องแจ้ง', time: r.at }, { title: 'เริ่มงานซ่อม', time: r.startedAt }, { title: 'ซ่อมเสร็จ', time: r.doneAt }];
-      target.innerHTML = `<div class="detail-grid"><article class="panel"><div class="inline" style="justify-content:space-between"><h2 class="section-heading number" style="margin:0">เสา ${esc(r.pole)}</h2>${badge(r.status)}</div><p>${esc(r.symptom)}</p>${r.note ? `<p><strong>บันทึกงาน:</strong> ${esc(r.note)}</p>` : ''}${r.cause ? `<p><strong>สาเหตุ:</strong> ${esc(r.cause)} ${esc(r.causeDetail)}</p>` : ''}<div class="photo-pair">${r.hasBefore ? `<figure><a href="/media/${value}/before" target="_blank" rel="noopener" aria-label="เปิดรูปก่อนซ่อมเสา ${esc(r.pole)} ขนาดเต็มในแท็บใหม่"><img src="/media/${value}/before" alt="รูปก่อนซ่อมเสา ${esc(r.pole)}"></a><figcaption>ก่อนซ่อม · เลือกภาพเพื่อเปิดขนาดเต็ม</figcaption></figure>` : ''}${r.hasAfter ? `<figure><a href="/media/${value}/after" target="_blank" rel="noopener" aria-label="เปิดรูปหลังซ่อมเสา ${esc(r.pole)} ขนาดเต็มในแท็บใหม่"><img src="/media/${value}/after" alt="รูปหลังซ่อมเสา ${esc(r.pole)}"></a><figcaption>หลังซ่อม · เลือกภาพเพื่อเปิดขนาดเต็ม</figcaption></figure>` : ''}</div></article><aside class="panel"><h2 class="section-heading">เส้นทางของเรื่องนี้</h2><ol class="timeline">${steps.map((s, i) => `<li><strong>${s.title}</strong><div class="small muted">${s.time ? date(s.time) : 'รอดำเนินการ'}</div></li>`).join('')}</ol><div class="road-line"></div></aside></div>`;
-    }, error => showError(target, error));
+      target.innerHTML = trackingDetailMarkup(r, value);
+      wireTrackingDetail(target, r, value);
+      target.setAttribute('aria-busy', 'false');
+    }, error => { target.setAttribute('aria-busy', 'false'); showError(target, error); });
   }
   $('#track-search').addEventListener('click', load);
   $('#track-id').addEventListener('keydown', e => { if (e.key === 'Enter') load(); });
   if (id) await load();
 }
 
-function renderRecentReports(target, hideEmpty = false) {
+function renderRecentReports(target, hideEmpty = false, compact = false) {
   const rows = readRecentReports();
   if (!rows.length && hideEmpty) { target.hidden = true; return; }
   target.hidden = false;
-  target.innerHTML = `<div class="section-head"><h2 class="section-heading">เรื่องล่าสุดในอุปกรณ์นี้</h2>${rows.length ? '<button class="button outline small" id="clear-recent" type="button">ล้างประวัติในอุปกรณ์นี้</button>' : ''}</div><p class="small muted">เก็บเฉพาะเลขเรื่อง หมายเลขเสา และเวลาที่ส่ง ไม่เกิน 10 เรื่อง ภายใน 30 วัน ไม่เก็บข้อมูลติดต่อหรือรูปในประวัตินี้ การล้างประวัติไม่ยกเลิกเรื่องแจ้ง</p>${rows.length ? `<div class="record-list">${rows.map(row => `<a class="record" href="${trackingPath(row.id)}"><strong class="record-title number">${esc(row.pole)}</strong><span>ดูสถานะ</span><span class="record-detail">ส่งเมื่อ ${date(row.at)} · เลขเรื่อง ${esc(row.id)}</span></a>`).join('')}</div>` : '<p class="empty">ยังไม่มีเรื่องที่บันทึกไว้ในเบราว์เซอร์นี้ หากส่งจากเครื่องอื่น ให้เปิดลิงก์ติดตามที่เก็บไว้</p>'}<p class="small muted">หากใช้เครื่องร่วมกับผู้อื่น ให้ล้างประวัติหลังใช้งาน</p>`;
+  target.innerHTML = `<div class="section-head"><h2 class="section-heading">เรื่องล่าสุดในอุปกรณ์นี้</h2>${rows.length ? `<button class="button outline small" id="clear-recent" type="button">${compact ? 'ล้างประวัติ' : 'ล้างประวัติในอุปกรณ์นี้'}</button>` : ''}</div><p class="small muted">${compact ? 'เก็บเลขเรื่องในเครื่องนี้ไม่เกิน 30 วัน' : 'เก็บเฉพาะเลขเรื่อง หมายเลขเสา และเวลาที่ส่ง ไม่เกิน 10 เรื่อง ภายใน 30 วัน ไม่เก็บข้อมูลติดต่อหรือรูปในประวัตินี้ การล้างประวัติไม่ยกเลิกเรื่องแจ้ง'}</p>${rows.length ? `<div class="record-list">${rows.map(row => `<a class="record" href="${trackingPath(row.id)}"><strong class="record-title number">${esc(row.pole)}</strong>${compact ? '<span class="record-arrow" aria-hidden="true">›</span>' : '<span>ดูสถานะ</span>'}<span class="record-detail">ส่งเมื่อ ${date(row.at)}${compact ? '' : ` · เลขเรื่อง ${esc(row.id)}`}</span></a>`).join('')}</div>` : '<p class="empty">ยังไม่มีเรื่องที่บันทึกไว้ในเบราว์เซอร์นี้ หากส่งจากเครื่องอื่น ให้เปิดลิงก์ติดตามที่เก็บไว้</p>'}<p class="small muted">${compact ? 'การล้างประวัติไม่ยกเลิกเรื่องแจ้ง' : 'หากใช้เครื่องร่วมกับผู้อื่น ให้ล้างประวัติหลังใช้งาน'}</p>`;
   $('#clear-recent')?.addEventListener('click', () => {
     if (!clearRecentReports()) { toast('ล้างประวัติไม่ได้ กรุณาตรวจการอนุญาตเก็บข้อมูลของเบราว์เซอร์'); return; }
-    renderRecentReports(target, hideEmpty); toast('ล้างประวัติในอุปกรณ์นี้แล้ว เรื่องแจ้งยังอยู่ในระบบ');
+    renderRecentReports(target, hideEmpty, compact); toast('ล้างประวัติในอุปกรณ์นี้แล้ว เรื่องแจ้งยังอยู่ในระบบ');
   });
 }
 

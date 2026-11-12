@@ -224,3 +224,12 @@ Page text has one rendered layer. Do not crossfade old and new document snapshot
 ## Approved logo — 10 November 2026
 
 User screenshot is authoritative for the new logo: white outlined location pin, gold bulb, lowercase white light and gold fix. Implement with inline SVG paths and live HTML text, never a screenshot or raster image. Only the logo font changes; Thai interface typography, motion and workflow remain intact. The favicon uses the same vector symbol.
+
+
+## Approved receipt and public tracking — 12 November 2026
+
+The user-approved SVGs define both screens. The report receipt uses a centered confirmation, a white reference/link card and a content-height support column. Public tracking uses a 620px record alongside a content-height progress panel on desktop; mobile orders summary, progress, square photo pair, actions and recent-device history. Keep the existing shared logo, self-hosted fonts and header motion.
+
+Both routes use repair-progress.js for milestone labels, completed checks, short pale connectors and recorded dates/times. Steps without timestamps remain pending; cancellations do not imply completed repairs. The receipt records its submission time and does not invent repair dates. Photos use 1:1 object-fit:cover thumbnails and link to untouched full-size originals. Missing images have a quiet explicit empty state; failed thumbnails retain their full-size link. Reference copy writes only the full report ID; share retains native sharing or full-URL copy fallback. Recent-device history remains bounded and does not infer server status.
+
+The implementation was reviewed locally by the user and approved for publication on 12 November 2026. Preview-only fixture servers remain outside public/ and are not part of the deployment.
