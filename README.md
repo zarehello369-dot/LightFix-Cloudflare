@@ -79,3 +79,12 @@ npm run check
 - ข้อความเตือนสายไฟชำรุดในหน้าสาธารณะยังไม่มีเบอร์ติดต่อฉุกเฉินของพื้นที่ ต้องเพิ่มช่องทางที่หน่วยงานยืนยันก่อนประกาศใช้งาน
 - แบบฟอร์มยอมให้ผู้แจ้งใส่เพียงชื่อ จึงอาจติดต่อกลับไม่ได้ในบางกรณี หากการติดต่อกลับจำเป็น ควรบังคับช่องทางที่ติดต่อได้
 - การนำเข้ารอบนี้ไม่มีงานซ่อมเก่า ประวัติซ่อม รูปเก่า หรือรหัสผ่านเก่า ตามขอบเขตที่ตกลงกัน
+
+
+## Staff chat release — 14 November 2026
+
+The staff workspace includes private team chat, emoji, avatar profiles, read receipts, online presence and admin-to-technician work invitations. Names remain managed through accounts. Presence is approximate and expires after 75 seconds; private messages and avatars require a current staff session. Existing system notifications remain accessible separately.
+
+For this existing production database, migration history was checked: only `0004_chat.sql` and `0005_staff_profiles.sql` were pending. Apply these additive migrations before deploying this Worker. Never rerun initial/import scripts against production. Keep the existing D1/R2 bindings and RATE_SALT secret.
+
+`npm run check` checks every JavaScript module under src/public/scripts/tests, then runs the regression suite. Tests include concurrency, duplicate requests, committed-but-lost responses, session revocation, privacy and frontend lifecycle behavior. Fixture servers outside this repository are not shipped. Changing passwords signs out other sessions. Uploads with an indeterminate database result are retained rather than risking deleted evidence; an ambiguous repair response requires reloading the latest work state.

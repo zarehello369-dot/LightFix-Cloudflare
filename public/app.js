@@ -9,6 +9,7 @@ import { trackingDetailMarkup, wireTrackingDetail } from './tracking-view.js';
 
 const symptoms = ['ไฟไม่ติด', 'ไฟติด ๆ ดับ ๆ', 'ไฟสว่างน้อย', 'เสาหรือโคมชำรุด', 'สายไฟหลุดหรือห้อยต่ำ', 'อื่น ๆ'];
 let reportPhoto = '', photoPending = false, photoFailed = false, photoGeneration = 0, reportRequestId = '';
+let reportAttempt = null;
 const getPole = value => {
   const text = String(value || '').trim().toUpperCase();
   const digits = text.startsWith('T') ? text.slice(1) : text;
@@ -20,7 +21,7 @@ const getPole = value => {
 
 
 function reportPage() {
-  reportPhoto = ''; photoPending = false; photoFailed = false; reportRequestId = crypto.randomUUID();
+  reportPhoto = ''; photoPending = false; photoFailed = false; reportAttempt = null; reportRequestId = crypto.randomUUID();
   document.title = 'แจ้งไฟถนนเสีย · LightFix';
   shell(`<div class="shell report-hero report-redesign">
     <header class="report-intro">
@@ -143,6 +144,7 @@ function reportPage() {
 async function submitReport(event) {
   event.preventDefault();
   const form = event.currentTarget;
+  if(form.dataset.saving==='true')return;
   const pole = getPole(control(form, 'pole').value);
   const picked = form.querySelector('input[name=symptom]:checked')?.value || '';
   const otherDetail = $('#other-symptom').value.trim();
@@ -165,18 +167,26 @@ async function submitReport(event) {
   if (photoFailed) { $('#form-error').textContent = 'รูปยังไม่พร้อม กรุณาเลือกรูปใหม่หรือกดเอารูปออก'; return; }
   if (photoPending) { $('#form-error').textContent = 'กำลังเตรียมรูป กรุณารอสักครู่แล้วส่งอีกครั้ง'; return; }
   const button = $('#submit-report');
+  const retryingUncertain = !!reportAttempt;
+  const payload = reportAttempt || Object.freeze({ pole, symptom, contactType, contactValue, photo:reportPhoto, requestId:reportRequestId });
+  reportAttempt = payload; form.dataset.saving='true';
+  const controls=[...form.querySelectorAll('input,select,textarea,button')].filter(control=>control!==button);
+  controls.forEach(control=>control.disabled=true);
   button.disabled = true; button.textContent = 'กำลังส่งเรื่อง…';
   try {
-    const photo = reportPhoto;
-    const requestId = reportRequestId;
-    const data = await post('/api/reports', { pole, symptom, contactType, contactValue, photo, requestId });
+    const data = await post('/api/reports', payload);
+    const reportedPole = data.pole || payload.pole;
     const url = `${location.origin}${trackingPath(data.id)}`;
-    const saved = rememberReport({ id: data.id, pole });
+    const saved = rememberReport({ id: data.id, pole:reportedPole });
     history.replaceState({}, '', trackingPath(data.id));
-    showReportReceipt({ id: data.id, pole, url, saved, sentAt: Date.now() });
+    showReportReceipt({ id: data.id, pole:reportedPole, url, saved, sentAt: Date.now() });
   } catch (error) {
-    $('#form-error').textContent = error.message;
-    button.disabled = false; button.textContent = 'ส่งเรื่องแจ้งไฟเสีย →';
+    const definitive=!retryingUncertain&&['TOO_LARGE','INVALID_JSON','CONTACT_REQUIRED','CONTACT_INVALID','INVALID_POLE','PHOTO_INVALID','PHOTO_TOO_LARGE','SLOW_DOWN','SYMPTOM_REQUIRED','INVALID_REQUEST','NO_POLE','POLE_LIMIT'].includes(error.code);
+    if(definitive){reportAttempt=null;reportRequestId=crypto.randomUUID();controls.forEach(control=>control.disabled=false);}
+    $('#form-error').textContent = error.message+(definitive?'':' · ยังไม่ทราบผล กรุณากดตรวจผลเพื่อส่งเรื่องเดิมอีกครั้งโดยไม่สร้างซ้ำ');
+    button.disabled = false; button.textContent = definitive?'ส่งเรื่องแจ้งไฟเสีย →':'ตรวจผล / ส่งเรื่องเดิมอีกครั้ง';
+  } finally {
+    delete form.dataset.saving;
   }
 }
 

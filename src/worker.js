@@ -1,3 +1,4 @@
+import { chatRoute } from './chat.js';
 const COOKIE = 'lf_session';
 const SESSION_MS = 8 * 60 * 60 * 1000;
 const PASSWORD_ITERATIONS = 100000;
@@ -82,6 +83,16 @@ async function actor(request, env, admin = false, allowPasswordChange = false) {
 }
 
 async function audit() {}
+
+async function discardUnreferencedPhotos(env, keys) {
+  for (const key of keys) {
+    try {
+      // A write can commit even when its response is lost. Retain objects if reconciliation fails.
+      const reference = await one(env.DB, 'SELECT id FROM reports WHERE before_photo_key=? UNION ALL SELECT id FROM jobs WHERE after_photo_key=? LIMIT 1', key, key);
+      if (!reference) await env.PHOTOS.delete(key);
+    } catch { /* Retaining an orphan is safer than deleting committed evidence. */ }
+  }
+}
 
 async function commitWork(env, user, pole, revision, statements) {
   if (!Number.isSafeInteger(revision) || revision < 0) throw new HttpError(409, 'WORK_CHANGED', 'กรุณาโหลดข้อมูลงานล่าสุดก่อนทำรายการ');
@@ -217,8 +228,8 @@ async function createReport(env, data) {
   const type = requestedType === 'none' ? 'name' : requestedType;
   const requestId = clean(data.requestId, 80);
   if (!/^[a-zA-Z0-9-]{20,80}$/.test(requestId)) throw new HttpError(400, 'INVALID_REQUEST', 'กรุณาลองส่งเรื่องใหม่');
-  const prior = await one(env.DB, 'SELECT id FROM reports WHERE request_id=?', requestId);
-  if (prior) return { id: prior.id, pole, duplicate: true };
+  const prior = await one(env.DB, 'SELECT id,pole FROM reports WHERE request_id=?', requestId);
+  if (prior) return { id: prior.id, pole: prior.pole, duplicate: true };
   const found = await one(env.DB, 'SELECT pole FROM poles WHERE pole=? AND active=1', pole);
   if (!found) throw new HttpError(400, 'NO_POLE', 'ไม่พบหมายเลขเสานี้ กรุณาตรวจสอบอีกครั้ง');
   const open = await one(env.DB, 'SELECT COUNT(*) AS count FROM reports WHERE pole=? AND status<2', pole);
@@ -239,9 +250,9 @@ async function createReport(env, data) {
     ]);
     if (!inserted[0].meta.changes) throw new HttpError(409, 'POLE_LIMIT', 'เสานี้มีเรื่องรอดำเนินการหลายรายการแล้ว กรุณาดูหน้าติดตาม');
   } catch (error) {
-    if (photo) await env.PHOTOS.delete(key);
-    const duplicate = await one(env.DB, 'SELECT id FROM reports WHERE request_id=?', requestId);
-    if (duplicate) return { id: duplicate.id, pole, duplicate: true };
+    if (photo) await discardUnreferencedPhotos(env, [key]);
+    const duplicate = await one(env.DB, 'SELECT id,pole FROM reports WHERE request_id=?', requestId);
+    if (duplicate) return { id: duplicate.id, pole: duplicate.pole, duplicate: true };
     throw error;
   }
   await audit(env.DB, 'public', 'report', reportId);
@@ -292,7 +303,10 @@ async function login(request, env, data, expectedRole) {
   }
   await run(env.DB, 'DELETE FROM login_attempts WHERE username=?', username);
   const token = hex(crypto.getRandomValues(new Uint8Array(32)));
-  await run(env.DB, 'INSERT INTO sessions(token_hash,user_id,expires_at,created_at) VALUES(?,?,?,?)', await sha256(token), user.id, now() + SESSION_MS, now());
+  const session = await run(env.DB, `INSERT INTO sessions(token_hash,user_id,expires_at,created_at)
+    SELECT ?,id,?,? FROM users WHERE id=? AND active=1 AND role=? AND password_hash=? AND salt=?`,
+    await sha256(token), now() + SESSION_MS, now(), user.id, role, user.password_hash, user.salt);
+  if (!session.meta.changes) throw new HttpError(401, 'BAD_LOGIN', 'ข้อมูลบัญชีเปลี่ยนแปลง กรุณาเข้าสู่ระบบใหม่');
   await audit(env.DB, username, 'login', user.id);
   return ok({ user: { id: user.id, username, name: user.display_name, role, mustChangePassword: !!user.must_change_password } }, 200, { 'set-cookie': sessionCookie(token, SESSION_MS / 1000) });
 }
@@ -304,7 +318,14 @@ async function changePassword(request, env, data, expectedRole) {
   if (password.length < 12 || password.length > 200) throw new HttpError(400, 'PASSWORD_INVALID', 'รหัสผ่านใหม่ต้องมี 12 ถึง 200 ตัวอักษร');
   const salt = bytesToBase64(crypto.getRandomValues(new Uint8Array(16)));
   const hash = await passwordHash(password, salt);
-  await run(env.DB, `UPDATE users SET password_hash=?,salt=?,iterations=?,must_change_password=0 WHERE id=?`, hash, salt, PASSWORD_ITERATIONS, user.id);
+  const sessionHash = await sha256(cookieValue(request, COOKIE));
+  const results = await env.DB.batch([
+    env.DB.prepare(`UPDATE users SET password_hash=?,salt=?,iterations=?,must_change_password=0 WHERE id=?
+      AND EXISTS(SELECT 1 FROM sessions WHERE token_hash=? AND user_id=? AND expires_at>?)`).bind(hash, salt, PASSWORD_ITERATIONS, user.id, sessionHash, user.id, now()),
+    env.DB.prepare(`DELETE FROM sessions WHERE user_id=? AND token_hash<>?
+      AND EXISTS(SELECT 1 FROM sessions WHERE token_hash=? AND user_id=? AND expires_at>?)`).bind(user.id, sessionHash, sessionHash, user.id, now())
+  ]);
+  if (!results[0].meta.changes) throw new HttpError(401, 'LOGIN_REQUIRED', 'เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่');
   await audit(env.DB, user.username, 'change_password', user.id);
   return true;
 }
@@ -329,11 +350,12 @@ async function workspace(request, env, expectedRole) {
     COALESCE((SELECT revision FROM pole_work_state w WHERE w.pole=p.pole),0) AS work_revision
     FROM poles p ORDER BY p.pole LIMIT 1000`);
   const notifications = await all(env.DB, `SELECT id,title,body,report_ids,created_at,read_at FROM notifications WHERE user_id=? ORDER BY created_at DESC LIMIT 100`, user.id);
+  const chatUnread = await one(env.DB, 'SELECT COUNT(*) AS count FROM chat_messages WHERE recipient_id=? AND read_at IS NULL', user.id);
   const result = {
     user: { id: user.id, username: user.username, name: user.display_name, role: user.role },
     reports: reports.map(r => ({ ...publicReport(r), contactType: r.contact_type, contactValue: r.contact_value,
       jobId: r.job_id, assignedId: r.assigned_user_id, instructions: r.instructions, dueAt: r.due_at })),
-    jobs, poles, notifications, causes: CAUSES
+    jobs, poles, notifications, causes: CAUSES, chat_unread: chatUnread.count
   };
   if (admin) {
     result.users = await all(env.DB, `SELECT u.id,u.username,u.display_name,u.role,u.active,u.created_at,
@@ -489,7 +511,7 @@ async function finishJob(request, env, jobId, data) {
     if (!result[0].meta.changes) throw new HttpError(409, 'STATUS_CHANGED', 'งานเปลี่ยนสถานะแล้ว กรุณารีเฟรช');
     await Promise.allSettled(movedPhotos.map(({ oldKey }) => env.PHOTOS.delete(oldKey)));
   } catch (e) {
-    await Promise.allSettled(createdKeys.map(createdKey => env.PHOTOS.delete(createdKey)));
+    await discardUnreferencedPhotos(env, createdKeys);
     throw e;
   }
   await audit(env.DB, user.username, 'finish', jobId);
@@ -528,11 +550,13 @@ async function reviewRegistration(request, env, registrationId, data) {
   if (!['approved', 'rejected'].includes(decision)) throw new HttpError(400, 'INVALID_DECISION', 'เลือกอนุมัติหรือปฏิเสธ');
   const registration = await one(env.DB, `SELECT id,user_id,status FROM registrations WHERE id=?`, registrationId);
   if (!registration || registration.status !== 'pending') throw new HttpError(409, 'STATUS_CHANGED', 'คำขอเปลี่ยนสถานะแล้ว');
-  await env.DB.batch([
+  const results = await env.DB.batch([
+    env.DB.prepare(`UPDATE users SET active=? WHERE id=? AND EXISTS(SELECT 1 FROM registrations WHERE id=? AND status='pending')`)
+      .bind(decision === 'approved' ? 1 : 0, registration.user_id, registrationId),
     env.DB.prepare(`UPDATE registrations SET status=?,reviewed_at=?,reviewed_by=?,reason=? WHERE id=? AND status='pending'`)
-      .bind(decision, now(), user.username, clean(data.reason, 500), registrationId),
-    env.DB.prepare('UPDATE users SET active=? WHERE id=?').bind(decision === 'approved' ? 1 : 0, registration.user_id)
+      .bind(decision, now(), user.username, clean(data.reason, 500), registrationId)
   ]);
+  if (!results[1].meta.changes) throw new HttpError(409, 'STATUS_CHANGED', 'คำขอเปลี่ยนสถานะแล้ว');
   await audit(env.DB, user.username, `registration_${decision}`, registration.user_id);
   return true;
 }
@@ -665,6 +689,11 @@ export default {
       }
       if (!url.pathname.startsWith('/api/') && !url.pathname.startsWith('/media/')) return await asset(request, env);
       if (request.method !== 'GET' && request.method !== 'HEAD') assertOrigin(request);
+      if (url.pathname.startsWith('/api/chat/')) {
+        if (request.method === 'POST') { const staff=await actor(request, env); await throttle(request, env, `chat-${staff.id}`, 120, 60_000); }
+        const result=await chatRoute(request, env, {actor,one,all,run,HttpError,commitWork,id,body,poleNumber,decodePhoto,sessionHash:()=>sha256(cookieValue(request,COOKIE))});
+        return result instanceof Response?result:ok(result);
+      }
       if (url.pathname.startsWith('/api/jobs/') || url.pathname.startsWith('/api/notifications/')) {
         const staff = await actor(request, env);
         if (staff.role !== 'technician') throw new HttpError(403, 'FORBIDDEN', 'ใช้เส้นทางผู้ดูแลสำหรับบัญชีผู้ดูแล');

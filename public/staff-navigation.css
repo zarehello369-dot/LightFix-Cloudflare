@@ -1,0 +1,8 @@
+/* Shared on every staff screen; the original workspace grid and panel remain. */
+.staff-identity{display:flex;align-items:center;gap:12px;justify-content:flex-start}
+.staff-profile-button{display:grid;place-items:center;width:44px;height:44px;flex:none;border:0;border-radius:50%;background:var(--deep);color:white;font:700 20px var(--font);padding:0;overflow:hidden}
+.staff-profile-button img{display:block;width:100%;height:100%;object-fit:cover}
+.staff-identity h2{min-width:0}.staff-identity h2 span{overflow-wrap:anywhere}
+.staff-rail-links{margin-bottom:18px}
+.staff-rail>#logout{margin-top:auto;width:100%;min-height:48px;border:1px solid var(--control-line);border-radius:12px;background:white;color:var(--deep);font-weight:600}
+@media(min-width:900px){.staff-rail{display:flex;flex-direction:column;align-self:start;min-height:min(740px,calc(100dvh - 160px))}.staff-identity{display:flex}.staff-rail-links{flex:none}.staff-rail>#logout{margin-top:auto}}

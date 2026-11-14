@@ -1,6 +1,9 @@
 // Keep the native select as the form value; phones get a shorter, branded choice sheet.
 const phone = matchMedia('(max-width: 639px)');
 let activeTrigger;
+const synchronizers = new WeakMap();
+
+export function syncMobilePicker(select) { synchronizers.get(select)?.(); }
 
 function labelFor(select) {
   const label = document.querySelector(`label[for="${CSS.escape(select.id)}"]`)?.cloneNode(true);
@@ -54,9 +57,11 @@ export function installMobilePickers() {
       trigger.disabled = select.disabled;
       trigger.setAttribute('aria-label', `${labelFor(select)}: ${trigger.textContent}`);
     };
+    synchronizers.set(select, sync);
     select.after(trigger);
     setMode(select);
     select.addEventListener('change', sync);
+    select.form?.addEventListener('reset', () => queueMicrotask(sync));
     select.addEventListener('invalid', event => {
       if (!phone.matches) return;
       event.preventDefault();
@@ -117,6 +122,9 @@ export function installMobilePickers() {
     root.querySelectorAll?.('select').forEach(enhance);
   };
   scan(document.body);
-  new MutationObserver(records => records.forEach(record => record.addedNodes.forEach(scan)))
-    .observe(document.body, { childList: true, subtree: true });
+  new MutationObserver(records => records.forEach(record => {
+    if(record.type==='attributes')syncMobilePicker(record.target.closest('select'));
+    else { record.addedNodes.forEach(scan); syncMobilePicker(record.target.closest?.('select')); }
+  }))
+    .observe(document.body, { childList: true, subtree: true, attributes:true, attributeFilter:['disabled','selected','label'] });
 }

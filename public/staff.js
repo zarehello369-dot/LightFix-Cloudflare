@@ -1,7 +1,14 @@
+import {profileEditor,avatarMarkup} from './chat-profile.js';
+import { mountChat } from './chat.js';
+import { mountPresence } from './staff-presence.js';
+import { syncMobilePicker } from './mobile-picker.js';
 import { groupReports, readFilters, queueReports } from './workflow.js';
 import { submitStaffForm, readWorkDraft, saveWorkDraft, selectPoleReports } from './staff-forms.js';
 import { $, control, esc, date, badge, api, post, shell, toast, showError, photoData, enhancePasswordFields, settle } from './shared.js';
 
+let stopChat = () => {};
+let stopPresence;
+let workspaceProfile;
 const state = { role: '', tab: 'overview', data: null, selected: new Set() };
 const roleLabel = role => role === 'admin' ? 'เจ้าหน้าที่' : 'ช่างไฟฟ้า';
 const contactLabel = type => ({ phone: 'โทรศัพท์', line: 'LINE', email: 'อีเมล', name: 'ชื่อ' })[type] || 'ข้อมูลผู้แจ้ง';
@@ -17,6 +24,7 @@ function focusViewHeading() {
 
 export async function staffPage(role) {
   state.role = role; state.tab = role === 'technician' ? 'mywork' : 'overview'; state.selected.clear();
+  if (new URLSearchParams(location.search).get('view') === 'messages') state.tab = 'messages';
   document.title = `${roleLabel(role)} · LightFix`;
   shell(`<section class="shell page"><div id="staff-root"><p class="loading" role="status">กำลังตรวจการเข้าสู่ระบบ…</p></div></section>`, role);
   try {
@@ -35,6 +43,9 @@ export async function staffPage(role) {
 }
 
 function loginPage(message = '') {
+  stopChat();
+  workspaceProfile?.destroy();
+  stopPresence?.();stopPresence=null;
   if ($('#site-nav.open')) $('.menu-toggle').click();
   $('#site-nav .mobile-staff-nav')?.remove();
   $('#staff-root').innerHTML = `<div class="login-wrap"><div class="panel"><h1>เข้าสู่พื้นที่${roleLabel(state.role)}</h1>
@@ -93,8 +104,10 @@ function changePasswordPage(me) {
 }
 
 async function loadWorkspace() {
+  stopChat();
+  workspaceProfile?.destroy();
   $('#staff-root').innerHTML = '<p class="loading" role="status">กำลังโหลดงาน…</p>';
-  try { state.data = await api(`${base()}/workspace`); restoreFilters(); renderWorkspace(); }
+  try { state.data = await api(`${base()}/workspace`); if(!stopPresence)stopPresence=mountPresence(); restoreFilters(); renderWorkspace(); }
   catch (error) { if (error.code === 'PASSWORD_CHANGE_REQUIRED') return changePasswordPage(await api(`${base()}/auth/me`)); showError($('#staff-root'), error); }
 }
 
@@ -104,13 +117,22 @@ function saveFilters() { try { localStorage.setItem(filterOwner, JSON.stringify(
 const workRevision = pole => state.data.poles.find(item => item.pole === pole)?.work_revision;
 const workPayload = (pole, data) => ({...data, workRevision:workRevision(pole)});
 function renderWorkspace() {
+  stopChat();
+  workspaceProfile?.destroy();
   const data = state.data, admin = state.role === 'admin';
   const primary = admin ? [['overview','งานรอ'],['reports','คิวงาน'],['jobs','กำลังซ่อม'],['messages','ข้อความ']] : [['mywork','งานของฉัน'],['reports','คิวงานที่รับได้'],['messages','ข้อความ']];
   const secondary = admin ? [['poles','ข้อมูลเสา'],['users','บัญชีผู้ใช้'],['history','ประวัติซ่อม']] : [['poles','ข้อมูลเสา'],['history','ประวัติซ่อม']];
   const buttons = tabs => tabs.map(([key,label]) => `<button type="button" data-tab="${key}" ${state.tab === key ? 'aria-current="page"' : ''}>${label}</button>`).join('');
-  $('#staff-root').innerHTML = `<div class="staff-layout"><aside class="staff-rail" id="staff-rail"><div class="staff-identity"><h2>${roleLabel(state.role)}<span>${esc(data.user.name)}</span></h2><button id="logout" class="button ghost small" type="button">ออกจากระบบ</button></div><nav class="staff-rail-links" aria-label="เมนูพื้นที่ทำงาน"><div class="staff-nav-group"><h3>งานหลัก</h3>${buttons(primary)}</div><div class="staff-nav-group"><h3>ข้อมูลเพิ่มเติม</h3>${buttons(secondary)}</div></nav></aside><div class="staff-main"><div id="staff-content"></div></div></div><dialog class="dialog" id="task-dialog" aria-labelledby="dialog-title"></dialog>`;
+  $('#staff-root').innerHTML = `<div class="staff-layout"><aside class="staff-rail" id="staff-rail"><div class="staff-identity"><button class="staff-profile-button" type="button" aria-label="แก้ไขรูปโปรไฟล์ของฉัน">${avatarMarkup({name:data.user.name})}</button><h2>${roleLabel(state.role)}<span>${esc(data.user.name)}</span></h2></div><nav class="staff-rail-links" aria-label="เมนูพื้นที่ทำงาน"><div class="staff-nav-group"><h3>งานหลัก</h3>${buttons(primary)}</div><div class="staff-nav-group"><h3>ข้อมูลเพิ่มเติม</h3>${buttons(secondary)}</div></nav><button id="logout" class="button ghost small" type="button">ออกจากระบบ</button></aside><div class="staff-main"><div id="staff-content"></div></div></div><dialog class="dialog" id="task-dialog" aria-labelledby="dialog-title"></dialog>`;
   $('#site-nav .mobile-staff-nav')?.remove();
-  $('#site-nav').insertAdjacentHTML('beforeend', `<div class="mobile-staff-nav" role="group" aria-label="เมนูพื้นที่${roleLabel(state.role)}"><p>พื้นที่${roleLabel(state.role)}</p>${buttons(primary)}${buttons(secondary)}<button type="button" data-mobile-logout>ออกจากระบบ</button></div>`);
+  $('#site-nav').insertAdjacentHTML('beforeend', `<div class="mobile-staff-nav" role="group" aria-label="เมนูพื้นที่${roleLabel(state.role)}"><p>พื้นที่${roleLabel(state.role)}</p><button type="button" data-mobile-profile>โปรไฟล์ของฉัน</button>${buttons(primary)}${buttons(secondary)}<button type="button" data-mobile-logout>ออกจากระบบ</button></div>`);
+  const profileButton=$('.staff-profile-button'),owner=data.user.id;
+  const updateProfile=profile=>{if(state.data?.user.id===owner&&profileButton.isConnected)profileButton.innerHTML=avatarMarkup(profile);};
+  workspaceProfile=profileEditor($('#staff-root'),updateProfile);
+  const editProfile=()=>workspaceProfile.open().catch(e=>toast(e.message));
+  profileButton.onclick=editProfile;
+  $('[data-mobile-profile]').onclick=()=>{if($('#site-nav.open'))$('.menu-toggle').click();editProfile();};
+  api('/api/chat/profile').then(updateProfile).catch(()=>{});
   document.querySelectorAll('[data-tab]').forEach(button => button.addEventListener('click', () => {
     if (button.closest('.mobile-staff-nav')) $('.menu-toggle').click();
     navigateTab(button.dataset.tab);
@@ -125,6 +147,8 @@ function renderWorkspace() {
   focusViewHeading();
 }
 function navigateTab(tab) {
+  const leavingChat = state.tab === 'messages' && tab !== 'messages';
+  if (leavingChat) { state.tab = tab; state.selected.clear(); return loadWorkspace(); }
   state.tab = tab; state.selected.clear(); renderWorkspace();
   settle($('#staff-content h1'));
 }
@@ -150,6 +174,7 @@ function dialog(html) {
   const target = $('#task-dialog'); target.innerHTML = html; target.showModal();
   const close = event => {
     if (target.querySelector('form[data-preparing="true"]')) { event?.preventDefault(); toast('กำลังเตรียมรูป รอสักครู่ก่อนกลับ'); return; }
+    if (target.querySelector('form[data-saving="true"],form:not([data-unavailable="true"]) button[type="submit"]:disabled,#confirm-start:disabled,#confirm-reset:disabled')) { event?.preventDefault(); toast('กำลังบันทึก รอสักครู่ก่อนกลับ'); return; }
     if (event?.type !== 'cancel') target.close();
   };
   target.querySelector('[data-close]')?.addEventListener('click', close);
@@ -251,7 +276,7 @@ function attachDraft(form, type, job) {
 function overview() {
   const d=state.data, groups=groupReports(d.reports.filter(r=>r.status<2),d.jobs,d.users||[],d.poles);
   const waiting=groups.filter(group=>!group.job), active=groups.filter(group=>group.job);
-  content(`<h1>งานรอจัดการ</h1><p class="muted">ดูงานรายเสา แล้วมอบหมายหรือติดตามการซ่อม</p><div class="metric-row"><div class="metric"><strong>${waiting.length}</strong><span>เสารอเริ่มงาน</span><span>${waiting.reduce((n,g)=>n+g.reports.length,0)} เรื่องแจ้ง</span></div><div class="metric"><strong>${active.length}</strong><span>เสากำลังซ่อม</span><span>${active.reduce((n,g)=>n+g.reports.length,0)} เรื่องแจ้ง</span></div><div class="metric"><strong>${d.notifications.filter(n=>!n.read_at).length}</strong><span>ข้อความยังไม่อ่าน</span></div></div><section class="staff-section"><div class="section-head"><h2>เรื่องที่ต้องดำเนินการ</h2><button class="button outline small" data-queue>เปิดคิวทั้งหมด</button></div>${groups.length ? `<div class="work-grid">${[...waiting,...active].slice(0,8).map(group=>groupCard(group,'overview')).join('')}</div>` : '<div class="empty">ยังไม่มีเสาที่ต้องดำเนินการ</div>'}</section>`);
+  content(`<h1>งานรอจัดการ</h1><p class="muted">ดูงานรายเสา แล้วมอบหมายหรือติดตามการซ่อม</p><div class="metric-row"><div class="metric"><strong>${waiting.length}</strong><span>เสารอเริ่มงาน</span><span>${waiting.reduce((n,g)=>n+g.reports.length,0)} เรื่องแจ้ง</span></div><div class="metric"><strong>${active.length}</strong><span>เสากำลังซ่อม</span><span>${active.reduce((n,g)=>n+g.reports.length,0)} เรื่องแจ้ง</span></div><div class="metric"><strong>${d.notifications.filter(n=>!n.read_at).length+(d.chat_unread||0)}</strong><span>ข้อความยังไม่อ่าน</span></div></div><section class="staff-section"><div class="section-head"><h2>เรื่องที่ต้องดำเนินการ</h2><button class="button outline small" data-queue>เปิดคิวทั้งหมด</button></div>${groups.length ? `<div class="work-grid">${[...waiting,...active].slice(0,8).map(group=>groupCard(group,'overview')).join('')}</div>` : '<div class="empty">ยังไม่มีเสาที่ต้องดำเนินการ</div>'}</section>`);
 }
 function jobGroup(job) {
   const d=state.data, rows=d.reports.filter(report=>report.jobId===job.id || (report.pole===job.pole && report.status===1));
@@ -303,7 +328,7 @@ function reports() {
   const d=state.data, status=state.reportStatus||'open', query=state.reportQuery||'';
   content(`<h1>${state.role==='admin'?'คิวงานรายเสา':'คิวงานที่รับได้'}</h1><p class="muted">${state.role==='admin'?'เปิดรายละเอียดแล้วมอบหมายจากบัตรเสาได้ทันที':'ดูอาการและรูปก่อนรับงาน ทำรายการได้ทีละเสา'}</p><div class="toolbar"><label class="eyeless" for="report-status">สถานะเรื่องแจ้ง</label><select id="report-status">${[['open','เรื่องที่ต้องดำเนินการ'],['0','รอรับเรื่อง'],['1','กำลังซ่อม'],['2','ซ่อมเสร็จ'],['3','ยกเลิก'],['all','ทุกสถานะ']].map(([key,label])=>`<option value="${key}" ${status===key?'selected':''}>${label}</option>`).join('')}</select><label class="eyeless" for="report-search">ค้นหาเสาหรืออาการ</label><input class="input" id="report-search" type="search" placeholder="ค้นหาเสาหรืออาการ" value="${esc(query)}"></div><div id="report-results">${reportResults(queueReports(d,status,query),d)}</div>`);
   const draw=()=>{state.selected.clear();$('#report-results').innerHTML=reportResults(queueReports(d,state.reportStatus||'open',state.reportQuery||''),d);bindWorkActions();};
-  $('#report-results').addEventListener('click',event=>{if(!event.target.closest('[data-clear-report-filters]'))return;state.reportStatus='open';state.reportQuery='';saveFilters();$('#report-status').value='open';$('#report-search').value='';draw();$('#report-search').focus();});
+  $('#report-results').addEventListener('click',event=>{if(!event.target.closest('[data-clear-report-filters]'))return;state.reportStatus='open';state.reportQuery='';saveFilters();$('#report-status').value='open';syncMobilePicker($('#report-status'));$('#report-search').value='';draw();$('#report-search').focus();});
   $('#report-status').addEventListener('change',event=>{state.reportStatus=event.target.value;saveFilters();draw();});
   $('#report-search').addEventListener('input',event=>{state.reportQuery=event.target.value;saveFilters();draw();});
 }
@@ -490,11 +515,8 @@ function resetUser(u) {
 }
 
 function messages() {
-  const d = state.data;
-  content(`<h1>ข้อความ</h1><p class="muted">ข้อความเกี่ยวกับงานและการมอบหมาย</p>${state.role === 'admin' ? `<section class="staff-section"><h2>ส่งข้อความถึงช่าง</h2><form id="message-form" class="panel staff-form"><div class="field"><label for="message-tech">ช่าง</label><select id="message-tech" name="technicianId" required>${d.users.filter(u => u.role === 'technician' && u.active).map(u => `<option value="${esc(u.id)}">${esc(u.display_name)}</option>`).join('')}</select></div><div class="field"><label for="message-title">หัวข้อ</label><input class="input" id="message-title" name="title" required maxlength="150"></div><div class="field full"><label for="message-body">ข้อความ</label><textarea id="message-body" name="body" rows="3" required maxlength="1000"></textarea></div><div class="field-error full" data-error role="alert"></div><button class="button primary">ส่งข้อความ</button></form></section>` : ''}
-    <section class="staff-section"><h2>ข้อความที่ได้รับ</h2>${d.notifications.length ? `<div class="panel">${d.notifications.map(n => `<div class="staff-row"><strong>${esc(n.title)}</strong><div>${esc(n.body)}<p>${date(n.created_at)}</p></div>${n.read_at ? '<span class="small muted">อ่านแล้ว</span>' : `<button class="button outline small" data-read="${esc(n.id)}">ทำเครื่องหมายว่าอ่าน</button>`}</div>`).join('')}</div>` : '<div class="empty">ยังไม่มีข้อความ</div>'}</section>`);
-  $('#message-form')?.addEventListener('submit', event => submitStaffForm(event, f => action('/api/admin/notifications', { technicianId: control(f, 'technicianId').value, title: control(f, 'title').value, body: control(f, 'body').value }, 'ส่งข้อความแล้ว'), formError));
-  document.querySelectorAll('[data-read]').forEach(b => b.addEventListener('click', async () => { try { await action(`${base()}/notifications/${b.dataset.read}/read`, {}, 'อ่านแล้ว'); } catch (error) { toast(error.message); } }));
+  content('<div id="staff-chat"></div>');
+  stopChat = mountChat($('#staff-chat'), {user:state.data.user,role:state.role,workspace:state.data,notifications:state.data.notifications});
 }
 
 function history() {

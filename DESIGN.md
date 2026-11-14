@@ -233,3 +233,12 @@ The user-approved SVGs define both screens. The report receipt uses a centered c
 Both routes use repair-progress.js for milestone labels, completed checks, short pale connectors and recorded dates/times. Steps without timestamps remain pending; cancellations do not imply completed repairs. The receipt records its submission time and does not invent repair dates. Photos use 1:1 object-fit:cover thumbnails and link to untouched full-size originals. Missing images have a quiet explicit empty state; failed thumbnails retain their full-size link. Reference copy writes only the full report ID; share retains native sharing or full-URL copy fallback. Recent-device history remains bounded and does not infer server status.
 
 The implementation was reviewed locally by the user and approved for publication on 12 November 2026. Preview-only fixture servers remain outside public/ and are not part of the deployment.
+
+
+## Approved staff chat and release hardening — 14 November 2026
+
+The user-approved chat retains the original global header, rounded workspace sidebar, menu colors, logo, fonts and motion. Only the conversation region follows the supplied desktop/mobile references. Shared avatar profile control is at the top and logout at the bottom across staff views. Account names remain account-managed. Desktop chat uses available viewport height; the mobile room keeps its composer below the visible global header. Back has a 44px target.
+
+Private text conversations support emoji, dated message groups, read receipts, authenticated profile pictures and approximate online presence (25-second visible-tab heartbeat, 75-second expiry). Legacy notifications retain their own inbox. Admins may invite an active technician to a waiting pole; acceptance uses the existing revision lock and preserves assignment instructions/deadlines. Invalidated invitations show expired. No citizen chat or group chat is implied.
+
+Release checks include empty conversation rendering, uncertain submission retries, mobile picker synchronization, pending-dialog closure protection and unread chat counts. Password changes revoke other sessions; ambiguous database responses retain referenced photos. Shared test fixtures and consolidated chat styles remove duplicate implementations without changing the approved design.
