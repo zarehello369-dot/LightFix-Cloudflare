@@ -213,6 +213,7 @@ details.manage-menu summary{cursor:pointer;min-height:42px;padding:10px;font-wei
 
 .dialog h2{margin:0 0 10px;font-size:1.36rem}.dialog form{display:grid;gap:14px}
 .dialog-actions{display:grid;gap:8px;margin-top:12px}.dialog-actions .button{width:100%}
+.receive-options{display:grid;gap:8px;margin:0;padding:0;border:0}.receive-options legend{margin-bottom:8px;font-weight:700}.receive-choice{display:flex;align-items:center;gap:12px;min-height:56px;padding:10px 12px;border:1px solid var(--control-line);border-radius:10px;cursor:pointer}.receive-choice:has(input:checked){border-color:var(--selected-line);background:var(--gold-soft)}.receive-choice:has(input:focus-visible){outline:3px solid var(--green);outline-offset:2px}.receive-choice input{flex:none;width:20px;height:20px;accent-color:var(--green)}.receive-choice span{display:grid;gap:2px}.receive-choice small{color:var(--muted)}
 
 @media(min-width:640px){
   .shell{padding-inline:24px}.site-header .shell{height:76px;gap:12px}.site-nav{top:75px}
