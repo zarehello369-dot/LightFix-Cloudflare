@@ -80,6 +80,6 @@ export async function notifyLineNewReport(env,reportId,origin,send=fetch) {
   const group=await env.DB.prepare('SELECT group_id FROM line_groups WHERE selected=1').first();
   if (!group) return false;
   const symptom=String(report.symptom).replace(/\s+/g,' ').slice(0,100);
-  await pushLineText(env,`💡 มีเรื่องแจ้งไฟถนนเสียใหม่\nเสา ${report.pole}\nอาการ: ${symptom}\nดูคิวงาน: ${new URL('/admin',origin).href}`,send);
+  await pushLineText(env,`💡 มีเรื่องแจ้งไฟถนนเสียใหม่\nเสา ${report.pole}\nอาการ: ${symptom}\nดูคิวงาน: ${new URL('/technician',origin).href}`,send);
   return true;
 }

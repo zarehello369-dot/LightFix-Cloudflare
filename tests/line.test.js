@@ -56,7 +56,7 @@ test('LINE push targets selected group and excludes reporter contact from new-re
   const message=JSON.parse(calls[1].options.body).messages[0].text;
   assert.match(message,/T0001/);
   assert.match(message,/ไฟไม่ติด/);
-  assert.match(message,/https:\/\/lightfix\.example\/admin/);
+  assert.match(message,/https:\/\/lightfix\.example\/technician/);
   assert.equal(message.includes('0812345678'),false);
   fixtureData.sqlite.close();
 });
