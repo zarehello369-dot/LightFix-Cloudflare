@@ -154,7 +154,7 @@ function navigateTab(tab) {
 }
 
 function renderTab() {
-  const views = { mywork, overview, reports, jobs, poles, users, messages, history, lineSettings };
+  const views = { mywork, overview, reports, jobs, poles, users, messages, history, line:lineSettings };
   views[state.tab]?.();
 }
 function enhanceTables(root = $('#staff-content')) {
