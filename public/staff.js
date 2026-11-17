@@ -121,7 +121,7 @@ function renderWorkspace() {
   workspaceProfile?.destroy();
   const data = state.data, admin = state.role === 'admin';
   const primary = admin ? [['overview','งานรอ'],['reports','คิวงาน'],['jobs','กำลังซ่อม'],['messages','ข้อความ']] : [['mywork','งานของฉัน'],['reports','คิวงานที่รับได้'],['messages','ข้อความ']];
-  const secondary = admin ? [['poles','ข้อมูลเสา'],['users','บัญชีผู้ใช้'],['history','ประวัติซ่อม']] : [['poles','ข้อมูลเสา'],['history','ประวัติซ่อม']];
+  const secondary = admin ? [['poles','ข้อมูลเสา'],['users','บัญชีผู้ใช้'],['history','ประวัติซ่อม'],['line','แจ้งเตือน LINE']] : [['poles','ข้อมูลเสา'],['history','ประวัติซ่อม']];
   const buttons = tabs => tabs.map(([key,label]) => `<button type="button" data-tab="${key}" ${state.tab === key ? 'aria-current="page"' : ''}>${label}</button>`).join('');
   $('#staff-root').innerHTML = `<div class="staff-layout"><aside class="staff-rail" id="staff-rail"><div class="staff-identity"><button class="staff-profile-button" type="button" aria-label="แก้ไขรูปโปรไฟล์ของฉัน">${avatarMarkup({name:data.user.name})}</button><h2>${roleLabel(state.role)}<span>${esc(data.user.name)}</span></h2></div><nav class="staff-rail-links" aria-label="เมนูพื้นที่ทำงาน"><div class="staff-nav-group"><h3>งานหลัก</h3>${buttons(primary)}</div><div class="staff-nav-group"><h3>ข้อมูลเพิ่มเติม</h3>${buttons(secondary)}</div></nav><button id="logout" class="button ghost small" type="button">ออกจากระบบ</button></aside><div class="staff-main"><div id="staff-content"></div></div></div><dialog class="dialog" id="task-dialog" aria-labelledby="dialog-title"></dialog>`;
   $('#site-nav .mobile-staff-nav')?.remove();
@@ -154,7 +154,7 @@ function navigateTab(tab) {
 }
 
 function renderTab() {
-  const views = { mywork, overview, reports, jobs, poles, users, messages, history };
+  const views = { mywork, overview, reports, jobs, poles, users, messages, history, lineSettings };
   views[state.tab]?.();
 }
 function enhanceTables(root = $('#staff-content')) {
@@ -477,6 +477,40 @@ function poleForm(p = {}) {
   const editing = !!p.pole;
   const target = dialog(`<h2 id="dialog-title">${editing ? `แก้ไขเสา ${esc(p.pole)}` : 'เพิ่มเสาใหม่'}</h2><form id="pole-form" class="staff-form"><div class="field"><label for="edit-pole">หมายเลขเสา</label><input class="input number" id="edit-pole" name="pole" required pattern="T[0-9]{4}" maxlength="5" value="${esc(p.pole || '')}" ${editing ? 'readonly' : ''}></div><div class="field"><label for="edit-location">ตำแหน่ง</label><input class="input" id="edit-location" name="location" value="${esc(p.location || '')}"></div><div class="field"><label for="edit-lat">ละติจูด</label><input class="input" id="edit-lat" name="lat" type="number" step="any" value="${p.lat ?? ''}"></div><div class="field"><label for="edit-lng">ลองจิจูด</label><input class="input" id="edit-lng" name="lng" type="number" step="any" value="${p.lng ?? ''}"></div><div class="field"><label for="edit-model">รุ่นโคม</label><input class="input" id="edit-model" name="model" value="${esc(p.model || '')}"></div><div class="field"><label for="edit-installed">ติดตั้งเมื่อ</label><input class="input" id="edit-installed" name="installedAt" value="${esc(p.installed_at || '')}"></div><div class="field full"><label for="edit-notes">บันทึก</label><textarea id="edit-notes" name="notes" rows="2">${esc(p.notes || '')}</textarea></div><label class="inline full"><input name="active" type="checkbox" ${p.active === 0 ? '' : 'checked'}> เปิดใช้เสานี้</label><div class="field-error full" data-error role="alert"></div><div class="dialog-actions full"><button type="button" class="button outline" data-close>กลับ</button><button class="button primary">บันทึกเสา</button></div></form>`);
   target.querySelector('form').addEventListener('submit', event => submitStaffForm(event, f => action('/api/admin/poles', { pole: control(f, 'pole').value.toUpperCase(), location: control(f, 'location').value, lat: control(f, 'lat').value, lng: control(f, 'lng').value, model: control(f, 'model').value, installedAt: control(f, 'installedAt').value, notes: control(f, 'notes').value, active: control(f, 'active').checked }, 'บันทึกข้อมูลเสาแล้ว'), formError));
+}
+
+async function lineSettings() {
+  content('<h1>แจ้งเตือน LINE OA</h1><p class="muted">แจ้งเรื่องใหม่เข้ากลุ่มเจ้าหน้าที่ โดยไม่ส่งข้อมูลติดต่อของผู้แจ้ง</p><div id="line-settings" class="panel line-settings"><p class="loading" role="status">กำลังโหลดการตั้งค่า…</p></div>');
+  const panel=$('#line-settings');
+  try {
+    const info=await api('/api/admin/line');
+    if(state.tab!=='line'||!panel.isConnected)return;
+    const selected=info.groups.find(group=>group.selected);
+    panel.innerHTML=`<h2>สถานะการเชื่อมต่อ</h2><p>Channel Access Token: <strong>${info.tokenConfigured?'พร้อมใช้งาน':'ยังไม่ได้ตั้งค่า'}</strong><br>Channel Secret: <strong>${info.secretConfigured?'พร้อมใช้งาน':'ยังไม่ได้ตั้งค่า'}</strong></p>
+      <p class="small muted">เก็บคีย์ทั้งสองรายการเป็น Cloudflare Worker Secrets เท่านั้น ไม่ต้องใส่ในหน้าเว็บ</p>
+      <div class="field"><label for="line-webhook-url">Webhook URL สำหรับ LINE Developers</label><input class="input" id="line-webhook-url" value="${esc(info.webhookUrl)}" readonly></div>
+      <p class="small muted">ตั้ง URL นี้และเปิด Use webhook ใน LINE Developers จากนั้นเชิญ LINE OA เข้ากลุ่มเจ้าหน้าที่และส่งข้อความหนึ่งครั้ง กลุ่มจะปรากฏด้านล่าง</p>
+      <h3>กลุ่มที่พบ</h3>${info.groups.length?`<div class="line-group-list">${info.groups.map(group=>`<div class="line-group"><div><strong>${group.selected?'กลุ่มที่ใช้แจ้งเตือน':'กลุ่ม LINE'}</strong><span class="small muted">รหัสลงท้าย ${esc(group.id.slice(-8))} · พบล่าสุด ${date(group.lastSeenAt)}</span></div><button type="button" class="button outline small" data-line-group="${esc(group.id)}" ${group.selected?'disabled':''}>${group.selected?'ใช้อยู่':'ใช้กลุ่มนี้'}</button></div>`).join('')}</div>`:'<p class="empty">ยังไม่พบกลุ่ม ส่งข้อความในกลุ่ม LINE ที่มี OA แล้วกดโหลดใหม่</p>'}
+      <div class="actions line-actions"><button type="button" class="button outline" id="line-refresh">โหลดกลุ่มใหม่</button><button type="button" class="button primary" id="line-test" ${!info.tokenConfigured||!selected?'disabled':''}>ส่งข้อความทดสอบ</button>${selected?'<button type="button" class="button ghost" id="line-stop">หยุดแจ้งเตือน</button>':''}</div>
+      <p class="small muted">เมื่อเชื่อมต่อแล้ว ระบบจะส่งเฉพาะเรื่องใหม่ที่ประชาชนแจ้งหลังจากนี้</p>`;
+    panel.querySelector('#line-refresh').addEventListener('click',lineSettings);
+    panel.querySelectorAll('[data-line-group]').forEach(button=>button.addEventListener('click',async()=>{
+      button.disabled=true;
+      try { await post('/api/admin/line/select',{groupId:button.dataset.lineGroup}); toast('เลือกกลุ่ม LINE แล้ว'); lineSettings(); }
+      catch(error) { toast(error.message); button.disabled=false; }
+    }));
+    panel.querySelector('#line-stop')?.addEventListener('click',async event=>{
+      const button=event.currentTarget;button.disabled=true;
+      try { await post('/api/admin/line/select',{groupId:null}); toast('หยุดแจ้งเตือน LINE แล้ว'); lineSettings(); }
+      catch(error) { toast(error.message);button.disabled=false; }
+    });
+    panel.querySelector('#line-test').addEventListener('click',async event=>{
+      const button=event.currentTarget;button.disabled=true;
+      try { await post('/api/admin/line/test'); toast('LINE รับข้อความทดสอบแล้ว กรุณาตรวจในกลุ่ม'); }
+      catch(error) { toast(error.message); }
+      finally { button.disabled=false; }
+    });
+  } catch(error) { if(state.tab==='line'&&panel.isConnected)showError(panel,error); }
 }
 
 function users() {

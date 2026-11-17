@@ -1,4 +1,5 @@
 import { chatRoute } from './chat.js';
+import { receiveLineWebhook, lineStatus, selectLineGroup, pushLineText, notifyLineNewReport } from './line.js';
 const COOKIE = 'lf_session';
 const SESSION_MS = 8 * 60 * 60 * 1000;
 const PASSWORD_ITERATIONS = 100000;
@@ -693,7 +694,7 @@ async function editHistory(request, env, jobId, data) {
 export const internals = { clean, contact, poleNumber, decodePhoto, publicReport, equalHex, passwordHash };
 
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const url = new URL(request.url);
     try {
       if (url.pathname === '/admin' || url.pathname.startsWith('/admin/')) {
@@ -701,6 +702,7 @@ export default {
       }
       if (!url.pathname.startsWith('/api/') && !url.pathname.startsWith('/media/')) return await asset(request, env);
       if (request.method !== 'GET' && request.method !== 'HEAD') assertOrigin(request);
+      if (request.method === 'POST' && url.pathname === '/api/line/webhook') return ok(await receiveLineWebhook(request,env));
       if (url.pathname.startsWith('/api/chat/')) {
         if (request.method === 'POST') { const staff=await actor(request, env); await throttle(request, env, `chat-${staff.id}`, 120, 60_000); }
         const result=await chatRoute(request, env, {actor,one,all,run,HttpError,commitWork,id,body,poleNumber,decodePhoto,sessionHash:()=>sha256(cookieValue(request,COOKIE))});
@@ -716,7 +718,14 @@ export default {
       if (request.method === 'GET' && url.pathname === '/api/reports') return ok(await board(env, url.searchParams));
       if (request.method === 'GET' && /^\/api\/reports\/[a-f0-9]{32}$/.test(url.pathname)) return ok(await detail(env, url.pathname.split('/')[3]));
       if (request.method === 'GET' && /^\/media\/[a-f0-9]{32}\/(before|after)$/.test(url.pathname)) return await media(env, url.pathname.split('/')[2], url.pathname.split('/')[3]);
-      if (request.method === 'POST' && url.pathname === '/api/reports') { await throttle(request, env, 'report', 10, 3600_000); return ok(await createReport(env, await body(request)), 201); }
+      if (request.method === 'POST' && url.pathname === '/api/reports') {
+        await throttle(request, env, 'report', 10, 3600_000);
+        const created=await createReport(env, await body(request));
+        if (!created.duplicate && env.LINE_CHANNEL_ACCESS_TOKEN && ctx?.waitUntil) {
+          ctx.waitUntil(notifyLineNewReport(env,created.id,request.url).catch(error=>console.error('LINE report alert failed',error.code||'UNKNOWN')));
+        }
+        return ok(created,201);
+      }
       if (request.method === 'POST' && (url.pathname === '/api/auth/login' || url.pathname === '/api/admin/auth/login')) {
         await throttle(request, env, 'login', 30, 900_000);
         return await login(request, env, await body(request), url.pathname.startsWith('/api/admin/') ? 'admin' : 'technician');
@@ -735,6 +744,18 @@ export default {
       if (request.method === 'GET' && /^\/api\/staff\/poles\/T\d{4}$/.test(url.pathname)) return ok(await staffPoleDetail(request, env, url.pathname.split('/')[4], url.searchParams.get('page')));
       if (request.method === 'GET' && url.pathname === '/api/workspace') return ok(await workspace(request, env, 'technician'));
       if (request.method === 'GET' && url.pathname === '/api/admin/workspace') return ok(await workspace(request, env, 'admin'));
+      if (request.method === 'GET' && url.pathname === '/api/admin/line') { await actor(request,env,true); return ok(await lineStatus(request,env)); }
+      if (request.method === 'POST' && url.pathname === '/api/admin/line/select') {
+        await actor(request,env,true);
+        const data=await body(request);
+        if (!Object.hasOwn(data,'groupId')) throw new HttpError(400,'INVALID_GROUP','เลือกกลุ่ม LINE จากรายการที่พบ');
+        return ok(await selectLineGroup(env,data.groupId));
+      }
+      if (request.method === 'POST' && url.pathname === '/api/admin/line/test') {
+        const user=await actor(request,env,true);
+        await throttle(request,env,`line-test-${user.id}`,3,3600_000);
+        return ok(await pushLineText(env,'✅ ทดสอบแจ้งเตือน LightFix สำเร็จ'));
+      }
       if (request.method === 'POST' && url.pathname === '/api/jobs/start') return ok(await startJob(request, env, await body(request)), 201);
       if (request.method === 'POST' && url.pathname === '/api/admin/jobs/start') return ok(await startJob(request, env, await body(request)), 201);
       if (request.method === 'POST' && /^\/api\/jobs\/[a-f0-9]{32}\/finish$/.test(url.pathname)) return ok(await finishJob(request, env, url.pathname.split('/')[3], await body(request)));

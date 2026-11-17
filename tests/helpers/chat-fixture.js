@@ -26,6 +26,7 @@ export function fixture() {
     VALUES(?,?,?,?,?,?,?,?)`).run('c'.repeat(32), 'T0002', 'ไฟไม่ติด', 'name', 'ผู้แจ้ง', 1, 'd'.repeat(32), technicianId);
   sqlite.exec(readFileSync(new URL('../../migrations/0004_chat.sql', import.meta.url), 'utf8'));
   sqlite.exec(readFileSync(new URL('../../migrations/0005_staff_profiles.sql', import.meta.url), 'utf8'));
+  sqlite.exec(readFileSync(new URL('../../migrations/0006_line_notifications.sql', import.meta.url), 'utf8'));
   let batchQueue = Promise.resolve();
   const DB = {
     prepare(sql) {
