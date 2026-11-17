@@ -55,6 +55,7 @@ export function shell(content, current = '') {
   document.body.dataset.area = staff ? 'staff' : 'public';
   $('#app').innerHTML = `<header class="site-header"><div class="shell">
     <a class="brand" href="/" aria-label="LightFix หน้าแรก">${logoMark}</a>
+    <a class="site-name" href="/" aria-label="LightFix หน้าแรก">light<span>fix</span></a>
     <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="site-nav" aria-label="เปิดเมนู">เมนู</button>
     <nav id="site-nav" class="site-nav" aria-label="เมนูหลัก">
       <a href="/" ${current === 'report' ? 'aria-current="page"' : ''}>แจ้งไฟเสีย</a>
