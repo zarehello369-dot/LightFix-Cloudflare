@@ -3,7 +3,6 @@
 @font-face{font-family:PlexThai;src:url('/fonts/IBMPlexSansThai-Bold.ttf') format('truetype');font-weight:700;font-display:optional}
 @font-face{font-family:Urbanist;src:url('/fonts/Urbanist-Variable.ttf') format('truetype');font-style:normal;font-weight:100 900;font-display:optional}
 
-@font-face{font-family:LightFixLogo;src:url('/fonts/Nunito-Variable.ttf') format('truetype');font-style:normal;font-weight:200 1000;font-display:block}
 
 :root{
   --red:#9c3c2e;
@@ -312,13 +311,9 @@ body{background:var(--page)}
 .site-header.is-scrolled.menu-open>.shell{border-radius:16px 16px 0 0;box-shadow:none}
 .site-header.is-scrolled.menu-open .site-nav{box-shadow:0 12px 30px rgba(7,30,34,.22)}
 .site-header.is-scrolled .site-nav.open{border-radius:0 0 16px 16px}
-.site-header{--logo-gold:#d4aa00}
-.brand{width:44px;height:48px;color:#fff}
+.brand{width:52px;height:52px;color:var(--gold)}
 .brand:hover{background:var(--deep-hover)}
-.brand svg{width:44px;height:44px}
-.site-name{font:750 1.95rem/1 LightFixLogo,sans-serif;letter-spacing:-.01em;text-decoration:none;white-space:nowrap}
-.site-name span{color:var(--logo-gold)}
-.site-name:hover{text-decoration:underline;text-decoration-color:var(--gold)}
+.brand svg{width:42px;height:42px}
 .menu-toggle{min-width:48px;min-height:48px;margin-left:auto;padding:7px;border-color:#7e9da0;background:transparent;color:#fff}
 .menu-toggle:hover{background:var(--deep-hover)}
 
@@ -413,7 +408,7 @@ body{background:var(--page)}
   .metric-row{grid-template-columns:repeat(3,minmax(0,1fr))}
 }
 @media(min-width:900px){
-  .site-header .shell{height:76px}.site-name{font-size:2.2rem;margin-right:0}
+  .site-header .shell{height:76px}
   .site-header.is-scrolled>.shell{width:min(calc(100% - 40px),1160px);transform:translateY(18px)}
   .site-nav{margin-left:auto;background:transparent;box-shadow:none}
   .mobile-staff-nav{display:none}
@@ -429,7 +424,6 @@ body{background:var(--page)}
   .work-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 @media(max-width:390px){
-  .site-name{font-size:1.8rem}
   .report-steps{padding-inline:9px}.report-steps li{font-size:.75rem}
   .report-steps li+li:before{margin-inline:7px}
 }
