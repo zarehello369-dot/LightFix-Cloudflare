@@ -58,7 +58,7 @@ export function installMotion() {
     const items = [...(root.matches(candidates) ? [root] : []), ...root.querySelectorAll(candidates)];
     let order = 0;
     for (const element of items) {
-      if (seen.has(element) || element.closest('dialog') || element.hidden) continue;
+      if (seen.has(element) || element.closest('dialog') || element.parentElement?.closest(candidates) || element.hidden) continue;
       seen.add(element);
       const rect = element.getBoundingClientRect();
       if (!rect.width || !rect.height) continue;

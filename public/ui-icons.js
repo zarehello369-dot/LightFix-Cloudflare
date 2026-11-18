@@ -20,6 +20,8 @@ const shapes = {
   warning:'<path fill-rule="evenodd" d="M10.2 3.1a2.1 2.1 0 0 1 3.6 0l9.4 16.2a2.1 2.1 0 0 1-1.8 3.2H2.6a2.1 2.1 0 0 1-1.8-3.2Zm1.8 3.2L4.7 19h14.6ZM11 10h2v5h-2zm0 6.5h2v2h-2z"/>',
   camera:'<path d="M7 5h3l1-2h5l1 2h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2zm5 4a5 5 0 1 0 0 10 5 5 0 0 0 0-10Zm0 2a3 3 0 1 1 0 6 3 3 0 0 1 0-6Z"/>',
   copy:'<path d="M8 3h11a2 2 0 0 1 2 2v12h-2V5H8z"/><path d="M5 7h11a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2Zm0 2v11h11V9z"/>',
+  lock:'<path fill-rule="evenodd" d="M7 9V7a5 5 0 0 1 10 0v2h1a3 3 0 0 1 3 3v8a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3v-8a3 3 0 0 1 3-3zm2 0h6V7a3 3 0 0 0-6 0zM6 11v9h12v-9zm6 2a1.5 1.5 0 0 1 1 2.6V18h-2v-2.4a1.5 1.5 0 0 1 1-2.6Z"/>',
+  refresh:'<path d="M20 4v6h-6l2.3-2.3A7 7 0 1 0 19 14h2a9 9 0 1 1-3.3-7.7z"/>',
   share:'<circle cx="18" cy="4" r="3"/><circle cx="5" cy="12" r="3"/><circle cx="18" cy="20" r="3"/><path d="m7 10 8.4-5 1 1.7-8.4 5zm1 2.3 8.4 5-1 1.7-8.4-5z"/>',
   zoom:'<circle cx="10" cy="10" r="6.5"/><path d="m15 14 6 6-1.5 1.5-6-6z"/><path d="M9 6.5h2v2.5h2.5v2H11v2.5H9V11H6.5V9H9z"/>',
   eye:'<path d="M12 4C5 4 1 12 1 12s4 8 11 8 11-8 11-8-4-8-11-8Zm0 12a4 4 0 1 1 0-8 4 4 0 0 1 0 8Z"/>',

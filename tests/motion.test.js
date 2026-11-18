@@ -39,18 +39,21 @@ test('scroll entrances never hide default content, run once, and stop when prefe
   const names = ['document','MutationObserver','IntersectionObserver','matchMedia','innerHeight'];
   const old = Object.fromEntries(names.map(name => [name, Object.getOwnPropertyDescriptor(globalThis,name)]));
   let enter, mediaChange, canceled = 0, animationCount = 0;
+  const observed=[];
   const element = { hidden:false, closest:()=>null, getBoundingClientRect:()=>({top:1000,width:300,height:200}),
     animate() { animationCount++; return { cancel() { canceled++; }, finished:new Promise(()=>{}) }; } };
   const visible = { ...element, getBoundingClientRect:()=>({top:20,width:300,height:200}) };
-  const body = { nodeType:1, matches:()=>false, querySelectorAll:()=>[visible,element] };
+  const nested = { ...element, parentElement:{closest:()=>visible} };
+  const body = { nodeType:1, matches:()=>false, querySelectorAll:()=>[visible,element,nested] };
   const changes = { document:{body,hidden:false,addEventListener(){},documentElement:{toggleAttribute(){}}}, innerHeight:800,
-    MutationObserver:class { observe(){} }, IntersectionObserver:class { constructor(fn){enter=fn;} observe(){} unobserve(){} },
+    MutationObserver:class { observe(){} }, IntersectionObserver:class { constructor(fn){enter=fn;} observe(target){observed.push(target);} unobserve(){} },
     matchMedia:()=>({matches:false,addEventListener(_,fn){mediaChange=fn;}}) };
   try {
     Object.assign(globalThis,changes);
     const module = await import('../public/motion.js?scroll-test');
     module.installMotion();
     assert.equal(animationCount,0);
+    assert.deepEqual(observed,[element]);
     assert.equal(element.hidden,false);
     enter([{target:element,isIntersecting:true}]);
     enter([{target:element,isIntersecting:true}]);

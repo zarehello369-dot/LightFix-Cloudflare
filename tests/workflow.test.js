@@ -21,6 +21,15 @@ test('receiving one of three reports leaves a separate waiting card with two rep
     ['T0001',2,false],['T0001',1,true]
   ]);
 });
+test('all-status queue keeps each pole status in its own card',()=>{
+  const rows=[
+    {id:'1',pole:'T0001',status:0,symptom:'ไฟไม่ติด',at:1},
+    {id:'2',pole:'T0001',status:1,symptom:'ไฟสว่างน้อย',at:2},
+    {id:'3',pole:'T0001',status:2,symptom:'ไฟติด ๆ ดับ ๆ',at:3}
+  ];
+  const groups=groupQueueReports(rows,[{id:'job',pole:'T0001',status:1}],[],[],'all');
+  assert.deepEqual(groups.map(group=>[group.reports[0].status,group.reports.length,Boolean(group.job)]),[[0,1,false],[1,1,true],[2,1,false]]);
+});
 test('filter preferences validate persisted data and tolerate blocked storage',()=>{
   const storage={getItem:key=>key==='tech' ? '{"reportStatus":"1","reportQuery":"T0001"}' : '{"reportStatus":"bad"}'};
   assert.equal(readFilters(storage,'tech').reportQuery,'T0001');

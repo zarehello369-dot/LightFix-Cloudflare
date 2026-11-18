@@ -4,7 +4,7 @@ import { mountPresence } from './staff-presence.js';
 import { syncMobilePicker } from './mobile-picker.js';
 import { groupReports, groupQueueReports, readFilters, queueReports } from './workflow.js';
 import { submitStaffForm, readWorkDraft, saveWorkDraft, selectPoleReports } from './staff-forms.js';
-import { $, control, esc, date, badge, api, post, shell, toast, showError, photoData, enhancePasswordFields, settle } from './shared.js';
+import { $, control, esc, date, badge, api, post, shell, toast, showError, photoData, enhancePasswordFields, reveal, settle } from './shared.js';
 import { uiIcon } from './ui-icons.js';
 
 let stopChat = () => {};
@@ -277,43 +277,22 @@ function attachDraft(form, type, job) {
 
 function overview() {
   const d=state.data, waiting=groupReports(d.reports.filter(r=>r.status===0),d.jobs,d.users||[],d.poles), active=groupReports(d.reports.filter(r=>r.status===1),d.jobs,d.users||[],d.poles), groups=[...waiting,...active];
-  content(`<h1>งานรอจัดการ</h1><p class="muted">ดูงานรายเสา แล้วมอบหมายหรือติดตามการซ่อม</p><div class="metric-row"><div class="metric"><strong>${waiting.length}</strong><span>เสารอเริ่มงาน</span><span>${waiting.reduce((n,g)=>n+g.reports.length,0)} เรื่องแจ้ง</span></div><div class="metric"><strong>${active.length}</strong><span>เสากำลังซ่อม</span><span>${active.reduce((n,g)=>n+g.reports.length,0)} เรื่องแจ้ง</span></div><div class="metric"><strong>${d.notifications.filter(n=>!n.read_at).length+(d.chat_unread||0)}</strong><span>ข้อความยังไม่อ่าน</span></div></div><section class="staff-section"><div class="section-head"><h2>เรื่องที่ต้องดำเนินการ</h2><button class="button outline small" data-queue>เปิดคิวทั้งหมด</button></div>${groups.length ? `<div class="work-grid">${[...waiting,...active].slice(0,8).map(group=>groupCard(group,'overview')).join('')}</div>` : '<div class="empty">ยังไม่มีเสาที่ต้องดำเนินการ</div>'}</section>`);
+  content(`<h1>งานรอจัดการ</h1><p class="muted">ดูงานรายเสา แล้วมอบหมายหรือติดตามการซ่อม</p><div class="metric-row"><div class="metric"><strong>${waiting.length}</strong><span>เสารอเริ่มงาน</span><span>${waiting.reduce((n,g)=>n+g.reports.length,0)} เรื่องแจ้ง</span></div><div class="metric"><strong>${active.length}</strong><span>เสากำลังซ่อม</span><span>${active.reduce((n,g)=>n+g.reports.length,0)} เรื่องแจ้ง</span></div><div class="metric"><strong>${d.notifications.filter(n=>!n.read_at).length+(d.chat_unread||0)}</strong><span>ข้อความยังไม่อ่าน</span></div></div><section class="staff-section"><div class="section-head"><h2>เรื่องที่ต้องดำเนินการ</h2><button class="button outline small" data-queue>เปิดคิวทั้งหมด</button></div>${groups.length ? `<div class="work-grid">${[...waiting,...active].slice(0,8).map(groupCard).join('')}</div>` : '<div class="empty">ยังไม่มีเสาที่ต้องดำเนินการ</div>'}</section>`);
 }
 function jobGroup(job) {
   const d=state.data, rows=d.reports.filter(report=>report.jobId===job.id || (report.pole===job.pole && report.status===1));
   return groupReports(rows,[job],d.users||[],d.poles)[0] || {pole:job.pole,reports:[],open:[],urgent:false,job,assignedId:job.assigned_user_id||job.technician_id,assignedName:'',location:d.poles.find(p=>p.pole===job.pole)?.location||'',dueAt:job.due_at,firstAt:job.started_at};
 }
-function groupCard(group, mode='queue') {
-  const job=group.job, admin=state.role==='admin', pending=group.reports.filter(report=>report.status===0);
-  const activeJob=state.data.jobs.find(item=>item.pole===group.pole&&item.status===1);
-  const activeOwner=activeJob?.assigned_user_id||activeJob?.technician_id;
-  const canStart=pending.length&&group.reports.every(report=>report.status===0)&&(admin||!activeJob||activeOwner===state.data.user.id);
+function groupCard(group) {
+  const job=group.job, admin=state.role==='admin';
   const owner=group.assignedName || (group.assignedId===state.data.user.id ? state.data.user.name : group.assignedId ? 'มอบหมายแล้ว' : 'ยังไม่มอบหมาย');
   const status=job?1:group.open[0]?.status??group.reports[0]?.status??0;
   const count=group.reports.length;
-  const buttons=[];
-  const extra=[];
-  if(mode==='overview') {
-    buttons.push(admin&&group.open.length&&!job
+  const buttons=[admin&&group.open.length&&!job
       ? `<button class="button primary" data-assign-pole="${esc(group.pole)}">มอบหมายช่าง</button>`
-      : `<button class="button outline" data-open-pole="${esc(group.pole)}">เปิดงานเสา ${esc(group.pole)}</button>`);
-  } else {
-    if(job) {
-      buttons.push(`<button class="button primary" data-finish="${esc(job.id)}">ปิดงานซ่อม</button>`);
-      buttons.push(`<button class="button outline" data-note="${esc(job.id)}">บันทึกความคืบหน้า</button>`);
-    }
-    if(admin&&group.open.length) {
-      const assign=`<button class="button ${job?'outline':'primary'}" data-assign-pole="${esc(group.pole)}">${group.assignedId?'เปลี่ยนผู้รับผิดชอบ':'มอบหมายช่าง'}</button>`;
-      (job?extra:buttons).push(assign);
-      extra.push(`<button class="button danger" data-cancel-pole="${esc(group.pole)}">ยกเลิกเรื่องของเสานี้</button>`);
-    }
-    if(canStart) {
-      buttons.push(`<button class="button ${admin?'outline':'primary'}" data-start-one="${esc(group.pole)}">รับ 1 เรื่อง</button>`);
-      if(pending.length>1) buttons.push(`<button class="button outline" data-start-pole="${esc(group.pole)}">รับทั้งหมด (${pending.length})</button>`);
-    }
-  }
+      : `<button class="button outline" data-open-pole="${esc(group.pole)}">เปิดงานเสา ${esc(group.pole)}</button>`];
   const details=group.reports.length?group.reports.map(report=>`<section class="complaint-detail"><div class="queue-report-heading"><h3>${esc(report.symptom)}</h3>${badge(report.status)}</div><p class="small muted">แจ้งเมื่อ ${date(report.at)}</p><p class="small">${contactLabel(report.contactType)}: ${esc(report.contactValue||'ไม่ได้ระบุ')}</p>${report.hasBefore?`<a class="work-photo-link" href="/media/${encodeURIComponent(report.id)}/before" target="_blank" rel="noopener"><img src="/media/${encodeURIComponent(report.id)}/before" loading="lazy" alt="รูปก่อนซ่อมเสา ${esc(group.pole)}"><span>เปิดรูปก่อนซ่อมขนาดเต็ม (แท็บใหม่)</span></a>`:`<p class="small muted queue-photo-empty">${uiIcon('image',20)} เรื่องนี้ไม่มีรูปก่อนซ่อม</p>`}</section>`).join(''):'<p class="small">ไม่พบรายละเอียดเรื่องแจ้งในรายการที่โหลด กรุณาโหลดงานล่าสุด</p>';
-  return `<article class="panel work-card queue-card" data-work-pole="${esc(group.pole)}">${group.urgent?`<div class="queue-alert">${uiIcon('warning',22)}<strong>เสี่ยงอันตรายตามอาการแจ้ง</strong></div>`:''}<div class="queue-card-body"><div class="queue-card-intro"><div class="queue-card-top"><div><h2 class="number">${esc(group.pole)}</h2><p class="muted">${esc(group.location||'ยังไม่ระบุตำแหน่ง')}</p></div>${badge(status)}</div><p class="work-symptoms">${esc([...new Set(group.reports.map(report=>report.symptom))].join(' · ')||'เปิดรายละเอียดงานเพื่อดูข้อมูลที่มี')}</p><p class="small muted queue-owner">${count} เรื่องแจ้ง · ผู้รับผิดชอบ: ${esc(owner)}</p>${group.dueAt?`<p class="small ${group.dueAt<Date.now()?'overdue':''}">${group.dueAt<Date.now()?'เกินกำหนด':'กำหนดเสร็จ'} ${date(group.dueAt)}</p>`:''}${job?.instructions||group.open[0]?.instructions?`<p class="small">รายละเอียดงาน: ${esc(job?.instructions||group.open[0]?.instructions)}</p>`:''}${job?.public_note?`<p class="small"><strong>บันทึกล่าสุด:</strong> ${esc(job.public_note)}</p>`:''}</div>${buttons.length?`<div class="queue-actions">${buttons.join('')}</div>`:''}${extra.length?`<details class="queue-manage"><summary>จัดการเพิ่มเติม</summary><div class="queue-manage-actions">${extra.join('')}</div></details>`:''}<details class="work-evidence queue-evidence"><summary>ดูรูปและรายละเอียด ${count} เรื่อง</summary><div class="queue-evidence-content">${details}</div></details></div></article>`;
+  return `<article class="panel work-card queue-card" data-work-pole="${esc(group.pole)}">${group.urgent?`<div class="queue-alert">${uiIcon('warning',22)}<strong>เสี่ยงอันตรายตามอาการแจ้ง</strong></div>`:''}<div class="queue-card-body"><div class="queue-card-intro"><div class="queue-card-top"><div><h2 class="number">${esc(group.pole)}</h2><p class="muted">${esc(group.location||'ยังไม่ระบุตำแหน่ง')}</p></div>${badge(status)}</div><p class="work-symptoms">${esc([...new Set(group.reports.map(report=>report.symptom))].join(' · ')||'เปิดรายละเอียดงานเพื่อดูข้อมูลที่มี')}</p><p class="small muted queue-owner">${count} เรื่องแจ้ง · ผู้รับผิดชอบ: ${esc(owner)}</p>${group.dueAt?`<p class="small ${group.dueAt<Date.now()?'overdue':''}">${group.dueAt<Date.now()?'เกินกำหนด':'กำหนดเสร็จ'} ${date(group.dueAt)}</p>`:''}${job?.instructions||group.open[0]?.instructions?`<p class="small">รายละเอียดงาน: ${esc(job?.instructions||group.open[0]?.instructions)}</p>`:''}${job?.public_note?`<p class="small"><strong>บันทึกล่าสุด:</strong> ${esc(job.public_note)}</p>`:''}</div>${buttons.length?`<div class="queue-actions">${buttons.join('')}</div>`:''}<details class="work-evidence queue-evidence"><summary>ดูรูปและรายละเอียด ${count} เรื่อง</summary><div class="queue-evidence-content">${details}</div></details></div></article>`;
 }
 function choosePole(pole) { state.selected=new Set(selectPoleReports(state.data.reports,pole)); }
 function chooseWaitingPole(pole) { state.selected=new Set(state.data.reports.filter(report=>report.pole===pole&&report.status===0).map(report=>report.id)); }
@@ -339,10 +318,12 @@ function queuePoleCard(group) {
   const job=group.job, activeJob=state.data.jobs.find(item=>item.pole===group.pole&&item.status===1);
   const ownerId=activeJob?.assigned_user_id||activeJob?.technician_id;
   const canReceive=!admin&&pending.length&&group.reports.every(report=>report.status===0)&&(!activeJob||ownerId===state.data.user.id);
-  const owner=group.assignedName||(group.assignedId===state.data.user.id?state.data.user.name:group.assignedId?'มอบหมายแล้ว':'ยังไม่มอบหมาย');
   const symptoms=[...new Set(group.reports.map(report=>report.symptom))];
   const dangerous=symptoms.filter(symptom=>/สายไฟ|เสาหรือโคมชำรุด/.test(symptom));
   const status=job?1:group.open[0]?.status??group.reports[0]?.status??0;
+  const completedJob=state.data.jobs.find(item=>item.id===group.reports.find(report=>report.jobId)?.jobId);
+  const completedOwner=completedJob?.technician_name||state.data.users?.find(user=>user.id===(completedJob?.assigned_user_id||completedJob?.technician_id))?.display_name;
+  const owner=group.assignedName||(group.assignedId===state.data.user.id?state.data.user.name:group.assignedId?'มอบหมายแล้ว':status===2?completedOwner||'ไม่ระบุช่าง':'ยังไม่มอบหมาย');
   const statusText=({0:'รอรับเรื่อง',1:'กำลังซ่อม',2:'ซ่อมเสร็จ',3:'ยกเลิก'})[status]||'ไม่ทราบสถานะ';
   const rows=group.reports.map(report=>`<li class="queue-inline-report"><div class="queue-inline-report-text"><h3>${esc(report.symptom)}</h3><p class="muted">${date(report.at)}</p><p class="muted">${esc(report.contactValue||'ไม่ระบุตัวตน')} · ${report.hasBefore?'มีรูปก่อนซ่อม':'ไม่มีรูปก่อนซ่อม'}</p>${report.hasBefore?`<a class="queue-inline-photo" href="/media/${encodeURIComponent(report.id)}/before" target="_blank" rel="noopener">${uiIcon('image',18)} ดูรูปก่อนซ่อม</a>`:''}</div>${canReceive&&report.status===0?`<button type="button" class="button outline queue-receive" data-start-pole="${pole}" data-start-report="${esc(report.id)}" aria-label="รับเรื่อง ${esc(report.symptom)} ของเสา ${pole}">รับ</button>`:!admin?badge(report.status):''}</li>`).join('');
   const actions=[];
@@ -351,8 +332,8 @@ function queuePoleCard(group) {
     if(group.open.length) actions.push(`<button class="button ${job?'outline':'primary'}" data-assign-pole="${pole}">${group.assignedId?'เปลี่ยนผู้รับผิดชอบ':'มอบหมายช่าง'}</button>`);
   } else if(canReceive&&pending.length>1) actions.push(`<button class="button primary" data-start-pole="${pole}">รับทั้ง ${pending.length} เรื่อง</button>`);
   else if(job) actions.push(`<button class="button primary" data-finish="${esc(job.id)}">ปิดงานซ่อม</button>`,`<button class="button outline" data-note="${esc(job.id)}">บันทึกความคืบหน้า</button>`);
-  const manage=admin&&group.open.length?`<details class="queue-inline-manage"><summary>จัดการเพิ่มเติม</summary><button class="button danger" data-cancel-pole="${pole}">ยกเลิกเรื่องของเสานี้</button></details>`:'';
-  return `<article class="panel queue-pole-card" data-work-pole="${pole}"><div class="queue-inline-head"><h2 class="number">${pole}</h2><span class="queue-status ${status===1?'is-working':status===0?'is-waiting':'is-complete'}">${statusText} · ${count} เรื่องแจ้ง</span></div>${group.urgent&&group.open.length?`<div class="queue-inline-danger">${uiIcon('warning',22)}<strong>เสี่ยงอันตราย: ${esc(dangerous.join(' · ')||'ตรวจสอบอาการแจ้ง')}</strong></div>`:''}<div class="queue-inline-location"><span>ตำแหน่ง</span><strong>${esc(group.location||'ยังไม่ระบุตำแหน่ง')}</strong></div>${admin||state.tab==='mywork'?`<p class="queue-inline-owner muted">ผู้รับผิดชอบ: ${esc(owner)}</p>`:''}${group.dueAt?`<p class="small ${group.dueAt<Date.now()?'overdue':'muted'}">${group.dueAt<Date.now()?'เกินกำหนด':'กำหนดเสร็จ'} ${date(group.dueAt)}</p>`:''}${job?.instructions||group.open[0]?.instructions?`<p class="queue-inline-instruction">รายละเอียดงาน: ${esc(job?.instructions||group.open[0]?.instructions)}</p>`:''}<ul class="queue-inline-list">${rows}</ul>${actions.length?`<div class="queue-inline-actions">${actions.join('')}</div>`:''}${manage}</article>`;
+  if(admin&&group.open.length) actions.push(`<button class="button danger" data-cancel-pole="${pole}">ยกเลิกเรื่องของเสานี้</button>`);
+  return `<article class="panel queue-pole-card" data-work-pole="${pole}"><div class="queue-inline-head"><h2 class="number">${pole}</h2><span class="queue-status ${status===1?'is-working':status===0?'is-waiting':status===3?'is-cancelled':'is-complete'}">${statusText} · ${count} เรื่องแจ้ง</span></div>${group.urgent&&group.open.length?`<div class="queue-inline-danger">${uiIcon('warning',22)}<strong>เสี่ยงอันตราย: ${esc(dangerous.join(' · ')||'ตรวจสอบอาการแจ้ง')}</strong></div>`:''}<div class="queue-inline-location"><span>ตำแหน่ง</span><strong>${esc(group.location||'ยังไม่ระบุตำแหน่ง')}</strong></div>${(admin||state.tab==='mywork')&&status!==3?`<p class="queue-inline-owner muted">ผู้รับผิดชอบ: ${esc(owner)}</p>`:''}${group.dueAt?`<p class="small ${group.dueAt<Date.now()?'overdue':'muted'}">${group.dueAt<Date.now()?'เกินกำหนด':'กำหนดเสร็จ'} ${date(group.dueAt)}</p>`:''}${job?.instructions||group.open[0]?.instructions?`<p class="queue-inline-instruction">รายละเอียดงาน: ${esc(job?.instructions||group.open[0]?.instructions)}</p>`:''}<ul class="queue-inline-list">${rows}</ul>${actions.length?`<div class="queue-inline-actions">${actions.join('')}</div>`:''}</article>`;
 }
 function completedPoleCard(group) {
   const pole=esc(group.pole), count=group.reports.length;
@@ -365,14 +346,14 @@ function completedPoleCard(group) {
 }
 function activeCards(jobs) {
   const groups=jobs.map(jobGroup).sort((a,b)=>Number(b.urgent)-Number(a.urgent)||(a.dueAt||Infinity)-(b.dueAt||Infinity)||a.firstAt-b.firstAt);
-  return groups.length?`<div class="work-grid">${groups.map(group=>state.role==='technician'?queuePoleCard(group):groupCard(group,'active')).join('')}</div>`:'<div class="empty"><p>ยังไม่มีงานที่กำลังซ่อม</p><p class="small muted">รับงานจากรายการรอรับเพื่อเริ่มบันทึกการซ่อม</p></div>';
+  return groups.length?`<div class="work-grid">${groups.map(queuePoleCard).join('')}</div>`:'<div class="empty"><p>ยังไม่มีงานที่กำลังซ่อม</p><p class="small muted">รับงานจากรายการรอรับเพื่อเริ่มบันทึกการซ่อม</p></div>';
 }
 function mywork() {
   const d=state.data, waiting=d.reports.filter(report=>report.status===0 && report.assignedId===d.user.id), active=d.jobs.filter(job=>job.status===1 && (job.assigned_user_id||job.technician_id)===d.user.id), groups=groupReports(waiting,d.jobs,d.users||[],d.poles);
   const view=state.workView||'active';
   content(`<div class="section-head"><h1>งานของฉัน</h1><button class="button outline small" id="refresh-mywork">โหลดงานล่าสุด</button></div><p class="muted">เปิดงานเพื่อดูอาการ รูป และบันทึกผลการซ่อม</p><div class="work-switch" role="group" aria-label="ประเภทงานของฉัน"><button type="button" data-work-view="active" aria-pressed="${view==='active'}">กำลังทำ <span class="number">${active.length}</span></button><button type="button" data-work-view="waiting" aria-pressed="${view==='waiting'}">รอรับ <span class="number">${groups.length}</span></button></div><section aria-label="${view==='active'?'งานกำลังซ่อม':'งานรอรับ'}">${view==='active'?activeCards(active):groups.length?`<div class="work-grid">${groups.map(queuePoleCard).join('')}</div>`:'<div class="empty"><p>ยังไม่มีงานมอบหมายที่รอรับ</p><button class="button outline" data-open-available>ดูคิวงานที่รับได้</button></div>'}</section>`);
   $('#refresh-mywork').addEventListener('click',loadWorkspace);
-  document.querySelectorAll('[data-work-view]').forEach(button=>button.addEventListener('click',()=>{state.workView=button.dataset.workView;mywork();document.querySelector(`[data-work-view="${state.workView}"]`).focus();}));
+  document.querySelectorAll('[data-work-view]').forEach(button=>button.addEventListener('click',()=>{if((state.workView||'active')===button.dataset.workView)return;state.workView=button.dataset.workView;mywork();document.querySelector(`[data-work-view="${state.workView}"]`).focus();reveal($('#staff-content section[aria-label]'));}));
   $('[data-open-available]')?.addEventListener('click',()=>{state.reportStatus='0';state.reportQuery='';saveFilters();navigateTab('reports');});
 }
 function reports() {
@@ -380,7 +361,7 @@ function reports() {
   content(`<h1>${state.role==='admin'?'คิวงานรายเสา':'คิวงานที่รับได้'}</h1><p class="muted">${state.role==='admin'?'ดูอาการและรูปก่อนมอบหมายหรือติดตามงาน งานที่เสี่ยงอันตรายอยู่บนสุด':'ดูอาการและรูปก่อนรับงาน งานที่เสี่ยงอันตรายอยู่บนสุด'}</p><div class="toolbar queue-toolbar"><div class="queue-filter-field"><label for="report-status">แสดงงาน</label><select id="report-status">${[['open','เรื่องที่ต้องดำเนินการ'],['0','รอรับเรื่อง'],['1','กำลังซ่อม'],['2','ซ่อมเสร็จ'],['3','ยกเลิก'],['all','ทุกสถานะ']].map(([key,label])=>`<option value="${key}" ${status===key?'selected':''}>${label}</option>`).join('')}</select></div><div class="queue-filter-field"><label for="report-search">ค้นหา</label><input class="input" id="report-search" type="search" placeholder="หมายเลขเสาหรืออาการ" value="${esc(query)}"></div></div><div id="report-results">${reportResults(queueReports(d,status,query),d)}</div>`);
   const draw=()=>{state.selected.clear();$('#report-results').innerHTML=reportResults(queueReports(d,state.reportStatus||'open',state.reportQuery||''),d);bindWorkActions();};
   $('#report-results').addEventListener('click',event=>{if(!event.target.closest('[data-clear-report-filters]'))return;state.reportStatus='open';state.reportQuery='';saveFilters();$('#report-status').value='open';syncMobilePicker($('#report-status'));$('#report-search').value='';draw();$('#report-search').focus();});
-  $('#report-status').addEventListener('change',event=>{state.reportStatus=event.target.value;saveFilters();draw();});
+  $('#report-status').addEventListener('change',event=>{state.reportStatus=event.target.value;saveFilters();draw();reveal($('#report-results .queue-counts'));});
   $('#report-search').addEventListener('input',event=>{state.reportQuery=event.target.value;saveFilters();draw();});
 }
 
@@ -528,19 +509,18 @@ function poleForm(p = {}) {
 }
 
 async function lineSettings() {
-  content('<h1>แจ้งเตือน LINE OA</h1><p class="muted">แจ้งเรื่องใหม่เข้ากลุ่มเจ้าหน้าที่ โดยไม่ส่งข้อมูลติดต่อของผู้แจ้ง</p><div id="line-settings" class="panel line-settings"><p class="loading" role="status">กำลังโหลดการตั้งค่า…</p></div>');
+  content('<h1>แจ้งเตือน LINE OA</h1><p class="muted">แจ้งเรื่องใหม่เข้ากลุ่มเจ้าหน้าที่ โดยไม่ส่งข้อมูลติดต่อของผู้แจ้ง</p><div id="line-settings" class="line-settings"><p class="loading" role="status">กำลังโหลดการตั้งค่า…</p></div>');
   const panel=$('#line-settings');
   try {
     const info=await api('/api/admin/line');
     if(state.tab!=='line'||!panel.isConnected)return;
     const selected=info.groups.find(group=>group.selected);
-    panel.innerHTML=`<h2>สถานะการเชื่อมต่อ</h2><p>Channel Access Token: <strong>${info.tokenConfigured?'พร้อมใช้งาน':'ยังไม่ได้ตั้งค่า'}</strong><br>Channel Secret: <strong>${info.secretConfigured?'พร้อมใช้งาน':'ยังไม่ได้ตั้งค่า'}</strong></p>
-      <p class="small muted">เก็บคีย์ทั้งสองรายการเป็น Cloudflare Worker Secrets เท่านั้น ไม่ต้องใส่ในหน้าเว็บ</p>
-      <div class="field"><label for="line-webhook-url">Webhook URL สำหรับ LINE Developers</label><input class="input" id="line-webhook-url" value="${esc(info.webhookUrl)}" readonly></div>
-      <p class="small muted">ตั้ง URL นี้และเปิด Use webhook ใน LINE Developers จากนั้นเชิญ LINE OA เข้ากลุ่มเจ้าหน้าที่และส่งข้อความหนึ่งครั้ง กลุ่มจะปรากฏด้านล่าง</p>
-      <h3>กลุ่มที่พบ</h3>${info.groups.length?`<div class="line-group-list">${info.groups.map(group=>`<div class="line-group"><div><strong>${group.selected?'กลุ่มที่ใช้แจ้งเตือน':'กลุ่ม LINE'}</strong><span class="small muted">รหัสลงท้าย ${esc(group.id.slice(-8))} · พบล่าสุด ${date(group.lastSeenAt)}</span></div><button type="button" class="button outline small" data-line-group="${esc(group.id)}" ${group.selected?'disabled':''}>${group.selected?'ใช้อยู่':'ใช้กลุ่มนี้'}</button></div>`).join('')}</div>`:'<p class="empty">ยังไม่พบกลุ่ม ส่งข้อความในกลุ่ม LINE ที่มี OA แล้วกดโหลดใหม่</p>'}
-      <div class="actions line-actions"><button type="button" class="button outline" id="line-refresh">โหลดกลุ่มใหม่</button><button type="button" class="button primary" id="line-test" ${!info.tokenConfigured||!selected?'disabled':''}>ส่งข้อความทดสอบ</button>${selected?'<button type="button" class="button ghost" id="line-stop">หยุดแจ้งเตือน</button>':''}</div>
-      <p class="small muted">เมื่อเชื่อมต่อแล้ว ระบบจะส่งเฉพาะเรื่องใหม่ที่ประชาชนแจ้งหลังจากนี้</p>`;
+    const connection=(label,ready)=>`<div class="line-status-row"><span>${label}</span><strong class="line-status-pill ${ready?'is-ready':'is-missing'}">${ready?uiIcon('check',18):uiIcon('close',18)} ${ready?'พร้อมใช้งาน':'ยังไม่ได้ตั้งค่า'}</strong></div>`;
+    panel.innerHTML=`<section class="panel line-card line-connection"><h2>สถานะการเชื่อมต่อ</h2>${connection('Channel Access Token',info.tokenConfigured)}${connection('Channel Secret',info.secretConfigured)}<p class="line-secret-note">${uiIcon('lock',21)}<span>เก็บคีย์ทั้งสองรายการเป็น Cloudflare Worker Secrets เท่านั้น ไม่ต้องใส่ในหน้าเว็บ</span></p></section>
+      <section class="panel line-card line-webhook"><h2>ตั้งค่า Webhook</h2><label for="line-webhook-url">Webhook URL สำหรับ LINE Developers</label><div class="line-webhook-field"><input class="input" id="line-webhook-url" value="${esc(info.webhookUrl)}" readonly><button type="button" class="button outline" id="line-copy-webhook" aria-label="คัดลอก Webhook URL">${uiIcon('copy',21)}</button></div><ol class="line-steps"><li>ตั้ง URL นี้และเปิด Use webhook ใน LINE Developers</li><li>เชิญ LINE OA เข้ากลุ่มเจ้าหน้าที่</li><li>ส่งข้อความหนึ่งครั้ง กลุ่มจะปรากฏด้านล่าง</li></ol></section>
+      <section class="panel line-card line-groups"><h2>กลุ่มที่พบ</h2>${info.groups.length?`<div class="line-group-list">${info.groups.map(group=>`<div class="line-group ${group.selected?'is-selected':''}"><div><strong>${group.selected?'กลุ่มที่ใช้แจ้งเตือน':'กลุ่ม LINE'}</strong><span class="muted">รหัสลงท้าย ${esc(group.id.slice(-8))} · พบล่าสุด ${date(group.lastSeenAt)}</span></div>${group.selected?'<span class="line-current">ใช้อยู่</span>':`<button type="button" class="button outline" data-line-group="${esc(group.id)}">ใช้กลุ่มนี้</button>`}</div>`).join('')}</div>`:'<p class="empty">ยังไม่พบกลุ่ม ส่งข้อความในกลุ่ม LINE ที่มี OA แล้วกดโหลดใหม่</p>'}
+      <div class="line-actions"><button type="button" class="button primary" id="line-test" ${!info.tokenConfigured||!selected?'disabled':''}>ส่งข้อความทดสอบ</button><button type="button" class="button outline" id="line-refresh">${uiIcon('refresh',20)} โหลดกลุ่มใหม่</button>${selected?'<button type="button" class="button outline line-stop" id="line-stop">หยุดแจ้งเตือน</button>':''}</div><p class="muted line-footnote">เมื่อเชื่อมต่อแล้ว ระบบจะส่งเฉพาะเรื่องใหม่ที่ประชาชนแจ้งหลังจากนี้</p></section>`;
+    panel.querySelector('#line-copy-webhook').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(info.webhookUrl);toast('คัดลอก Webhook URL แล้ว');}catch{panel.querySelector('#line-webhook-url').select();toast('คัดลอกไม่ได้ กรุณาคัดลอก URL จากช่องด้านบน');}});
     panel.querySelector('#line-refresh').addEventListener('click',lineSettings);
     panel.querySelectorAll('[data-line-group]').forEach(button=>button.addEventListener('click',async()=>{
       button.disabled=true;

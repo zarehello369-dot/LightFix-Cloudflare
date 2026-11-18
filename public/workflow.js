@@ -14,11 +14,9 @@ export function groupReports(rows, jobs = [], users = [], poles = []) {
 }
 
 export function groupQueueReports(rows, jobs = [], users = [], poles = [], status = 'open') {
-  if (status !== 'open') return groupReports(rows, jobs, users, poles);
-  return [
-    ...groupReports(rows.filter(report => report.status === 0), jobs, users, poles),
-    ...groupReports(rows.filter(report => report.status === 1), jobs, users, poles)
-  ];
+  if (status !== 'open' && status !== 'all') return groupReports(rows, jobs, users, poles);
+  return (status === 'all' ? [0, 1, 2, 3] : [0, 1]).flatMap(reportStatus =>
+    groupReports(rows.filter(report => report.status === reportStatus), jobs, users, poles));
 }
 
 export function readFilters(storage, key) {

@@ -142,9 +142,30 @@
  .chat-offer-slot{order:2}.chat-error{order:6;padding:4px 16px;font-size:13px}
  .chat-contact{min-height:96px}.chat-people-head{padding:20px 16px 12px}.chat-person strong{font-size:17px}.chat-person small{font-size:15px}
 }
-@media(prefers-reduced-motion:no-preference){.chat-contact{transition:background-color 140ms var(--motion-ease)}}
-.chat-profile-account{padding:16px 0}.chat-profile-account p{margin:4px 0;font-size:.85rem}
 .chat-people-title .button{min-height:40px;font-size:.8rem}
 .chat-profile-shortcut{padding:0;border:1px solid var(--line);margin-left:auto;width:36px;height:36px}
-.chat-profile-dialog{width:min(460px,calc(100% - 24px));max-height:calc(100dvh - 32px);padding:24px;overflow:auto}.chat-profile-title{display:flex;align-items:center;justify-content:space-between;gap:12px}.chat-profile-title h2{margin:0;font-size:1.4rem}.chat-profile-dialog>form>p{font-size:.85rem}.chat-profile-photo{display:flex;align-items:center;gap:16px;margin:24px 0 12px}.chat-profile-photo>.chat-avatar{width:88px;height:88px;font-size:2rem}.chat-profile-photo>div{display:flex;flex-direction:column;align-items:flex-start;gap:6px}.chat-profile-photo label{cursor:pointer}.chat-profile-photo input:focus-visible+button{outline:3px solid var(--green)}
-@media(max-width:760px){.chat-profile-dialog{padding:20px}.chat-thread-head .chat-profile-shortcut{width:32px;height:32px}.chat-people-title .button{padding:6px 8px}}
+.chat-profile-dialog{width:min(520px,calc(100% - 24px));max-height:calc(100dvh - 32px);padding:28px;overflow:auto;border-radius:22px}
+.chat-profile-dialog form{gap:0}
+.chat-profile-title{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.chat-profile-title h2{margin:0;font-size:1.9rem;line-height:1.25}
+.chat-profile-title .button{display:inline-flex;align-items:center;gap:8px;min-height:44px}
+.chat-profile-intro{margin:14px 0 22px;line-height:1.55}
+.chat-profile-photo{display:flex;align-items:center;gap:20px;margin:0 0 12px}
+.chat-profile-photo>.chat-avatar{width:96px;height:96px;font-size:2.6rem}
+.chat-profile-photo-actions{display:flex;flex-direction:column;align-items:flex-start;gap:8px}
+.chat-profile-photo-actions label{cursor:pointer}
+.chat-profile-photo-actions:has(input:focus-visible) label{outline:3px solid var(--green);outline-offset:3px}
+.chat-profile-photo-actions [data-remove]{color:#a12d24;font-weight:700}
+.chat-profile-help{margin:0 0 22px;line-height:1.55}
+.chat-profile-account{padding:18px 20px;border-radius:16px;background:var(--page)}
+.chat-profile-account strong{font-size:1.25rem}
+.chat-profile-account p{margin:8px 0}
+.chat-profile-dialog [data-error]:empty{display:none}
+.chat-profile-save{width:100%;min-height:54px;margin-top:22px}
+@media(max-width:760px){
+  .chat-profile-dialog{position:fixed;inset:auto 0 0;width:100%;max-width:none;max-height:calc(100dvh - 12px);margin:0;padding:40px 24px calc(26px + env(safe-area-inset-bottom));border-radius:28px 28px 0 0}
+  .chat-profile-dialog:before{content:'';position:absolute;top:12px;left:50%;width:44px;height:5px;border-radius:999px;background:var(--line);transform:translateX(-50%)}
+  .chat-profile-title h2{font-size:2rem}
+  .chat-thread-head .chat-profile-shortcut{width:32px;height:32px}
+  .chat-people-title .button{padding:6px 8px}
+}
