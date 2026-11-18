@@ -266,7 +266,7 @@ details.manage-menu summary{cursor:pointer;min-height:42px;padding:10px;font-wei
 .photo-pair img{height:auto;aspect-ratio:auto;object-fit:contain}.photo-pair figure a{display:block}.photo-pair figure a:focus-visible{outline-offset:4px}
 @media(max-width:899px){.staff-identity h2{font-size:.8rem}.staff-identity h2 span{display:inline;margin-left:6px;font-size:.95rem}}
 .toolbar select{max-width:100%}@media(min-width:640px){.toolbar select{max-width:280px}}
-.work-grid{display:grid;gap:14px}.work-card{min-width:0}.work-card h2{margin:0}.work-card p{margin:8px 0;overflow-wrap:anywhere}.work-card details{margin-top:12px}.work-card summary{cursor:pointer;min-height:44px;padding-block:9px;font-weight:600}.work-card input[type=checkbox]{width:24px;height:24px;accent-color:var(--green)}.work-card .staff-row{display:flex;justify-content:space-between;gap:12px}.work-card .inline{align-items:center}.work-card+.button{margin-top:8px;width:100%}.work-card .danger-note,.work-card .status-note{padding:5px 9px}
+.work-grid{display:grid;gap:14px;align-items:start}.work-card{min-width:0}.work-card h2{margin:0}.work-card p{margin:8px 0;overflow-wrap:anywhere}.work-card details{margin-top:12px}.work-card summary{cursor:pointer;min-height:44px;padding-block:9px;font-weight:600}.work-card input[type=checkbox]{width:24px;height:24px;accent-color:var(--green)}.work-card .staff-row{display:flex;justify-content:space-between;gap:12px}.work-card .inline{align-items:center}.work-card+.button{margin-top:8px;width:100%}.work-card .danger-note,.work-card .status-note{padding:5px 9px}
 .work-card .staff-row>div{min-width:0;flex:1;overflow-wrap:anywhere}.work-card .staff-row>.badge{flex:none}.overdue{color:var(--red);font-weight:600}
 @media(min-width:1100px){.work-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 
@@ -397,28 +397,32 @@ body{background:var(--page)}
 .work-card:has([data-assign-pole]) .work-evidence{order:2}
 .work-actions{padding-top:15px}
 .work-actions .button.primary{background:var(--gold)}
-/* Work queue cards; other staff cards keep their existing layout. */
-.queue-card{padding:0;overflow:hidden;border-radius:24px}
-.queue-card .queue-alert{display:flex;align-items:center;gap:11px;min-height:54px;padding:11px 18px;background:#fcefed;color:#982a1e;font-size:1rem;line-height:1.4}
+/* Pole cards share one layout across the queue, overview, and active work. */
+.queue-card{padding:0;overflow:hidden;border-radius:18px}
+.queue-card .queue-alert{display:flex;align-items:center;gap:10px;min-height:44px;padding:10px 20px;background:#fff0ed;color:#982a1e;font-size:.91rem;line-height:1.4}
 .queue-alert .ui-icon{flex:none}
-.queue-card-body{min-width:0;padding:18px}
+.queue-card-body{min-width:0;padding:20px}
 .queue-card-top{display:flex;align-items:center;justify-content:space-between;gap:12px}
 .queue-card-top>div{min-width:0}
-.queue-card-top h2{font-size:1.85rem;line-height:1.2;color:var(--deep)}
-.queue-card-count{font-size:.6em;font-weight:600;color:var(--muted);vertical-align:middle}
+.queue-card-top h2{font-size:1.65rem;line-height:1.2;color:var(--deep)}
 .queue-card-top .badge{flex:none;white-space:nowrap}
 .queue-card-top p{margin:4px 0 0}
-.queue-card .work-symptoms{margin:18px 0 12px;font-size:1.06rem;line-height:1.55}
-.queue-owner{margin:0 0 12px!important}
-.queue-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:16px 0 12px}
-.queue-actions .button{width:100%;min-width:0;min-height:50px;padding:8px 10px;line-height:1.35}
-.queue-actions [data-assign-pole],.queue-actions [data-cancel-pole],.queue-actions [data-finish]{grid-column:1/-1}
-.queue-actions .button.danger{background:var(--surface);border:1px solid #eab8b0;color:#a3281f}
-.queue-evidence{margin:0!important}
-.queue-evidence>summary{list-style:none;min-height:54px;padding:13px 2px;font-size:1rem;color:var(--deep)}
+.queue-card .work-symptoms{margin:16px 0 6px;font-size:1.02rem;line-height:1.5}
+.queue-owner{margin:0!important}
+.queue-actions{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;max-width:600px;margin:20px 0 0}
+.queue-actions:has(.button:only-child){max-width:240px}
+.queue-actions .button{width:100%;min-width:0;min-height:48px;padding:9px 12px;line-height:1.35}
+.queue-manage{margin:8px 0 0!important}
+.queue-manage>summary{display:inline-flex;align-items:center;min-height:44px;padding:8px 2px!important;color:var(--deep);font-size:.9rem;text-decoration:underline;text-underline-offset:4px}
+.queue-manage-actions{display:flex;flex-wrap:wrap;gap:10px;padding:6px 0 4px}
+.queue-manage-actions .button{min-height:44px;padding:8px 14px}
+.queue-manage-actions .button.danger{background:var(--surface);border:1px solid #dca69e;color:#8b2720}
+.queue-evidence{margin:16px 0 0!important;border-top:1px solid var(--line)}
+.queue-evidence>summary{list-style:none;min-height:48px;padding:12px 2px;font-size:.96rem;color:var(--deep)}
 .queue-evidence>summary::-webkit-details-marker{display:none}
-.queue-evidence>summary:before{content:'';display:inline-block;width:8px;height:8px;margin:0 16px 3px 3px;border-right:3px solid var(--deep);border-bottom:3px solid var(--deep);transform:rotate(-45deg);transition:transform var(--motion-fast)}
+.queue-evidence>summary:before{content:'';display:inline-block;width:8px;height:8px;margin:0 12px 3px 3px;border-right:2px solid var(--deep);border-bottom:2px solid var(--deep);transform:rotate(-45deg);transition:transform var(--motion-fast)}
 .queue-evidence[open]>summary:before{transform:rotate(45deg)}
+.queue-evidence-content{max-width:780px}
 .queue-evidence .complaint-detail{padding:16px 0 18px}
 .queue-report-heading{display:flex;align-items:center;justify-content:space-between;gap:10px}
 .queue-report-heading h3{font-size:1.13rem;line-height:1.4}
@@ -426,14 +430,10 @@ body{background:var(--page)}
 .queue-photo-empty{display:flex;align-items:center;gap:8px}
 .queue-photo-empty .ui-icon{flex:none}
 @media(max-width:370px){.queue-card-top{align-items:flex-start;flex-direction:column}.queue-report-heading{align-items:flex-start;flex-direction:column}}
+@media(max-width:639px){.queue-actions,.queue-actions:has(.button:only-child){grid-template-columns:minmax(0,1fr);max-width:none}}
 @media(min-width:900px){
   #staff-content[data-view=reports] .work-grid{grid-template-columns:minmax(0,1fr)}
-  #staff-content[data-view=reports] .queue-card-body{display:grid;grid-template-columns:minmax(0,1fr) minmax(250px,290px);gap:8px 28px;padding:24px 28px}
-  #staff-content[data-view=reports] .queue-card-top{justify-content:flex-start;gap:20px}
-  #staff-content[data-view=reports] .queue-actions{align-self:start;margin:0}
-  #staff-content[data-view=reports] .queue-evidence{grid-column:1/-1}
-  #staff-content[data-view=reports] .queue-evidence[open]{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:24px}
-  #staff-content[data-view=reports] .queue-evidence>summary{grid-column:1/-1}
+  #staff-content[data-view=reports] .queue-card-body{padding:24px 28px}
 }
 .work-switch button{border-color:var(--control-line);border-radius:12px}
 .work-switch button[aria-pressed=true]{background:var(--gold-soft);border-color:var(--selected-line);box-shadow:inset 0 -3px var(--selected-line)}
