@@ -1,4 +1,5 @@
 import { chatRoute } from './chat.js';
+import { receiveLineWebhook, lineStatus, selectLineGroup, pushLineText, notifyLineNewReport } from './line.js';
 const COOKIE = 'lf_session';
 const SESSION_MS = 8 * 60 * 60 * 1000;
 const PASSWORD_ITERATIONS = 100000;
@@ -440,22 +441,34 @@ async function startJob(request, env, data) {
     throw new HttpError(400, 'INVALID_SELECTION', 'เลือกเรื่องแจ้ง 1 ถึง 3 เรื่องของเสาเดียวกัน');
   }
   const reports = await all(env.DB, `SELECT id,pole,status,assigned_user_id,instructions,due_at FROM reports WHERE id IN (${ids.map(() => '?').join(',')})`, ...ids);
-  const waiting = await one(env.DB, 'SELECT COUNT(*) AS count FROM reports WHERE pole=? AND status=0', pole);
-  if (waiting.count !== ids.length) throw new HttpError(409, 'WORK_CHANGED', 'จำนวนเรื่องแจ้งของเสานี้เปลี่ยนไป กรุณาโหลดข้อมูลล่าสุดเพื่อรับงานรวมทั้งเสา');
   if (reports.length !== ids.length || reports.some(r => r.pole !== pole || r.status !== 0 || (user.role !== 'admin' && r.assigned_user_id && r.assigned_user_id !== user.id))) {
     throw new HttpError(409, 'STATUS_CHANGED', 'รายการเปลี่ยนไปแล้ว กรุณารีเฟรช');
   }
-  const jobId = id(), time = now();
-  if (await one(env.DB, 'SELECT id FROM jobs WHERE pole=? AND status=1', pole)) throw new HttpError(409, 'WORK_CHANGED', 'เสานี้มีงานกำลังซ่อมแล้ว กรุณาโหลดข้อมูลล่าสุด');
+  const active = await one(env.DB, 'SELECT id,technician_id,assigned_user_id FROM jobs WHERE pole=? AND status=1', pole);
+  const owner = active?.assigned_user_id || active?.technician_id;
+  if (active && user.role !== 'admin' && owner !== user.id) throw new HttpError(403, 'FORBIDDEN', 'เสานี้มีช่างคนอื่นกำลังซ่อม');
+  if (active && reports.some(r => r.assigned_user_id && r.assigned_user_id !== owner)) {
+    throw new HttpError(409, 'WORK_CHANGED', 'เรื่องนี้มอบหมายให้ช่างคนอื่น กรุณาเปลี่ยนผู้รับผิดชอบก่อนรับเพิ่ม');
+  }
+  if (!active && new Set(reports.map(r => r.assigned_user_id).filter(Boolean)).size > 1) {
+    throw new HttpError(409, 'WORK_CHANGED', 'เรื่องที่เลือกมีผู้รับผิดชอบต่างกัน กรุณาเลือกใหม่หรือเปลี่ยนผู้รับผิดชอบ');
+  }
+  const jobId = active?.id || id(), time = now();
   const placeholders = ids.map(() => '?').join(',');
   const allowed = user.role === 'admin' ? '' : 'AND (assigned_user_id IS NULL OR assigned_user_id=?)';
-  const statements = [env.DB.prepare(`INSERT INTO jobs(id,pole,status,started_at,technician_id,assigned_user_id,instructions,due_at)
+  const selectionCheck = id();
+  const statements = active ? [env.DB.prepare(`INSERT INTO work_mutation_checks(operation_id,valid)
+    VALUES(?,(SELECT COUNT(*)=? FROM reports WHERE id IN (${placeholders}) AND pole=? AND status=0 AND (assigned_user_id IS NULL OR assigned_user_id=?))
+      AND EXISTS(SELECT 1 FROM jobs WHERE id=? AND status=1))`)
+    .bind(selectionCheck, ids.length, ...ids, pole, owner, jobId)] : [env.DB.prepare(`INSERT INTO jobs(id,pole,status,started_at,technician_id,assigned_user_id,instructions,due_at)
     SELECT ?,?,1,?,?,?,?,? WHERE (SELECT COUNT(*) FROM reports WHERE id IN (${placeholders}) AND pole=? AND status=0 ${allowed})=?`)
     .bind(jobId, pole, time, user.id, reports[0].assigned_user_id || null, reports[0].instructions || '', reports[0].due_at || null, ...ids, pole, ...(user.role === 'admin' ? [] : [user.id]), ids.length)];
-  for (const reportId of ids) statements.push(env.DB.prepare(`UPDATE reports SET status=1,job_id=? WHERE id=? AND status=0 AND EXISTS(SELECT 1 FROM jobs WHERE id=?)`).bind(jobId, reportId, jobId));
+  for (const reportId of ids) statements.push(env.DB.prepare(`UPDATE reports SET status=1,job_id=?,assigned_user_id=COALESCE(assigned_user_id,?) WHERE id=? AND pole=? AND status=0 AND (assigned_user_id IS NULL OR assigned_user_id=?) AND EXISTS(SELECT 1 FROM jobs WHERE id=? AND status=1)`)
+    .bind(jobId, owner || reports[0].assigned_user_id || user.id, reportId, pole, owner || reports[0].assigned_user_id || user.id, jobId));
+  if (active) statements.push(env.DB.prepare('DELETE FROM work_mutation_checks WHERE operation_id=?').bind(selectionCheck));
   const result = await commitWork(env, user, pole, data.workRevision, statements);
-  if (!result[0].meta.changes) throw new HttpError(409, 'STATUS_CHANGED', 'รายการเปลี่ยนไปแล้ว กรุณารีเฟรช');
-  await audit(env.DB, user.username, 'start', jobId);
+  if (result.some(statement => statement.meta.changes !== 1)) throw new HttpError(409, 'STATUS_CHANGED', 'รายการเปลี่ยนไปแล้ว กรุณารีเฟรช');
+  await audit(env.DB, user.username, active ? 'add_to_job' : 'start', jobId);
   return { id: jobId };
 }
 
@@ -681,7 +694,7 @@ async function editHistory(request, env, jobId, data) {
 export const internals = { clean, contact, poleNumber, decodePhoto, publicReport, equalHex, passwordHash };
 
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const url = new URL(request.url);
     try {
       if (url.pathname === '/admin' || url.pathname.startsWith('/admin/')) {
@@ -689,6 +702,7 @@ export default {
       }
       if (!url.pathname.startsWith('/api/') && !url.pathname.startsWith('/media/')) return await asset(request, env);
       if (request.method !== 'GET' && request.method !== 'HEAD') assertOrigin(request);
+      if (request.method === 'POST' && url.pathname === '/api/line/webhook') return ok(await receiveLineWebhook(request,env));
       if (url.pathname.startsWith('/api/chat/')) {
         if (request.method === 'POST') { const staff=await actor(request, env); await throttle(request, env, `chat-${staff.id}`, 120, 60_000); }
         const result=await chatRoute(request, env, {actor,one,all,run,HttpError,commitWork,id,body,poleNumber,decodePhoto,sessionHash:()=>sha256(cookieValue(request,COOKIE))});
@@ -704,7 +718,14 @@ export default {
       if (request.method === 'GET' && url.pathname === '/api/reports') return ok(await board(env, url.searchParams));
       if (request.method === 'GET' && /^\/api\/reports\/[a-f0-9]{32}$/.test(url.pathname)) return ok(await detail(env, url.pathname.split('/')[3]));
       if (request.method === 'GET' && /^\/media\/[a-f0-9]{32}\/(before|after)$/.test(url.pathname)) return await media(env, url.pathname.split('/')[2], url.pathname.split('/')[3]);
-      if (request.method === 'POST' && url.pathname === '/api/reports') { await throttle(request, env, 'report', 10, 3600_000); return ok(await createReport(env, await body(request)), 201); }
+      if (request.method === 'POST' && url.pathname === '/api/reports') {
+        await throttle(request, env, 'report', 10, 3600_000);
+        const created=await createReport(env, await body(request));
+        if (!created.duplicate && env.LINE_CHANNEL_ACCESS_TOKEN && ctx?.waitUntil) {
+          ctx.waitUntil(notifyLineNewReport(env,created.id,request.url).catch(error=>console.error('LINE report alert failed',error.code||'UNKNOWN')));
+        }
+        return ok(created,201);
+      }
       if (request.method === 'POST' && (url.pathname === '/api/auth/login' || url.pathname === '/api/admin/auth/login')) {
         await throttle(request, env, 'login', 30, 900_000);
         return await login(request, env, await body(request), url.pathname.startsWith('/api/admin/') ? 'admin' : 'technician');
@@ -723,6 +744,18 @@ export default {
       if (request.method === 'GET' && /^\/api\/staff\/poles\/T\d{4}$/.test(url.pathname)) return ok(await staffPoleDetail(request, env, url.pathname.split('/')[4], url.searchParams.get('page')));
       if (request.method === 'GET' && url.pathname === '/api/workspace') return ok(await workspace(request, env, 'technician'));
       if (request.method === 'GET' && url.pathname === '/api/admin/workspace') return ok(await workspace(request, env, 'admin'));
+      if (request.method === 'GET' && url.pathname === '/api/admin/line') { await actor(request,env,true); return ok(await lineStatus(request,env)); }
+      if (request.method === 'POST' && url.pathname === '/api/admin/line/select') {
+        await actor(request,env,true);
+        const data=await body(request);
+        if (!Object.hasOwn(data,'groupId')) throw new HttpError(400,'INVALID_GROUP','เลือกกลุ่ม LINE จากรายการที่พบ');
+        return ok(await selectLineGroup(env,data.groupId));
+      }
+      if (request.method === 'POST' && url.pathname === '/api/admin/line/test') {
+        const user=await actor(request,env,true);
+        await throttle(request,env,`line-test-${user.id}`,3,3600_000);
+        return ok(await pushLineText(env,'✅ ทดสอบแจ้งเตือน LightFix สำเร็จ'));
+      }
       if (request.method === 'POST' && url.pathname === '/api/jobs/start') return ok(await startJob(request, env, await body(request)), 201);
       if (request.method === 'POST' && url.pathname === '/api/admin/jobs/start') return ok(await startJob(request, env, await body(request)), 201);
       if (request.method === 'POST' && /^\/api\/jobs\/[a-f0-9]{32}\/finish$/.test(url.pathname)) return ok(await finishJob(request, env, url.pathname.split('/')[3], await body(request)));

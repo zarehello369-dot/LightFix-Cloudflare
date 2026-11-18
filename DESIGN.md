@@ -256,4 +256,4 @@ Use one authored, single-color SVG family (`public/ui-icons.js`) for functional 
 
 ## Production release — 18 November 2026
 
-The user approved publication of all pending interface changes. The redesigned pole queue card is scoped to the queue page, with a wide desktop layout and the supplied stacked mobile layout. Whole-pole acceptance remains the backend rule; the card offers a first-report detail shortcut and an accept-all action. The image placeholder uses the shared filled image icon. The preview-only restriction above is superseded by this approval.
+The user approved publication of all pending interface changes. The redesigned pole queue card is scoped to the queue page, with a wide desktop layout and the supplied stacked mobile layout. The queue keeps both one-report and accept-all actions introduced on main. The image placeholder uses the shared filled image icon. The preview-only restriction above is superseded by this approval.

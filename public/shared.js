@@ -6,6 +6,7 @@ export const control = (form, name) => form.elements.namedItem(name);
 export const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 export const date = value => value ? new Intl.DateTimeFormat('th-TH', { dateStyle: 'medium', timeStyle: 'short' }).format(Number(value)) : 'ยังไม่ระบุ';
 export const icon = `<svg viewBox="0 0 48 48" aria-hidden="true" focusable="false"><g fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 31.5c0-3.1-1.4-4.5-3-6.6a11.5 11.5 0 1 1 19 0c-1.6 2.1-3 3.5-3 6.6H17.5Z"/><path d="M18 36h12M20 40h8M24 3v3M8.5 9.5l2.2 2.2M39.5 9.5l-2.2 2.2M4 23h3M44 23h-3"/></g></svg>`;
+const logoMark = `<svg viewBox="0 0 48 48" aria-hidden="true" focusable="false"><g fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M24 5C15.7 5 9 11.4 9 19.4c0 5.2 2.6 8.3 6.1 11.7 2.3 2.2 2.9 4 2.9 6.9h12c0-2.9.6-4.7 2.9-6.9 3.5-3.4 6.1-6.5 6.1-11.7C39 11.4 32.3 5 24 5Z"/><path d="M20 42h8M22 46h4"/></g><path fill="currentColor" d="m25 11-7 12h6l-1 10 8-14h-6l1-8Z"/></svg>`;
 export const badge = status => `<span class="badge ${['wait','doing','done','cancel'][status] || 'wait'}">${['รอรับเรื่อง','กำลังซ่อม','ซ่อมเสร็จ','ยกเลิก'][status] || 'รอรับเรื่อง'}</span>`;
 
 export async function api(path, options = {}) {
@@ -54,7 +55,7 @@ export function shell(content, current = '') {
   const staff = current === 'admin' || current === 'technician';
   document.body.dataset.area = staff ? 'staff' : 'public';
   $('#app').innerHTML = `<header class="site-header"><div class="shell">
-    <a class="brand" href="/" aria-label="LightFix หน้าแรก"><svg viewBox="0 0 96 96" aria-hidden="true" focusable="false"><path d="M77 35c0 21-29 53-29 53S19 56 19 35a29 29 0 0 1 58 0Z" fill="none" stroke="currentColor" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"/><g transform="translate(0 8)" fill="none" stroke="var(--logo-gold)" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"><path d="M41 42c0-5-7-7-7-15a14 14 0 0 1 28 0c0 8-7 10-7 15Z"/><path d="M42 50h12M46 57h4"/></g></svg></a>
+    <a class="brand" href="/" aria-label="LightFix หน้าแรก">${logoMark}</a>
     <a class="site-name" href="/" aria-label="LightFix หน้าแรก">light<span>fix</span></a>
     <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="site-nav" aria-label="เปิดเมนู">เมนู</button>
     <nav id="site-nav" class="site-nav" aria-label="เมนูหลัก">

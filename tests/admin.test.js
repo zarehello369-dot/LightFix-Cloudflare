@@ -78,6 +78,55 @@ test('concurrent assignments and claims accept one revision and reject the other
   sqlite.close();
 });
 
+test('technician can receive one report, add another to the same repair, and leave the last waiting', async () => {
+  const { sqlite, request } = fixture();
+  const ids=[];
+  for (let index=0;index<3;index++) {
+    const result=await request('/api/reports','POST',{pole:'T0001',symptom:'ไฟไม่ติด',contactType:'none',requestId:`receive-one-report-${index}-request-2026`});
+    assert.equal(result.status,201);
+    ids.push(result.body.data.id);
+  }
+  const revision=()=>sqlite.prepare('SELECT revision FROM pole_work_state WHERE pole=?').get('T0001').revision;
+  const receive=reportIds=>request('/api/jobs/start','POST',{pole:'T0001',reportIds,workRevision:revision()},technicianToken);
+  const first=await receive([ids[0]]);
+  assert.equal(first.status,201);
+  assert.deepEqual(sqlite.prepare('SELECT status,COUNT(*) AS count FROM reports WHERE pole=? GROUP BY status ORDER BY status').all('T0001').map(row=>[row.status,row.count]),[[0,2],[1,1]]);
+  const otherId='e'.repeat(32),otherToken='3'.repeat(64);
+  sqlite.prepare(`INSERT INTO users(id,username,display_name,role,password_hash,salt,iterations,active,created_at) VALUES(?,?,?,'technician','unused','unused',100000,1,1)`).run(otherId,'othertech','ช่างอีกคน');
+  sqlite.prepare('INSERT INTO sessions(token_hash,user_id,expires_at,created_at) VALUES(?,?,?,?)').run(hash(otherToken),otherId,Date.now()+60000,Date.now());
+  const denied=await request('/api/jobs/start','POST',{pole:'T0001',reportIds:[ids[1]],workRevision:revision()},otherToken);
+  assert.equal(denied.status,403);
+  assert.equal(sqlite.prepare('SELECT status FROM reports WHERE id=?').get(ids[1]).status,0);
+  const second=await receive([ids[1]]);
+  assert.equal(second.status,201);
+  assert.equal(second.body.data.id,first.body.data.id);
+  assert.deepEqual(sqlite.prepare('SELECT status,COUNT(*) AS count FROM reports WHERE pole=? GROUP BY status ORDER BY status').all('T0001').map(row=>[row.status,row.count]),[[0,1],[1,2]]);
+  assert.equal(sqlite.prepare('SELECT COUNT(*) AS count FROM jobs WHERE pole=? AND status=1').get('T0001').count,1);
+  const photo='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=';
+  const finished=await request(`/api/jobs/${first.body.data.id}/finish`,'POST',{cause:'หลอดไฟหมดอายุ',photo,workRevision:revision()},technicianToken);
+  assert.equal(finished.status,200);
+  assert.deepEqual(sqlite.prepare('SELECT status,COUNT(*) AS count FROM reports WHERE pole=? GROUP BY status ORDER BY status').all('T0001').map(row=>[row.status,row.count]),[[0,1],[2,2]]);
+  sqlite.close();
+});
+
+test('receiving all remaining reports after one joins the existing job', async () => {
+  const { sqlite, request } = fixture();
+  const ids=[];
+  for (let index=0;index<3;index++) {
+    const result=await request('/api/reports','POST',{pole:'T0001',symptom:'ไฟไม่ติด',contactType:'none',requestId:`receive-rest-${index}-request-2026`});
+    ids.push(result.body.data.id);
+  }
+  const revision=()=>sqlite.prepare('SELECT revision FROM pole_work_state WHERE pole=?').get('T0001').revision;
+  const first=await request('/api/jobs/start','POST',{pole:'T0001',reportIds:[ids[0]],workRevision:revision()},technicianToken);
+  assert.equal(first.status,201);
+  const rest=await request('/api/jobs/start','POST',{pole:'T0001',reportIds:ids.slice(1),workRevision:revision()},technicianToken);
+  assert.equal(rest.status,201);
+  assert.equal(rest.body.data.id,first.body.data.id);
+  assert.equal(sqlite.prepare('SELECT COUNT(*) AS count FROM reports WHERE pole=? AND status=0').get('T0001').count,0);
+  assert.equal(sqlite.prepare('SELECT COUNT(*) AS count FROM reports WHERE job_id=? AND status=1').get(first.body.data.id).count,3);
+  sqlite.close();
+});
+
 test('simultaneous public reports cannot exceed the selectable pole group size', async () => {
   const { sqlite, request } = fixture();
   const results = await Promise.all([0,1,2,3].map(index=>request('/api/reports','POST',{pole:'T0001',symptom:'ไฟไม่ติด',contactType:'none',requestId:`parallel-public-report-${index}`})));
