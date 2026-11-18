@@ -242,3 +242,18 @@ The user-approved chat retains the original global header, rounded workspace sid
 Private text conversations support emoji, dated message groups, read receipts, authenticated profile pictures and approximate online presence (25-second visible-tab heartbeat, 75-second expiry). Legacy notifications retain their own inbox. Admins may invite an active technician to a waiting pole; acceptance uses the existing revision lock and preserves assignment instructions/deadlines. Invalidated invitations show expired. No citizen chat or group chat is implied.
 
 Release checks include empty conversation rendering, uncertain submission retries, mobile picker synchronization, pending-dialog closure protection and unread chat counts. Password changes revoke other sessions; ambiguous database responses retain referenced photos. Shared test fixtures and consolidated chat styles remove duplicate implementations without changing the approved design.
+
+
+## Chat composer preview — 17 November 2026
+
+The latest user-edited desktop/mobile screenshots supersede the previous chat header/composer rules only. In a mobile conversation, hide the global website header and use a full-height room with its own peer header and Back control; returning to the contact list restores global navigation. Desktop keeps global navigation and starts the chat without the redundant visual page-title block (the heading remains available to assistive navigation).
+
+Both roles use one outlined composer containing the text area, an admin-only icon button for job invitations, and a gold circular send button. Remove the emoji-picker button/panel; preserve ordinary Unicode emoji in messages and keyboard input. Work and send controls use the user's filled, rounded briefcase and right-pointing triangle with labelled 44px targets. Contact rows are compact on desktop and mobile, with role beside the name and message preview beneath. Account-managed avatars, access rules, message drafts, work invitations and all other application behavior remain intact.
+
+## Filled interface icons — 17 November 2026
+
+Use one authored, single-color SVG family (`public/ui-icons.js`) for functional interface symbols across the citizen report, receipt, tracking, staff workspace and chat. Match the supplied solid slate pictograms while inheriting LightFix's deep teal, semantic status and gold control colors. Keep the approved logo separate. UI icons are decorative next to visible labels, or have explicit accessible names on icon-only controls. User-authored emoji inside chat messages remain text.
+
+## Production release — 18 November 2026
+
+The user approved publication of all pending interface changes. The redesigned pole queue card is scoped to the queue page, with a wide desktop layout and the supplied stacked mobile layout. Whole-pole acceptance remains the backend rule; the card offers a first-report detail shortcut and an accept-all action. The image placeholder uses the shared filled image icon. The preview-only restriction above is superseded by this approval.

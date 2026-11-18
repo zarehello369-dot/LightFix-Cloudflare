@@ -1,4 +1,5 @@
 import { reveal, settle, installMotion } from './motion.js';
+import { uiIcon } from './ui-icons.js';
 export { reveal, settle };
 export const $ = selector => document.querySelector(selector);
 export const control = (form, name) => form.elements.namedItem(name);
@@ -31,7 +32,7 @@ export function enhancePasswordFields(root) {
       const visible = input.type === 'text';
       toggle.setAttribute('aria-label', visible ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน');
       toggle.setAttribute('aria-pressed', String(visible));
-      toggle.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>${visible ? '<path d="m3 3 18 18"/>' : ''}</svg>`;
+      toggle.innerHTML = uiIcon(visible ? 'eyeOff' : 'eye', 22);
     };
     toggle.addEventListener('click', () => { input.type = input.type === 'password' ? 'text' : 'password'; update(); });
     update(); wrap.append(toggle);

@@ -1,12 +1,12 @@
 import { $, esc, date, shell, toast } from './shared.js';
 import { repairProgressMarkup } from './repair-progress.js';
+import { uiIcon } from './ui-icons.js';
 
-const receiptIcon = (name, paths, size = 20) => `<svg class="receipt-icon" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" data-receipt-icon="${name}">${paths}</svg>`;
-const check = receiptIcon('check', '<path d="m5 12 4 4L19 6"/>', 32);
-const copy = receiptIcon('copy', '<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V4H4v12h4"/>', 18);
-const share = receiptIcon('share', '<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m9 10 6-4M9 14l6 4"/>', 18);
-const calendar = receiptIcon('calendar', '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4M17 3v4M3 10h18"/>');
-const clock = receiptIcon('clock', '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>');
+const check = uiIcon('check', 32, 'receipt-icon');
+const copy = uiIcon('copy', 18, 'receipt-icon');
+const share = uiIcon('share', 18, 'receipt-icon');
+const calendar = uiIcon('calendar', 20, 'receipt-icon');
+const clock = uiIcon('clock', 20, 'receipt-icon');
 
 export function reportReceiptMarkup({ id, pole, url, saved, sentAt }) {
   return `<section class="shell receipt-page" aria-labelledby="receipt-title">
@@ -23,7 +23,7 @@ export function reportReceiptMarkup({ id, pole, url, saved, sentAt }) {
         <p class="receipt-date">${calendar}<time datetime="${new Date(sentAt).toISOString()}">${date(sentAt)}</time></p>
         <div class="receipt-next-action">
           <p>รอเจ้าหน้าที่ตรวจสอบและจัดคิวซ่อม</p>
-          <a class="button primary receipt-primary" href="${esc(url)}">ติดตามงานซ่อม <span aria-hidden="true">→</span></a>
+          <a class="button primary receipt-primary" href="${esc(url)}">ติดตามงานซ่อม ${uiIcon('arrowRight',20)}</a>
           <div class="receipt-actions"><button class="button outline" id="copy-reference" type="button">${copy}คัดลอกเลขอ้างอิง</button><button class="button outline" id="share-track" type="button">${share}แชร์ลิงก์</button></div>
           <p class="receipt-keep-link">เก็บลิงก์นี้ไว้ เพื่อติดตามเรื่องได้ทุกอุปกรณ์</p>
         </div>

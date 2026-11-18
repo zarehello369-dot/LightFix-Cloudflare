@@ -1,10 +1,10 @@
 import {messageDay,emojiOnly} from './chat-presentation.js';
 import {profileEditor,avatarMarkup} from './chat-profile.js';
-import {installEmojiPicker} from './chat-emoji.js';
 import {api,post,esc,date} from './shared.js';
 import {serialTasks,mergeMessages,draftMayClear,uncertainInvite} from './chat-state.js';
+import {uiIcon} from './ui-icons.js';
 
-const icon=(name)=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${{checks:'<path d="m2 12 4 4L16 6m-5 10 3 3L24 9"/>',back:'<path d="m14 6-6 6 6 6"/>',smile:'<circle cx="12" cy="12" r="9"/><path d="M8 14s1 3 4 3 4-3 4-3M8 9h.01M16 9h.01"/>',send:'<path d="m3 3 18 9-18 9 4-9-4-9Zm4 9h14"/>',search:'<circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/>',work:'<rect x="3" y="7" width="18" height="14" rx="3"/><path d="M8 7V3h8v4M3 12h18M10 12v3h4v-3"/>',chat:'<path d="M21 11a9 9 0 0 1-9 9H4l-3 2 2-6a9 9 0 1 1 18-5Z"/>'}[name]}</svg>`;
+const icon=name=>uiIcon(name==='back'?'arrowLeft':name,22);
 const roleName=role=>role==='admin'?'เจ้าหน้าที่':'ช่างไฟฟ้า';
 const presenceMarkup=online=>`<span class="chat-presence ${online?'is-online':'is-offline'}"><i aria-hidden="true"></i>${online?'ออนไลน์':'ออฟไลน์'}</span>`;
 const offerLabel={pending:'รอช่างตอบรับ',accepted:'รับงานแล้ว',declined:'ปฏิเสธงานแล้ว',expired:'คำเชิญหมดอายุ'};
@@ -39,28 +39,32 @@ export function mountChat(root,{user,role,notifications=[]}) {
   function saveDraft(){if(peer&&!system){const input=$('.chat-compose textarea');if(input)drafts.set(peer.id,input.value);}}
   function syncPeerControls(){
     if(!peer||system)return;
-    const input=$('#chat-input'),send=$('.chat-send'),emoji=$('.chat-emoji-toggle'),offer=$('.chat-offer-toggle');
+    const input=$('#chat-input'),send=$('.chat-send'),offer=$('.chat-offer-toggle');
     if(input)input.disabled=!peer.active;
     if(send)send.disabled=busy||!peer.active;
-    if(emoji)emoji.disabled=!peer.active;
     if(offer)offer.disabled=!peer.active||!!$('.chat-offer-slot [data-close-offer]')?.disabled;
     const note=$('.chat-compose-meta>span');
-    if(note)note.textContent=peer.active?'ข้อความส่วนตัวระหว่างคุณกับคู่สนทนา':'ส่งข้อความไม่ได้ เนื่องจากบัญชีนี้ปิดใช้งาน';
+    if(note){note.textContent=peer.active?'':'ส่งข้อความไม่ได้ เนื่องจากบัญชีนี้ปิดใช้งาน';note.parentElement.hidden=!!peer.active;}
   }
-  function back(){saveDraft();generation++;peer=null;system=false;$('.chat-layout').classList.remove('is-thread');renderContacts();$('.chat-search input').focus();}
+  function back(){
+    const returnTarget=system?'[data-system]':peer?`[data-peer="${peer.id}"]`:'.chat-own-profile';
+    saveDraft();generation++;peer=null;system=false;
+    $('.chat-layout').classList.remove('is-thread');renderContacts();
+    // Restore navigation focus without opening the phone's search keyboard.
+    $(returnTarget)?.focus({preventScroll:true});
+  }
   function header(name,sub,avatarUrl){return `<header class="chat-thread-head"><button class="button ghost chat-back" aria-label="กลับรายชื่อแชท">${icon('back')}</button><span class="chat-avatar-wrap"><span class="chat-avatar chat-peer-avatar">${avatarMarkup({display_name:name,avatar_url:avatarUrl})}</span><i class="chat-avatar-status ${peer?.online?'is-online':'is-offline'}" aria-hidden="true"></i></span><div class="chat-peer-name"><h2>${esc(name)}</h2><p>${esc(sub)}</p></div><button class="chat-profile-shortcut chat-self-avatar chat-avatar" type="button" aria-label="แก้ไขโปรไฟล์ของฉัน">${avatarMarkup(myProfile)}</button></header>`;}
   async function openPeer(contact){
     saveDraft();generation++;peer=contact;system=false;rows=[];more=false;readThrough=0;
     alignThread();$('.chat-layout').classList.add('is-thread');renderContacts();
     $('.chat-thread').innerHTML=`${header(contact.display_name,roleName(contact.role)+(contact.active?(contact.online?' · ออนไลน์':' · ออฟไลน์'):' · บัญชีปิดใช้งาน'),contact.avatar_url)}<div class="chat-log" tabindex="0" aria-label="ประวัติข้อความ"><p class="loading">กำลังโหลดข้อความ…</p></div>
-      <div class="chat-offer-slot"></div><div class="chat-emoji-panel" id="chat-emoji-panel" hidden></div><form class="chat-compose"><button class="button ghost chat-emoji-toggle" type="button" aria-label="เลือกอีโมจิ" aria-controls="chat-emoji-panel" aria-expanded="false" ${contact.active?'':'disabled'}>${icon('smile')}</button><label class="visually-hidden" for="chat-input">ข้อความถึง ${esc(contact.display_name)}</label><textarea id="chat-input" rows="1" maxlength="2000" placeholder="พิมพ์ข้อความ…" ${contact.active?'':'disabled'}></textarea><button class="button primary chat-send" aria-label="ส่งข้อความ" ${contact.active?'':'disabled'}>${icon('send')}</button></form><div class="chat-compose-meta"><span>${contact.active?'ข้อความส่วนตัวระหว่างคุณกับคู่สนทนา':'ส่งข้อความไม่ได้ เนื่องจากบัญชีนี้ปิดใช้งาน'}</span>${role==='admin'&&contact.role==='technician'&&contact.active?`<button class="chat-offer-toggle" type="button">${icon('work')} ส่งคำเชิญงาน</button>`:''}</div><p class="chat-error" role="status"></p>`;
+      <div class="chat-offer-slot"></div><form class="chat-compose"><div class="chat-input-wrap"><label class="visually-hidden" for="chat-input">ข้อความถึง ${esc(contact.display_name)}</label><textarea id="chat-input" rows="1" maxlength="2000" placeholder="พิมพ์ข้อความ…" ${contact.active?'':'disabled'}></textarea>${role==='admin'&&contact.role==='technician'?`<button class="chat-offer-toggle" type="button" aria-label="ส่งคำเชิญงาน" title="ส่งคำเชิญงาน" ${contact.active?'':'disabled'}>${icon('work')}</button>`:''}<button class="button primary chat-send" aria-label="ส่งข้อความ" ${contact.active?'':'disabled'}>${icon('send')}</button></div></form><div class="chat-compose-meta" ${contact.active?'hidden':''}><span role="status">${contact.active?'':'ส่งข้อความไม่ได้ เนื่องจากบัญชีนี้ปิดใช้งาน'}</span></div><p class="chat-error" role="status"></p>`;
     $('.chat-back').onclick=back;
     $('.chat-profile-shortcut').onclick=openProfile;
     const input=$('#chat-input');input.value=drafts.get(contact.id)||'';
     input.oninput=()=>{drafts.set(contact.id,input.value);draftVersions.set(contact.id,version(contact.id)+1);resizeInput();};
     const resizeInput=()=>{input.style.height='auto';input.style.height=Math.min(input.scrollHeight,120)+'px';};resizeInput();
     $('.chat-compose').onsubmit=send;
-    installEmojiPicker($('.chat-thread'));
     $('.chat-send').disabled=busy||!contact.active;
     $('.chat-log').addEventListener('scroll',()=>{markVisible().catch(e=>error(e.message));},{passive:true});
     $('.chat-offer-toggle')?.addEventListener('click',offerForm);

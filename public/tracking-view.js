@@ -1,11 +1,11 @@
 import { esc, badge, toast } from './shared.js';
 import { repairProgressMarkup } from './repair-progress.js';
+import { uiIcon } from './ui-icons.js';
 
-const lineIcon = (path, size = 20) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${path}</svg>`;
-const photoIcon = lineIcon('<rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8" cy="8" r="1.5"/><path d="m3 17 6-6 4 4 3-3 5 5"/>', 28);
-const zoom = lineIcon('<circle cx="10" cy="10" r="6"/><path d="m15 15 6 6M7 10h6M10 7v6"/>', 18);
-const copy = lineIcon('<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V4H4v12h4"/>', 18);
-const share = lineIcon('<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m9 10 6-4M9 14l6 4"/>', 18);
+const photoIcon = uiIcon('image', 28);
+const zoom = uiIcon('zoom', 18);
+const copy = uiIcon('copy', 18);
+const share = uiIcon('share', 18);
 
 function photoMarkup(r, id, phase) {
   const before = phase === 'before';
