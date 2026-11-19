@@ -22,12 +22,12 @@ export function reveal(element) {
   play(element, [
     { opacity: .7 },
     { opacity: 1 },
-  ], 180);
+  ], 280);
 }
 
 // Animate local records only: never hide the page or duplicate a text layer.
 export function settle(element, delay = 0) {
-  play(element, [{ transform:'translateY(8px)' }, { transform:'translateY(0)' }], 260, Math.min(100, Math.max(0, delay)));
+  play(element, [{ transform:'translateY(8px)' }, { transform:'translateY(0)' }], 390, Math.min(160, Math.max(0, delay)));
 }
 
 let installed = false;
@@ -49,7 +49,7 @@ export function installMotion() {
     for (const entry of entries) {
       if (!watched.has(entry.target) || !entry.isIntersecting || entry.target.hidden) continue;
       observer.unobserve(entry.target); watched.delete(entry.target);
-      if (!document.hidden) settle(entry.target, order++ * 20);
+      if (!document.hidden) settle(entry.target, order++ * 32);
     }
   }, { threshold:0, rootMargin:'0px 0px -16px 0px' }) : null;
 
@@ -63,7 +63,7 @@ export function installMotion() {
       const rect = element.getBoundingClientRect();
       if (!rect.width || !rect.height) continue;
       if (rect.top >= innerHeight && observer) { watched.add(element); observer.observe(element); }
-      else if (!initial && rect.bottom > 0 && rect.top < innerHeight && !document.hidden) settle(element, order++ * 20);
+      else if (!initial && rect.bottom > 0 && rect.top < innerHeight && !document.hidden) settle(element, order++ * 32);
     }
   }
   scan(document.body, true);

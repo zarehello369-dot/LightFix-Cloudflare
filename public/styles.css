@@ -22,8 +22,8 @@
   --deep:#0e3b42;
   --deep-hover:#1e535b;
   --shadow:0 12px 32px rgba(20,63,70,.12);
-  --motion-fast:140ms;
-  --motion-state:220ms;
+  --motion-fast:200ms;
+  --motion-state:320ms;
   --motion-ease:cubic-bezier(.16,1,.3,1);
 }
 *{box-sizing:border-box}
@@ -59,7 +59,7 @@ input,textarea,select{caret-color:var(--green)}
 .site-footer .shell{padding-block:22px;display:grid;gap:9px}
 .site-footer .shell>span:last-child{display:flex;flex-wrap:wrap;gap:4px 15px}
 .site-footer a{display:inline-flex;align-items:center;min-height:44px}
-#toast{position:fixed;left:16px;right:16px;z-index:100;max-width:520px;margin:auto;padding:11px 16px;border-radius:11px;background:var(--ink);color:white;box-shadow:var(--shadow);opacity:0;transform:translateY(10px);pointer-events:none;transition:opacity .2s,transform .2s}
+#toast{position:fixed;left:16px;right:16px;z-index:100;max-width:520px;margin:auto;padding:11px 16px;border-radius:11px;background:var(--ink);color:white;box-shadow:var(--shadow);opacity:0;transform:translateY(10px);pointer-events:none;transition:opacity .3s,transform .3s}
 #toast.show{opacity:1;transform:translateY(0)}
 
 /* Public reporting */
@@ -343,7 +343,7 @@ body{background:var(--page)}
 #app{display:flex;flex-direction:column;min-height:100dvh}
 #app>main{flex:1}
 .site-header{background:var(--deep);border-bottom:0;color:#fff}
-.site-header .shell{position:relative;min-height:70px;height:auto;gap:6px;background:var(--deep);transition:width 320ms var(--motion-ease),transform 320ms var(--motion-ease),border-radius 320ms var(--motion-ease),box-shadow 320ms var(--motion-ease)}
+.site-header .shell{position:relative;min-height:70px;height:auto;gap:6px;background:var(--deep);transition:width 460ms var(--motion-ease),transform 460ms var(--motion-ease),border-radius 460ms var(--motion-ease),box-shadow 460ms var(--motion-ease)}
 .site-header.is-scrolled{background:transparent}
 .site-header.is-scrolled>.shell{width:min(calc(100% - 24px),1160px);transform:translateY(12px);border-radius:16px;box-shadow:0 12px 30px rgba(7,30,34,.22)}
 .site-header.is-scrolled.menu-open>.shell{border-radius:16px 16px 0 0;box-shadow:none}
@@ -543,9 +543,9 @@ details[open]>summary{color:var(--deep)}
 .success-icon{width:72px;height:72px;border-radius:20px;background:var(--gold-soft);color:#9b7600}
 .success-icon svg{width:51px;height:51px}
 @media(prefers-reduced-motion:no-preference){
-  .success-icon{animation:signal-lit 620ms var(--motion-ease) both}
-  .success-icon svg path{stroke-dasharray:150;animation:signal-draw 620ms var(--motion-ease) both}
-  .loading:before{content:'';display:inline-block;width:14px;height:14px;margin-right:10px;border:2px solid var(--line);border-top-color:var(--deep);border-radius:50%;vertical-align:-2px;animation:working 800ms linear infinite}
+  .success-icon{animation:signal-lit 780ms var(--motion-ease) both}
+  .success-icon svg path{stroke-dasharray:150;animation:signal-draw 780ms var(--motion-ease) both}
+  .loading:before{content:'';display:inline-block;width:14px;height:14px;margin-right:10px;border:2px solid var(--line);border-top-color:var(--deep);border-radius:50%;vertical-align:-2px;animation:working 1100ms linear infinite}
   .button:disabled{animation:none}
 }
 @keyframes signal-lit{0%{box-shadow:0 2px 3px rgba(241,198,43,0);background:#f7f2df}45%{box-shadow:0 7px 22px rgba(190,151,0,.23)}100%{box-shadow:0 4px 12px rgba(190,151,0,.1);background:var(--gold-soft)}}
@@ -567,18 +567,18 @@ button,.site-nav a,.upload-button{
 .password-toggle svg{transition:transform var(--motion-fast) var(--motion-ease)}
 .password-toggle[aria-pressed=true] svg{transform:scale(.94)}
 details[open]>.route-panel,details[open]>.complaint-detail,details[open]>.draft-status,
-.login-help[open]>p,.login-help[open]>a,.manage-menu[open]>.button{animation:detail-unfold 200ms var(--motion-ease)}
+.login-help[open]>p,.login-help[open]>a,.manage-menu[open]>.button{animation:detail-unfold 300ms var(--motion-ease)}
 @keyframes detail-unfold{from{opacity:.85;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
 
 /* Discrete display/overlay transitions keep native focus, Escape and dialog semantics. */
 @supports(transition-behavior:allow-discrete){
   dialog.dialog,dialog.mobile-picker-dialog{
     opacity:0;transform:translateY(14px) scale(.99);
-    transition:opacity 160ms var(--motion-ease),transform 220ms var(--motion-ease),display 220ms allow-discrete,overlay 220ms allow-discrete;
+    transition:opacity 240ms var(--motion-ease),transform 330ms var(--motion-ease),display 330ms allow-discrete,overlay 330ms allow-discrete;
   }
   dialog.dialog[open],dialog.mobile-picker-dialog[open]{opacity:1;transform:translateY(0) scale(1)}
   dialog.dialog::backdrop,dialog.mobile-picker-dialog::backdrop{
-    opacity:0;transition:opacity 160ms var(--motion-ease),display 220ms allow-discrete,overlay 220ms allow-discrete;
+    opacity:0;transition:opacity 240ms var(--motion-ease),display 330ms allow-discrete,overlay 330ms allow-discrete;
   }
   dialog.dialog[open]::backdrop,dialog.mobile-picker-dialog[open]::backdrop{opacity:1}
   @starting-style{
@@ -588,7 +588,7 @@ details[open]>.route-panel,details[open]>.complaint-detail,details[open]>.draft-
   @media(max-width:899px){
     .site-nav{
       opacity:0;transform:translateY(-6px);pointer-events:none;
-      transition:opacity 140ms var(--motion-ease),transform 200ms var(--motion-ease),display 200ms allow-discrete;
+      transition:opacity 220ms var(--motion-ease),transform 320ms var(--motion-ease),display 320ms allow-discrete;
     }
     .site-nav.open{opacity:1;transform:translateY(0);pointer-events:auto}
     @starting-style{
@@ -834,7 +834,7 @@ body[data-view=report-receipt] .site-footer .shell>span:last-child{display:none}
   body[data-view=report-receipt] .site-footer .shell{font-size:14px}
 }
 @media(prefers-reduced-motion:no-preference){
-  .receipt-check>svg{animation:receipt-check-appear 480ms var(--motion-ease) both}
+  .receipt-check>svg{animation:receipt-check-appear 650ms var(--motion-ease) both}
 }
 @keyframes receipt-check-appear{from{opacity:.4;transform:scale(.78)}to{opacity:1;transform:scale(1)}}
 

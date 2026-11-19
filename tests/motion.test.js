@@ -12,7 +12,7 @@ test('motion respects reduced preference and cancels interrupted feedback', () =
     reveal(element);
     assert.equal(calls.length,1);
     assert.deepEqual(calls[0].frames,[{opacity:.7},{opacity:1}]);
-    assert.equal(calls[0].options.duration,180);
+    assert.equal(calls[0].options.duration,280);
     reduce=true;reveal(element);
     assert.equal(canceled,1);
     assert.equal(calls.length,1);
@@ -23,11 +23,14 @@ test('motion respects reduced preference and cancels interrupted feedback', () =
 test('fast repeated tab feedback cancels prior motion and reduced mode never moves content', () => {
   const previous = globalThis.matchMedia;
   let reduce = false, canceled = 0, count = 0;
+  const durations = [];
   globalThis.matchMedia = () => ({ matches:reduce });
-  const element = { animate() { count++; return { cancel() { canceled++; }, finished:new Promise(()=>{}) }; } };
+  const element = { animate(_frames, options) { count++; durations.push(options); return { cancel() { canceled++; }, finished:new Promise(()=>{}) }; } };
   try {
-    settle(element); settle(element);
+    settle(element, 999); settle(element);
     assert.equal(count, 2); assert.equal(canceled, 1);
+    assert.equal(durations[0].duration, 390);
+    assert.equal(durations[0].delay, 160);
     reduce = true; settle(element);
     assert.equal(count, 2); assert.equal(canceled, 2);
     assert.doesNotThrow(() => settle(null));
