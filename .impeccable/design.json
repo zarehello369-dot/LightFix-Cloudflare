@@ -108,6 +108,66 @@
         "role": "neutral",
         "displayName": "Subtle Ground",
         "canonical": "#e6ebe3"
+      },
+      "surface-tint": {
+        "role": "neutral",
+        "displayName": "Surface Tint",
+        "canonical": "#e7efeb"
+      },
+      "surface-hover": {
+        "role": "neutral",
+        "displayName": "Surface Hover",
+        "canonical": "#f3f7f4"
+      },
+      "surface-quiet": {
+        "role": "neutral",
+        "displayName": "Quiet Surface",
+        "canonical": "#f9fbf7"
+      },
+      "field-line": {
+        "role": "neutral",
+        "displayName": "Field Line",
+        "canonical": "#768d89"
+      },
+      "deep-line": {
+        "role": "neutral",
+        "displayName": "Line on Teal",
+        "canonical": "#768d89"
+      },
+      "on-deep": {
+        "role": "neutral",
+        "displayName": "Text on Teal",
+        "canonical": "#edf5f1"
+      },
+      "gold-hover": {
+        "role": "primary",
+        "displayName": "Yellow Hover",
+        "canonical": "#ffe078"
+      },
+      "gold-line": {
+        "role": "primary",
+        "displayName": "Yellow Line",
+        "canonical": "#be9700"
+      },
+      "danger-soft": {
+        "role": "secondary",
+        "displayName": "Danger Surface",
+        "canonical": "#fff0ed"
+      },
+      "danger-selected": {
+        "role": "secondary",
+        "displayName": "Selected Danger",
+        "canonical": "#ffe6df"
+      },
+      "danger-line": {
+        "role": "secondary",
+        "displayName": "Danger Line",
+        "canonical": "#d99f94"
+      },
+      "danger-ink": {
+        "role": "secondary",
+        "displayName": "Danger Text",
+        "canonical": "#8b2720"
       }
     },
     "typographyMeta": {
@@ -309,7 +369,7 @@
   ],
   "narrative": {
     "northStar": "ศูนย์ประสานงาน (Coordination Centre)",
-    "overview": "A calm Thai-first workspace connects a numbered streetlight, readable repair status, and the next action. The eight user-supplied mobile mockups received 10 November 2026 are the visual authority for reporting, My Work, available work, pending management, pole registry, pole detail, repair history and accounts. Desktop expands their hierarchy into useful columns.\n\nDeep teal headings and header anchor a warm pale working ground. White rounded records, generous fields, orange waiting states, mint completed states and blue active states support quick scanning. Yellow remains the brand and primary-action cue. The approved lowercase Nunito wordmark sits beside a gold bolt bulb. IBM Plex Sans Thai, reduced-motion behavior, functions and data remain binding preservation constraints.",
+    "overview": "A calm Thai-first workspace connects a numbered streetlight, readable repair status, and the next action. The eight user-supplied mobile mockups received 10 November 2026 are the visual authority for reporting, My Work, available work, pending management, pole registry, pole detail, repair history and accounts. Desktop expands their hierarchy into useful columns.\n\nDeep teal headings and header anchor a warm pale working ground. White rounded records, generous fields, orange waiting states, mint completed states and blue active states support quick scanning. Yellow remains the brand and primary-action cue. The approved lowercase Nunito wordmark sits beside a gold bolt bulb. IBM Plex Sans Thai, reduced-motion behavior, functions and data remain binding preservation constraints.\n\nThe shared color system uses four visual anchors: deep teal, action yellow, a pale working ground and white records. Text, borders and surface tints are derived from those anchors. Orange, blue, mint and red appear only where a work state or hazard needs a distinct meaning; they retain a written label or icon. The same tokens serve public, technician and admin views, including chat and transient controls.",
     "keyCharacteristics": [
       "Pole identity and status precede secondary detail.",
       "The phone viewport begins the task directly.",

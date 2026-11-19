@@ -23,6 +23,18 @@ colors:
   working: "#dceafa"
   working-ink: "#155786"
   subtle: "#e6ebe3"
+  surface-tint: "#e7efeb"
+  surface-hover: "#f3f7f4"
+  surface-quiet: "#f9fbf7"
+  field-line: "#768d89"
+  deep-line: "#768d89"
+  on-deep: "#edf5f1"
+  gold-hover: "#ffe078"
+  gold-line: "#be9700"
+  danger-soft: "#fff0ed"
+  danger-selected: "#ffe6df"
+  danger-line: "#d99f94"
+  danger-ink: "#8b2720"
 typography:
   wordmark:
     fontFamily: "LightFixLogo, sans-serif"
@@ -114,6 +126,8 @@ components:
 
 Deep teal headings and header anchor a warm pale working ground. White rounded records, generous fields, orange waiting states, mint completed states and blue active states support quick scanning. Yellow remains the brand and primary-action cue. The approved lowercase Nunito wordmark sits beside a gold bolt bulb. IBM Plex Sans Thai, reduced-motion behavior, functions and data remain binding preservation constraints.
 
+The shared color system uses four visual anchors: deep teal, action yellow, a pale working ground and white records. Text, borders and surface tints are derived from those anchors. Orange, blue, mint and red appear only where a work state or hazard needs a distinct meaning; they retain a written label or icon. The same tokens serve public, technician and admin views, including chat and transient controls.
+
 **Key Characteristics:**
 
 - Pole identity and status precede secondary detail.
@@ -141,6 +155,9 @@ Deep teal headings and header anchor a warm pale working ground. White rounded r
 - **Working Ground**, **White Surface** and **Record Line:** page, records and dividers.
 - **Subtle Ground:** segmented-switch tracks, footer and mobile report summary.
 - **Control Line** and **Selected Line:** retained base control and selected-symptom strokes; reference-styled fields use a gray-green stroke, strengthened to teal for pole entry/search.
+- **Surface Tint**, **Surface Hover** and **Surface Quiet:** consistent pale teal neutrals for footers, hover rows and empty states. **On Deep** is the readable light text on dark teal; **Deep Line** separates dark areas.
+- **Field Line** marks input edges. **Gold Hover** and **Gold Line** keep yellow actions within the same family.
+- **Danger Soft**, **Danger Selected**, **Danger Line** and **Danger Ink** keep warnings and hazardous symptom choices in one red family.
 
 **The Status Words Rule.** Pair status color with readable words or an explicit count label; do not rely on color alone.
 
