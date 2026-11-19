@@ -34,7 +34,7 @@ let installed = false;
 export function installMotion() {
   if (installed || !globalThis.document || !globalThis.MutationObserver) return;
   installed = true;
-  const candidates = '.record,.work-card,.report-help,.recent-section,.login-wrap>.panel,#track-detail .panel,.empty';
+  const candidates = '.record,.work-card,.overview-card,.report-help,.recent-section,.login-wrap>.panel,#track-detail .panel,.empty';
   const watched = new Set(), seen = new WeakSet();
   const cancelAll = () => { for (const animation of active) animation.cancel(); active.clear(); };
   const preference = globalThis.matchMedia?.('(prefers-reduced-motion: reduce)');

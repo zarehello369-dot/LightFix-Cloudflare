@@ -3,6 +3,7 @@ import { mountChat } from './chat.js';
 import { mountPresence } from './staff-presence.js';
 import { syncMobilePicker } from './mobile-picker.js';
 import { groupReports, groupQueueReports, readFilters, queueReports } from './workflow.js';
+import { overviewCard } from './overview-card.js';
 import { submitStaffForm, readWorkDraft, saveWorkDraft, selectPoleReports } from './staff-forms.js';
 import { $, control, esc, date, badge, api, post, shell, toast, showError, photoData, enhancePasswordFields, reveal, settle } from './shared.js';
 import { uiIcon } from './ui-icons.js';
@@ -277,7 +278,8 @@ function attachDraft(form, type, job) {
 
 function overview() {
   const d=state.data, waiting=groupReports(d.reports.filter(r=>r.status===0),d.jobs,d.users||[],d.poles), active=groupReports(d.reports.filter(r=>r.status===1),d.jobs,d.users||[],d.poles), groups=[...waiting,...active];
-  content(`<h1>งานรอจัดการ</h1><p class="muted">ดูงานรายเสา แล้วมอบหมายหรือติดตามการซ่อม</p><div class="metric-row"><div class="metric"><strong>${waiting.length}</strong><span>เสารอเริ่มงาน</span><span>${waiting.reduce((n,g)=>n+g.reports.length,0)} เรื่องแจ้ง</span></div><div class="metric"><strong>${active.length}</strong><span>เสากำลังซ่อม</span><span>${active.reduce((n,g)=>n+g.reports.length,0)} เรื่องแจ้ง</span></div><div class="metric"><strong>${d.notifications.filter(n=>!n.read_at).length+(d.chat_unread||0)}</strong><span>ข้อความยังไม่อ่าน</span></div></div><section class="staff-section"><div class="section-head"><h2>เรื่องที่ต้องดำเนินการ</h2><button class="button outline small" data-queue>เปิดคิวทั้งหมด</button></div>${groups.length ? `<div class="work-grid">${[...waiting,...active].slice(0,8).map(groupCard).join('')}</div>` : '<div class="empty">ยังไม่มีเสาที่ต้องดำเนินการ</div>'}</section>`);
+  const viewer = { viewerId: d.user.id, viewerName: d.user.name };
+  content(`<h1>งานรอจัดการ</h1><p class="muted">ดูงานรายเสา แล้วมอบหมายหรือติดตามการซ่อม</p><div class="metric-row"><div class="metric"><strong>${waiting.length}</strong><span>เสารอเริ่มงาน</span><span>${waiting.reduce((n,g)=>n+g.reports.length,0)} เรื่องแจ้ง</span></div><div class="metric"><strong>${active.length}</strong><span>เสากำลังซ่อม</span><span>${active.reduce((n,g)=>n+g.reports.length,0)} เรื่องแจ้ง</span></div><div class="metric"><strong>${d.notifications.filter(n=>!n.read_at).length+(d.chat_unread||0)}</strong><span>ข้อความยังไม่อ่าน</span></div></div><section class="staff-section"><div class="section-head"><h2>เรื่องที่ต้องดำเนินการ</h2><button class="button outline small" data-queue>เปิดคิวทั้งหมด</button></div>${groups.length ? `<div class="overview-grid">${groups.slice(0,8).map(group=>overviewCard(group,{...viewer,active:active.includes(group)})).join('')}</div>` : '<div class="empty">ยังไม่มีเสาที่ต้องดำเนินการ</div>'}</section>`);
 }
 function jobGroup(job) {
   const d=state.data, rows=d.reports.filter(report=>report.jobId===job.id || (report.pole===job.pole && report.status===1));
