@@ -25,11 +25,11 @@ colors:
   subtle: "#e6ebe3"
 typography:
   wordmark:
-    fontFamily: "Urbanist, PlexThai, Noto Sans Thai, sans-serif"
-    fontSize: "1.55rem"
-    fontWeight: 800
+    fontFamily: "LightFixLogo, sans-serif"
+    fontSize: "1.95rem"
+    fontWeight: 750
     lineHeight: 1
-    letterSpacing: "-.035em"
+    letterSpacing: "-.01em"
   display:
     fontFamily: "PlexThai, Noto Sans Thai, sans-serif"
     fontSize: "2.1rem"
@@ -112,7 +112,7 @@ components:
 
 **Creative North Star: “ศูนย์ประสานงาน” (Coordination Centre).** A calm Thai-first workspace connects a numbered streetlight, readable repair status, and the next action. The eight user-supplied mobile mockups received 10 November 2026 are the visual authority for reporting, My Work, available work, pending management, pole registry, pole detail, repair history and accounts. Desktop expands their hierarchy into useful columns.
 
-Deep teal headings and header anchor a warm pale working ground. White rounded records, generous fields, orange waiting states, mint completed states and blue active states support quick scanning. Yellow remains the brand and primary-action cue. Original interface fonts, animation behavior, functions and data are binding preservation constraints. The user-approved logo update of 10 November supersedes the earlier bulb/wordmark.
+Deep teal headings and header anchor a warm pale working ground. White rounded records, generous fields, orange waiting states, mint completed states and blue active states support quick scanning. Yellow remains the brand and primary-action cue. The approved lowercase Nunito wordmark sits beside a gold bolt bulb. IBM Plex Sans Thai, reduced-motion behavior, functions and data remain binding preservation constraints.
 
 **Key Characteristics:**
 
@@ -147,9 +147,9 @@ Deep teal headings and header anchor a warm pale working ground. White rounded r
 ## Typography
 
 
-**Wordmark:** User-approved lowercase `lightfix`, self-hosted Nunito variable at 750 weight, with white `light` and gold `fix` (#d4aa00). Live HTML text remains separate from the inline SVG white location pin and gold outline bulb; 1.8–1.95rem on phones and 2.2rem from 900px. **Interface:** Self-hosted IBM Plex Sans Thai (PlexThai), with Noto Sans Thai and sans-serif fallbacks.
+**Wordmark:** User-approved lowercase `lightfix`, self-hosted Nunito variable at 750 weight, with white `light` and gold `fix` (#f6c72c). Live HTML text remains separate from the inline SVG gold outline bulb and lightning bolt; 1.8–1.95rem on phones and 2.2rem from 900px. **Interface:** Self-hosted IBM Plex Sans Thai (PlexThai), with Noto Sans Thai and sans-serif fallbacks.
 
-Preload the regular and bold Thai faces and the Nunito wordmark. Font faces use `font-display: optional`: slow first visits retain a readable fallback instead of swapping text metrics after the page is already being read. Warm visits use the cached custom faces.
+Preload the regular and bold Thai faces and the Nunito wordmark. Thai font faces use `font-display: optional`; the Nunito wordmark uses `font-display: block`. Slow first visits retain readable Thai fallback text instead of swapping metrics after the page is already being read.
 
 - **Display:** Bold page titles, 2.1rem with a 1.3 line height; public reporting uses 2rem on phones and 2.5rem from 900px.
 - **Headline:** Bold section titles around 1.25–1.4rem; staff titles respond to context.
@@ -194,7 +194,7 @@ My Work uses two equal segments with counts; pole detail uses three. The selecte
 
 ### Navigation
 
-Use the approved white location pin with gold outline bulb beside the lowercase Nunito lightfix wordmark. The deep teal header has a right-aligned rounded menu button and an anchored teal menu. Public navigation, authenticated destinations, role indicators and sign-out retain their existing access and behavior; staff desktop navigation also uses the established rail. The pale footer uses teal links.
+Use the approved gold outline bulb with a lightning bolt beside the lowercase Nunito lightfix wordmark. The deep teal header has a right-aligned rounded menu button and an anchored teal menu. Public navigation, authenticated destinations, role indicators and sign-out retain their existing access and behavior; staff desktop navigation also uses the established rail. The pale footer uses teal links.
 
 ### Motion and feedback
 
@@ -223,7 +223,7 @@ Page text has one rendered layer. Do not crossfade old and new document snapshot
 
 ## Approved logo — 10 November 2026
 
-User screenshot is authoritative for the new logo: white outlined location pin, gold bulb, lowercase white light and gold fix. Implement with inline SVG paths and live HTML text, never a screenshot or raster image. Only the logo font changes; Thai interface typography, motion and workflow remain intact. The favicon uses the same vector symbol.
+The approved logo uses a gold outline bulb with a lightning bolt, lowercase white light and gold fix. Implement with inline SVG paths and live HTML text, never a screenshot or raster image. Thai interface typography, motion and workflow remain intact. The favicon uses the same vector symbol.
 
 
 ## Approved receipt and public tracking — 12 November 2026

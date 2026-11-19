@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-11-10T10:21:05.028660+00:00",
+  "generatedAt": "2026-11-19T08:31:01.000000+00:00",
   "title": "Design System: LightFix",
   "extensions": {
     "colorMeta": {
@@ -112,8 +112,8 @@
     },
     "typographyMeta": {
       "wordmark": {
-        "displayName": "Urbanist Wordmark",
-        "purpose": "Separate Latin LightFix name in the header."
+        "displayName": "Nunito Wordmark",
+        "purpose": "Separate lowercase lightfix name in the header."
       },
       "display": {
         "displayName": "Thai Page Title",
@@ -142,7 +142,7 @@
     "motion": [
       {
         "name": "control-feedback",
-        "value": "140–220ms",
+        "value": "200–320ms",
         "purpose": "Selection, press, focus and progress feedback; state remains visible with reduced motion."
       },
       {
@@ -152,12 +152,12 @@
       },
       {
         "name": "photo-preview",
-        "value": "180ms opacity, .7 to 1",
+        "value": "280ms opacity, .7 to 1",
         "purpose": "Acknowledge a prepared photo without moving form or list content."
       },
       {
         "name": "report-signal",
-        "value": "620ms, once after committed report",
+        "value": "780ms, once after committed report",
         "purpose": "Draw and illuminate the success bulb; static bulb with reduced motion."
       },
       {
@@ -167,18 +167,38 @@
       },
       {
         "name": "inset-header",
-        "value": "320ms after 24px scrolling",
+        "value": "460ms after 24px scrolling",
         "purpose": "Retain original full-width-to-inset header motion; static inset state with reduced motion."
       },
       {
         "name": "local-record-arrival",
-        "value": "8px / 260ms, once; stagger at most 100ms",
+        "value": "8px / 390ms, once; stagger at most 160ms",
         "purpose": "Retain existing local entrance while never holding initially visible content."
       },
       {
         "name": "disclosure",
-        "value": "200ms",
+        "value": "300ms",
         "purpose": "Retain existing disclosure feedback; no spatial animation with reduced motion."
+      },
+      {
+        "name": "dialog-overlay",
+        "value": "240–330ms",
+        "purpose": "Make choice and work dialogs legible while preserving native focus and Escape behavior."
+      },
+      {
+        "name": "mobile-navigation",
+        "value": "220–320ms",
+        "purpose": "Show the anchored menu without delaying page navigation."
+      },
+      {
+        "name": "receipt-confirmation",
+        "value": "650ms",
+        "purpose": "Confirm the saved report without delaying its result."
+      },
+      {
+        "name": "loading-indicator",
+        "value": "1100ms per cycle",
+        "purpose": "Show active work; use a static dot with reduced motion."
       }
     ],
     "breakpoints": [
@@ -196,13 +216,14 @@
       }
     ],
     "fontLoading": {
-      "display": "optional",
+      "thaiDisplay": "optional",
+      "logoDisplay": "block",
       "preload": [
         "/fonts/IBMPlexSansThai-Regular.ttf",
         "/fonts/IBMPlexSansThai-Bold.ttf",
-        "/fonts/Urbanist-Variable.ttf"
+        "/fonts/Nunito-Variable.ttf"
       ],
-      "purpose": "Avoid late font-metric swaps during reading on slow first visits."
+      "purpose": "Thai copy avoids late metric swaps; the Nunito wordmark keeps its approved shape."
     },
     "referenceAuthority": {
       "date": "2026-11-10",
@@ -219,9 +240,9 @@
       "source": "User-supplied mobile mockups in Downloads; desktop adapts their hierarchy.",
       "implementation": "public/styles.css final user-supplied mobile references block; public/app.js; public/staff.js",
       "preserve": [
-        "Original self-hosted fonts",
-        "Original outline bulb and separate wordmark",
-        "Existing motion and reduced-motion behavior",
+        "Self-hosted Thai faces and Nunito logo face",
+        "Gold outline bulb with lightning bolt and separate lowercase wordmark",
+        "Current motion and reduced-motion behavior",
         "All functions and data"
       ]
     }
@@ -233,7 +254,7 @@
       "refersTo": "button-primary",
       "description": "Yellow next action with a dark label.",
       "html": "<button class=\"ds-primary\">แจ้งปัญหา</button>",
-      "css": ".ds-primary{min-height:48px;padding:9px 16px;border:1px solid transparent;border-radius:12px;background:#f6c72c;color:#182d31;font:700 16px/1.35 PlexThai,\"Noto Sans Thai\",sans-serif;cursor:pointer;transition:background .18s ease-out,transform .18s ease-out}.ds-primary:hover{background:#ffdb4a}.ds-primary:focus-visible{outline:3px solid #176851;outline-offset:3px}.ds-primary:active{transform:scale(.985)}"
+      "css": ".ds-primary{min-height:48px;padding:9px 16px;border:1px solid transparent;border-radius:12px;background:#f6c72c;color:#182d31;font:700 16px/1.35 PlexThai,\"Noto Sans Thai\",sans-serif;cursor:pointer;transition:background .2s cubic-bezier(.16,1,.3,1),transform .2s cubic-bezier(.16,1,.3,1)}.ds-primary:hover{background:#ffdb4a}.ds-primary:focus-visible{outline:3px solid #176851;outline-offset:3px}.ds-primary:active{transform:scale(.985)}"
     },
     {
       "name": "Pole Field",
@@ -267,9 +288,9 @@
     {
       "name": "Command Header",
       "kind": "nav",
-      "description": "Deep teal header with separate bulb and Urbanist wordmark.",
-      "html": "<nav class=\"ds-head\" aria-label=\"หลัก\"><a class=\"ds-bulb\" href=\"#\" aria-label=\"หน้าแรก\"><svg viewBox=\"0 0 48 48\" aria-hidden=\"true\"><g fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" stroke-linecap=\"round\"><path d=\"M17.5 31.5c0-3.1-1.4-4.5-3-6.6a11.5 11.5 0 1 1 19 0c-1.6 2.1-3 3.5-3 6.6H17.5Z\"/><path d=\"M18 36h12M20 40h8M24 3v3\"/></g></svg></a><span class=\"ds-name\">LightFix</span><span class=\"ds-role\">ประชาชน</span></nav>",
-      "css": ".ds-head{display:flex;align-items:center;gap:6px;min-height:64px;padding:0 20px;background:#0e3b42;color:#fff}.ds-bulb{display:grid;place-items:center;width:44px;height:48px;color:#f6c72c}.ds-bulb svg{width:33px;height:33px}.ds-bulb:hover{background:#1e535b}.ds-name{font:800 25px/1 Urbanist,PlexThai,sans-serif;letter-spacing:-.035em}.ds-role{margin-left:auto;padding:5px 11px;border-radius:999px;background:#f6c72c;color:#182d31;font:700 12px PlexThai,sans-serif}.ds-bulb:focus-visible{outline:3px solid #f6c72c;outline-offset:3px}"
+      "description": "Deep teal header with a gold bolt bulb and separate lowercase Nunito wordmark.",
+      "html": "<nav class=\"ds-head\" aria-label=\"หลัก\"><a class=\"ds-bulb\" href=\"#\" aria-label=\"หน้าแรก\"><svg viewBox=\"0 0 48 48\" aria-hidden=\"true\"><g fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M24 5C15.7 5 9 11.4 9 19.4c0 5.2 2.6 8.3 6.1 11.7 2.3 2.2 2.9 4 2.9 6.9h12c0-2.9.6-4.7 2.9-6.9 3.5-3.4 6.1-6.5 6.1-11.7C39 11.4 32.3 5 24 5Z\"/><path d=\"M20 42h8M22 46h4\"/></g><path fill=\"currentColor\" d=\"m25 11-7 12h6l-1 10 8-14h-6l1-8Z\"/></svg></a><a class=\"ds-name\" href=\"#\" aria-label=\"LightFix หน้าแรก\">light<span>fix</span></a><button class=\"ds-menu\" type=\"button\">เมนู</button></nav>",
+      "css": ".ds-head{display:flex;align-items:center;gap:6px;min-height:64px;padding:0 20px;background:#0e3b42;color:#fff}.ds-bulb{display:grid;place-items:center;width:52px;height:52px;color:#f6c72c;border-radius:11px}.ds-bulb svg{width:42px;height:42px}.ds-bulb:hover{background:#1e535b}.ds-name{color:white;font:750 1.95rem/1 LightFixLogo,Nunito,sans-serif;letter-spacing:-.01em;text-decoration:none}.ds-name span{color:#f6c72c}.ds-menu{margin-left:auto;min-width:48px;min-height:48px;padding:7px;border:1px solid #7e9da0;border-radius:14px;background:transparent;color:white;font:600 16px PlexThai,sans-serif;cursor:pointer;transition:background .2s cubic-bezier(.16,1,.3,1)}.ds-menu:hover{background:#1e535b}.ds-bulb:focus-visible,.ds-name:focus-visible,.ds-menu:focus-visible{outline:3px solid #f6c72c;outline-offset:3px}"
     },
     {
       "name": "Work Switch",
@@ -283,22 +304,22 @@
       "kind": "chip",
       "description": "Waiting orange, working blue and completed mint always carry words.",
       "html": "<div class=\"ds-statuses\"><span class=\"wait\">รอดำเนินการ</span><span class=\"work\">กำลังซ่อม</span><span class=\"done\">ซ่อมเสร็จ</span></div>",
-      "css": ".ds-statuses{display:flex;gap:8px;flex-wrap:wrap;font:600 14px/1.6 PlexThai,\"Noto Sans Thai\",sans-serif}.ds-statuses span{padding:6px 12px;border-radius:999px}.wait{background:#ffe4c7;color:#854100}.work{background:#dceafa;color:#155786}.done{background:#dceee5;color:#205a45}"
+      "css": ".ds-statuses{display:flex;gap:8px;flex-wrap:wrap;font:600 14px/1.6 PlexThai,\"Noto Sans Thai\",sans-serif}.ds-statuses span{padding:6px 12px;border-radius:999px}.ds-statuses .wait{background:#ffe4c7;color:#854100}.ds-statuses .work{background:#dceafa;color:#155786}.ds-statuses .done{background:#dceee5;color:#205a45}"
     }
   ],
   "narrative": {
     "northStar": "ศูนย์ประสานงาน (Coordination Centre)",
-    "overview": "User-supplied mobile mockups define the current LightFix visual system. Deep teal headings and header anchor a warm pale working ground; white outlined rounded records, orange waiting, mint completed and blue working states support direct task scanning. Preserve original fonts, logo, motion, functions and data.",
+    "overview": "A calm Thai-first workspace connects a numbered streetlight, readable repair status, and the next action. The eight user-supplied mobile mockups received 10 November 2026 are the visual authority for reporting, My Work, available work, pending management, pole registry, pole detail, repair history and accounts. Desktop expands their hierarchy into useful columns.\n\nDeep teal headings and header anchor a warm pale working ground. White rounded records, generous fields, orange waiting states, mint completed states and blue active states support quick scanning. Yellow remains the brand and primary-action cue. The approved lowercase Nunito wordmark sits beside a gold bolt bulb. IBM Plex Sans Thai, reduced-motion behavior, functions and data remain binding preservation constraints.",
     "keyCharacteristics": [
-      "Pole identity and readable status lead records.",
-      "Mobile tasks follow the eight approved reference screens.",
-      "Selected work and pole-detail segments use deep teal.",
-      "Desktop adds card columns and a docked pole reader."
+      "Pole identity and status precede secondary detail.",
+      "The phone viewport begins the task directly.",
+      "Segmented switches use a deep teal selected segment.",
+      "Desktop adds room for side-by-side records and a docked pole reader."
     ],
     "rules": [
       {
-        "name": "The Selective Yellow Rule",
-        "body": "Use yellow for the brand and a clear next action, rather than routine copy.",
+        "name": "The Status Words Rule",
+        "body": "Pair status color with readable words or an explicit count label; do not rely on color alone.",
         "section": "colors"
       },
       {
@@ -308,15 +329,15 @@
       }
     ],
     "dos": [
-      "Do keep the outline bulb and Urbanist wordmark separate.",
-      "Do keep status words visible alongside color.",
-      "Do begin the phone public form with pole input and symptom choices."
+      "Do use the eight supplied mobile mockups as visual authority and adapt their hierarchy to desktop.",
+      "Do preserve the original font files, separate bulb/wordmark, animations and reduced-motion behavior.",
+      "Do retain every existing function and data path while styling records, tabs and forms.",
+      "Do keep status words and labels visible alongside color."
     ],
     "donts": [
-      "Don't merge LightFix into bulb artwork or fill the bulb.",
-      "Don't return to a white header or large framed report form.",
-      "Don't make mobile data depend on an unlabeled wide table.",
-      "Do not restore superseded square yellow form badges or yellow pending counts."
+      "Don't replace the original typefaces or redraw the logo as combined artwork.",
+      "Don't restore the superseded square yellow form badges, yellow pending counts or pale-yellow selected work segments.",
+      "Don't make mobile records depend on an unlabeled wide table or use the supplied mockups as fixed desktop-width canvases."
     ]
   }
 }

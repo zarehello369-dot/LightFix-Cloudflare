@@ -55,7 +55,7 @@ The workflow centers on the pole number: a resident enters it when reporting, an
 
 - Product name: LightFix. The public interface is Thai-first, with an English option in source code.
 - The selected visual direction is “ศูนย์ประสานงาน” (Coordination Centre): a deep teal command header, pale green-gray working ground, white records, and selective yellow action cues. Residents and staff share a visual grammar for pole number, status, and next action.
-- The user-approved logo (10 November 2026) is a white outline location pin with a gold outline bulb and lowercase `lightfix` in self-hosted Nunito, white `light` and gold `fix`. The mark is inline SVG and the name live HTML text; Thai interface text retains self-hosted IBM Plex Sans Thai.
+- The user-approved logo is a gold outline bulb with a lightning bolt and lowercase `lightfix` in self-hosted Nunito, white `light` and gold `fix`. The mark is inline SVG and the name live HTML text; Thai interface text retains self-hosted IBM Plex Sans Thai.
 - The public first priority remains completing a report quickly without an account. Status and progress must remain understandable in words as well as color.
 
 ## Evidence on Hand
@@ -82,7 +82,7 @@ The pole registry now opens a docked reader beside a searchable list at desktop 
 
 ## User-supplied reference direction — 10 November 2026
 
-Eight mobile mockups supplied by the user define the visual direction for public reporting, My Work, available queue, pending management, pole registry, pole detail, repair history and accounts. Match those mobile references and adapt their hierarchy for desktop. Preserve the original self-hosted IBM Plex Sans Thai and Urbanist fonts, yellow outline bulb, animations and reduced-motion support, and every existing function and data path. The refreshed system uses deep teal, a warm pale working ground, white outlined records, orange waiting, mint completed and blue active-work states; DESIGN.md and its sidecar record the built tokens and components.
+Eight mobile mockups supplied by the user define the visual direction for public reporting, My Work, available queue, pending management, pole registry, pole detail, repair history and accounts. Match those mobile references and adapt their hierarchy for desktop. Preserve the self-hosted IBM Plex Sans Thai interface font, Nunito wordmark, gold outline bulb, animations and reduced-motion support, and every existing function and data path. The refreshed system uses deep teal, a warm pale working ground, white outlined records, orange waiting, mint completed and blue active-work states; DESIGN.md and its sidecar record the built tokens and components.
 
 
 ## Public receipt and tracking — 12 November 2026
