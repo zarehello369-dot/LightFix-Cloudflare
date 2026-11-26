@@ -34,7 +34,7 @@ export function overviewCard(group, { active = false, viewerId = '', viewerName 
     <details class="staff-card-details"><summary>ดูรูปและรายละเอียด ${reports.length} เรื่อง</summary>
     <div class="overview-card-meta"><p>ผู้รับผิดชอบ: ${esc(owner)}</p>${group.dueAt ? `<p class="${group.dueAt < Date.now() ? 'overdue' : ''}">${group.dueAt < Date.now() ? 'เกินกำหนด' : 'กำหนดเสร็จ'} ${date(group.dueAt)}</p>` : ''}</div>
     <ul class="overview-report-list" aria-label="เรื่องแจ้งของเสา ${esc(group.pole)}">${rows}</ul>
-    <div class="overview-card-actions">${viewWork}</div>
+    <div class="overview-card-actions">${viewWork}<button type="button" class="button danger" data-cancel-pole="${esc(group.pole)}">ยกเลิกเรื่องของเสานี้</button></div>
     </details>
   </article>`;
 }

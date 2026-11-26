@@ -476,7 +476,7 @@ body{background:var(--page)}
 .queue-actions{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;max-width:600px;margin:20px 0 0}
 .queue-actions:has(.button:only-child){max-width:240px}
 .queue-actions .button{width:100%;min-width:0;min-height:48px;padding:9px 12px;line-height:1.35}
-.queue-actions .button.danger,.queue-inline-actions .button.danger{background:var(--surface);border:1px solid var(--danger-line);color:var(--danger-ink)}
+.queue-actions .button.danger,.queue-inline-actions .button.danger,.overview-card-actions .button.danger{background:var(--surface);border:1px solid var(--danger-line);color:var(--danger-ink)}
 .queue-evidence{margin:16px 0 0!important;border-top:1px solid var(--line)}
 .queue-evidence>summary{list-style:none;min-height:48px;padding:12px 2px;font-size:.96rem;color:var(--deep)}
 .queue-evidence>summary::-webkit-details-marker{display:none}

@@ -9,6 +9,7 @@ test('waiting cards let staff view the queue without taking or assigning a job',
   const html=overviewCard(group([report('r1','ไฟติด ๆ ดับ ๆ'),report('r2','เสาหรือโคมชำรุด')]));
   assert.doesNotMatch(html,/data-start-report|data-start-pole|data-assign-pole/);
   assert.match(html,/data-open-pole="T0005">ดูงานของเสานี้/);
+  assert.match(html,/data-cancel-pole="T0005"/);
   assert.match(html,/เสี่ยงอันตราย: เสาหรือโคมชำรุด/);
 });
 

@@ -128,6 +128,10 @@ test('invitation acceptance preserves assigned instructions and deadlines for jo
   const job=sqlite.prepare('SELECT instructions,due_at FROM jobs WHERE id=?').get(accepted.body.data.jobId);
   assert.ok(job.instructions.includes('ตัดไฟก่อนทำงาน'));assert.equal(job.due_at,dueAt);
   const added=await request('/api/reports','POST',report('T0002','joining-invited-repair-2026'));
+  assert.equal(added.status,201);
+  const revision=sqlite.prepare("SELECT revision FROM pole_work_state WHERE pole='T0002'").get().revision;
+  const claimed=await request('/api/jobs/start','POST',{pole:'T0002',reportIds:[added.body.data.id],workRevision:revision},token);
+  assert.equal(claimed.status,201);
   const joined=sqlite.prepare('SELECT instructions,due_at FROM reports WHERE id=?').get(added.body.data.id);
   assert.equal(joined.instructions,job.instructions);assert.equal(joined.due_at,dueAt);
 });

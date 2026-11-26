@@ -109,6 +109,60 @@ test('technician can receive one report, add another to the same repair, and lea
   sqlite.close();
 });
 
+test('only staff can cancel pending and active reports for a pole with a public reason', async () => {
+  const { sqlite, request } = fixture();
+  const pole = 'T0002', activeReport = 'c'.repeat(32);
+  const started = await request('/api/jobs/start','POST',{pole,reportIds:[activeReport],workRevision:0},technicianToken);
+  assert.equal(started.status,201);
+  const incoming = await request('/api/reports','POST',{
+    pole, symptom:'ไฟไม่ติด', contactType:'none', requestId:'cancel-active-and-pending-2026'
+  });
+  assert.equal(incoming.status,201);
+  const data = {pole, workRevision:2, note:'   '};
+  const empty = await request('/api/admin/cancel','POST',data,adminToken);
+  assert.equal(empty.body.error,'NOTE_REQUIRED');
+  data.note = 'แจ้งผิดหมายเลขเสา';
+  const denied = await request('/api/admin/cancel','POST',data,technicianToken);
+  assert.equal(denied.status,403);
+  const accepted = await request('/api/admin/cancel','POST',data,adminToken);
+  assert.equal(accepted.status,200);
+  for (const id of [activeReport,incoming.body.data.id]) {
+    const detail = await request(`/api/reports/${id}`);
+    assert.equal(detail.body.data.status,3);
+    assert.equal(detail.body.data.note,data.note);
+  }
+  assert.equal(sqlite.prepare('SELECT status FROM jobs WHERE id=?').get(started.body.data.id).status,3);
+  sqlite.close();
+});
+
+test('new reports for a pole under repair stay in the receive queue until claimed', async () => {
+  const { sqlite, request } = fixture();
+  const pole = 'T0001';
+  const revision = () => sqlite.prepare('SELECT revision FROM pole_work_state WHERE pole=?').get(pole).revision;
+  const submit = index => request('/api/reports','POST',{
+    pole, symptom:'ไฟไม่ติด', contactType:'none', requestId:`repair-then-report-${index}-2026`
+  });
+  const receive = reportIds => request('/api/jobs/start','POST',{pole,reportIds,workRevision:revision()},technicianToken);
+  const original = await Promise.all([0,1,2].map(submit));
+  original.forEach(result => assert.equal(result.status,201));
+  const active = await receive(original.map(result => result.body.data.id));
+  assert.equal(active.status,201);
+  const incoming = await submit(3);
+  assert.equal(incoming.status,201);
+  const id = incoming.body.data.id;
+  const list = await request('/api/workspace','GET',undefined,technicianToken);
+  const waiting = list.body.data.reports.find(report => report.id===id);
+  assert.equal(waiting.status,0);
+  assert.equal(waiting.jobId,null);
+  assert.equal(waiting.assignedId,null);
+  assert.equal(list.body.data.reports.filter(report=>report.jobId===active.body.data.id).length,3);
+  const accepted = await receive([id]);
+  assert.equal(accepted.status,201);
+  assert.equal(accepted.body.data.id,active.body.data.id);
+  assert.equal(sqlite.prepare('SELECT status FROM reports WHERE id=?').get(id).status,1);
+  sqlite.close();
+});
+
 test('receiving all remaining reports after one joins the existing job', async () => {
   const { sqlite, request } = fixture();
   const ids=[];
@@ -136,7 +190,7 @@ test('simultaneous public reports cannot exceed the selectable pole group size',
   sqlite.close();
 });
 
-test('new reports join the active pole job and invalidate an old repair snapshot', async () => {
+test('new reports stay waiting and invalidate an old repair snapshot', async () => {
   const { sqlite, request } = fixture();
   const started = await request('/api/jobs/start','POST',{pole:'T0002',reportIds:['c'.repeat(32)],workRevision:0},technicianToken);
   assert.equal(started.status,201);
@@ -144,9 +198,9 @@ test('new reports join the active pole job and invalidate an old repair snapshot
   const added = await request('/api/reports','POST',{pole:'T0002',symptom:'ไฟสว่างน้อย',contactType:'none',requestId:'join-active-repair-request-2026'});
   assert.equal(added.status,201);
   const report = sqlite.prepare('SELECT status,job_id,assigned_user_id FROM reports WHERE id=?').get(added.body.data.id);
-  assert.equal(report.status,1);
-  assert.equal(report.job_id,started.body.data.id);
-  assert.equal(report.assigned_user_id,technicianId);
+  assert.equal(report.status,0);
+  assert.equal(report.job_id,null);
+  assert.equal(report.assigned_user_id,null);
   const note = await request(`/api/jobs/${started.body.data.id}/note`,'POST',{note:'stale note',workRevision:snapshot},technicianToken);
   assert.equal(note.status,409);
   assert.equal(sqlite.prepare('SELECT public_note FROM jobs WHERE id=?').get(started.body.data.id).public_note,'');
