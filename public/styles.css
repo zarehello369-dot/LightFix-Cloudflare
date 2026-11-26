@@ -698,6 +698,9 @@ h1,.page-title{color:var(--deep);font-size:2.1rem;line-height:1.3;letter-spacing
 .overview-card-meta p{margin:0;overflow-wrap:anywhere}
 .overview-report-list{list-style:none;margin:0;padding:0}
 .overview-report-row{display:grid;grid-template-columns:minmax(0,1fr);align-items:center;gap:12px;padding:15px 0;border-top:1px solid var(--line)}
+.overview-report-row:has(.queue-cancel-report){grid-template-columns:minmax(0,1fr) auto}
+.button.queue-cancel-report{flex:none;background:var(--surface);border-color:var(--danger-line);color:var(--danger-ink)}
+.button.queue-cancel-report:hover:not(:disabled){background:var(--danger-soft)}
 .overview-report-copy{min-width:0;overflow-wrap:anywhere}
 .overview-report-copy h3{margin:0 0 4px;font-size:1rem;line-height:1.45}
 .overview-report-copy p{margin:2px 0;color:var(--muted);font-size:.8125rem;line-height:1.55}
@@ -1064,7 +1067,10 @@ body[data-view=tracking] .site-footer .shell>span:last-child{display:none}
 }
 @media (max-width: 639px) {
   :is(.overview-card-actions,.queue-inline-actions) .button { width: 100%; }
+  .overview-card-actions:has(> .queue-cancel-report) { flex-wrap: nowrap; }
+  .overview-card-actions:has(> .queue-cancel-report) > [data-open-pole] { flex: 1; width: auto; }
 }
+.button.queue-cancel-report { width: 48px; min-width: 48px; min-height: 48px; padding: 0; }
 
 /* Give extra desktop width to records, photos and working controls. */
 @media (min-width: 900px) {

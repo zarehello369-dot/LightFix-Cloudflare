@@ -135,6 +135,35 @@ test('only staff can cancel pending and active reports for a pole with a public 
   sqlite.close();
 });
 
+test('canceling individual reports preserves their siblings and closes an empty repair', async () => {
+  const { sqlite, request } = fixture();
+  const pole = 'T0002', original = 'c'.repeat(32);
+  const revision = () => sqlite.prepare('SELECT revision FROM pole_work_state WHERE pole=?').get(pole).revision;
+  const submit = suffix => request('/api/reports','POST',{
+    pole, symptom:'ไฟไม่ติด', contactType:'none', requestId:`cancel-one-report-${suffix}-2026`
+  });
+  const claim = reportIds => request('/api/jobs/start','POST',{pole,reportIds,workRevision:revision()},technicianToken);
+  const cancel = (reportId,note) => request('/api/admin/cancel','POST',{pole,reportId,note,workRevision:revision()},adminToken);
+  const detail = async id => (await request(`/api/reports/${id}`)).body.data;
+  const a = (await submit('a')).body.data.id;
+  const b = (await submit('b')).body.data.id;
+  const started = await claim([original,a]);
+  assert.equal(started.status,201);
+  assert.equal((await cancel(b,'  ')).body.error,'NOTE_REQUIRED');
+  assert.equal((await cancel(b,'แจ้งซ้ำ')).status,200);
+  assert.equal((await detail(b)).status,3);
+  assert.equal((await detail(a)).status,1);
+  assert.equal((await cancel(a,'ข้อมูลซ้ำ')).status,200);
+  assert.equal((await detail(original)).status,1);
+  assert.equal(sqlite.prepare('SELECT status FROM jobs WHERE id=?').get(started.body.data.id).status,1);
+  assert.equal((await cancel(original,'ไม่ใช่เสาที่เสีย')).status,200);
+  assert.equal(sqlite.prepare('SELECT status FROM jobs WHERE id=?').get(started.body.data.id).status,3);
+  assert.equal((await detail(a)).note,'ข้อมูลซ้ำ');
+  assert.equal((await detail(original)).note,'ไม่ใช่เสาที่เสีย');
+  assert.equal((await cancel(a,'ลองยกเลิกอีกครั้ง')).status,409);
+  sqlite.close();
+});
+
 test('new reports for a pole under repair stay in the receive queue until claimed', async () => {
   const { sqlite, request } = fixture();
   const pole = 'T0001';

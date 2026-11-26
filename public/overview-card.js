@@ -14,6 +14,12 @@ const beforePhoto = report => report.hasBefore
   ? `<a class="overview-photo-link" href="/media/${encodeURIComponent(report.id)}/before" target="_blank" rel="noopener" aria-label="ดูรูปก่อนซ่อมของเรื่อง ${esc(report.symptom || 'ไม่ระบุอาการ')} (เปิดแท็บใหม่)">${photoIcon} ดูรูปก่อนซ่อม</a>`
   : `<span class="overview-photo-missing">${photoIcon} ไม่มีรูปก่อนซ่อม</span>`;
 
+export function cancelWorkButton(pole, report) {
+  const title = report ? 'ยกเลิกเรื่องนี้' : 'ยกเลิกทุกเรื่องที่ยังเปิดของเสานี้';
+  const label = report ? `${title}: ${report.symptom} แจ้งเมื่อ ${date(report.at)}` : `${title} ${pole}`;
+  return `<button type="button" class="button danger queue-cancel-report" data-cancel-pole="${esc(pole)}"${report ? ` data-cancel-report="${esc(report.id)}"` : ''} aria-label="${esc(label)}" title="${title}">${uiIcon('trash',20)}</button>`;
+}
+
 export function overviewCard(group, { active = false, viewerId = '', viewerName = '' } = {}) {
   const reports = group.reports;
   const owner = group.assignedName || (group.assignedId === viewerId ? viewerName : group.assignedId ? 'มอบหมายแล้ว' : 'ยังไม่มอบหมาย');
@@ -25,6 +31,7 @@ export function overviewCard(group, { active = false, viewerId = '', viewerName 
       <p class="overview-report-time">แจ้งเมื่อ ${date(report.at)}</p>
       <p class="overview-report-meta"><span>${reporterContact(report)}</span>${beforePhoto(report)}</p>
     </div>
+    ${cancelWorkButton(group.pole, report)}
   </li>`).join('');
   const viewWork = `<button type="button" class="button outline" data-open-pole="${esc(group.pole)}">ดูงานของเสานี้</button>`;
 
@@ -34,7 +41,7 @@ export function overviewCard(group, { active = false, viewerId = '', viewerName 
     <details class="staff-card-details"><summary>ดูรูปและรายละเอียด ${reports.length} เรื่อง</summary>
     <div class="overview-card-meta"><p>ผู้รับผิดชอบ: ${esc(owner)}</p>${group.dueAt ? `<p class="${group.dueAt < Date.now() ? 'overdue' : ''}">${group.dueAt < Date.now() ? 'เกินกำหนด' : 'กำหนดเสร็จ'} ${date(group.dueAt)}</p>` : ''}</div>
     <ul class="overview-report-list" aria-label="เรื่องแจ้งของเสา ${esc(group.pole)}">${rows}</ul>
-    <div class="overview-card-actions">${viewWork}<button type="button" class="button danger" data-cancel-pole="${esc(group.pole)}">ยกเลิกเรื่องของเสานี้</button></div>
+    <div class="overview-card-actions">${viewWork}${cancelWorkButton(group.pole)}</div>
     </details>
   </article>`;
 }

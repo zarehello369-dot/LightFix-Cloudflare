@@ -3,7 +3,7 @@ import { mountChat } from './chat.js';
 import { mountPresence } from './staff-presence.js';
 import { syncMobilePicker } from './mobile-picker.js';
 import { groupReports, groupQueueReports, readFilters, queueReports } from './workflow.js';
-import { overviewCard } from './overview-card.js';
+import { overviewCard, cancelWorkButton } from './overview-card.js';
 import { submitStaffForm, readWorkDraft, saveWorkDraft } from './staff-forms.js';
 import { $, control, esc, date, badge, api, post, shell, toast, showError, photoData, MAX_REPAIR_PHOTO_MB, repairPhotoSize, enhancePasswordFields, reveal, settle } from './shared.js';
 import { uiIcon } from './ui-icons.js';
@@ -298,7 +298,7 @@ function bindWorkActions() {
   root.querySelectorAll('[data-note]').forEach(button=>button.addEventListener('click',()=>noteJob(button.dataset.note)));
   root.querySelectorAll('[data-finish]').forEach(button=>button.addEventListener('click',()=>finishJob(button.dataset.finish)));
   root.querySelectorAll('[data-cancel-pole]').forEach(button => {
-    button.addEventListener('click', () => cancelPole(button.dataset.cancelPole));
+    button.addEventListener('click', () => cancelPole(button.dataset.cancelPole, button.dataset.cancelReport));
   });
   root.querySelectorAll('[data-open-pole]').forEach(button=>button.addEventListener('click',()=>{state.reportStatus='open';state.reportQuery=button.dataset.openPole;saveFilters();navigateTab('reports');}));
 }
@@ -320,10 +320,10 @@ function queuePoleCard(group) {
   const completedOwner=completedJob?.technician_name||state.data.users?.find(user=>user.id===(completedJob?.assigned_user_id||completedJob?.technician_id))?.display_name;
   const owner=group.assignedName||(group.assignedId===state.data.user.id?state.data.user.name:group.assignedId?'มอบหมายแล้ว':status===2?completedOwner||'ไม่ระบุช่าง':'ยังไม่มอบหมาย');
   const statusText=({0:'รอรับเรื่อง',1:'กำลังซ่อม',2:'ซ่อมเสร็จ',3:'ยกเลิก'})[status]||'ไม่ทราบสถานะ';
-  const rows=group.reports.map(report=>`<li class="queue-inline-report"><div class="queue-inline-report-text"><h3>${esc(report.symptom)}</h3><p class="muted">${date(report.at)}</p><p class="muted">${esc(report.contactValue||'ไม่ระบุตัวตน')} · ${report.hasBefore?'มีรูปก่อนซ่อม':'ไม่มีรูปก่อนซ่อม'}</p>${report.hasBefore?`<a class="queue-inline-photo" href="/media/${encodeURIComponent(report.id)}/before" target="_blank" rel="noopener">${uiIcon('image',18)} ดูรูปก่อนซ่อม</a>`:''}</div>${canReceive&&pending.length>1&&report.status===0?`<button type="button" class="button outline queue-receive" data-start-pole="${pole}" data-start-report="${esc(report.id)}" aria-label="รับเรื่อง ${esc(report.symptom)} ของเสา ${pole}">รับงานนี้</button>`:!admin?badge(report.status):''}</li>`).join('');
+  const rows=group.reports.map(report=>`<li class="queue-inline-report"><div class="queue-inline-report-text"><h3>${esc(report.symptom)}</h3><p class="muted">${date(report.at)}</p><p class="muted">${esc(report.contactValue||'ไม่ระบุตัวตน')} · ${report.hasBefore?'มีรูปก่อนซ่อม':'ไม่มีรูปก่อนซ่อม'}</p>${report.hasBefore?`<a class="queue-inline-photo" href="/media/${encodeURIComponent(report.id)}/before" target="_blank" rel="noopener">${uiIcon('image',18)} ดูรูปก่อนซ่อม</a>`:''}</div>${canReceive&&pending.length>1&&report.status===0?`<button type="button" class="button outline queue-receive" data-start-pole="${pole}" data-start-report="${esc(report.id)}" aria-label="รับเรื่อง ${esc(report.symptom)} ของเสา ${pole}">รับงานนี้</button>`:admin&&report.status<2?cancelWorkButton(group.pole, report):!admin?badge(report.status):''}</li>`).join('');
   const actions=[];
   if (admin && (group.open.length || job)) {
-    actions.push(`<button type="button" class="button danger" data-cancel-pole="${pole}">ยกเลิกเรื่องของเสานี้</button>`);
+    actions.push(cancelWorkButton(group.pole));
   }
 
   if(!admin&&job) actions.push(`<button class="button primary" data-finish="${esc(job.id)}">ปิดงานซ่อม</button>`,`<button class="button outline" data-note="${esc(job.id)}">บันทึกความคืบหน้า</button>`);
@@ -379,9 +379,16 @@ async function receiveReports(button) {
     controls.forEach(control => { control.disabled = false; });
   }
 }
-function cancelPole(pole) {
-  const target = dialog(`<h2 id="dialog-title">ยกเลิกเรื่องของเสา ${esc(pole)}?</h2>
-    <p>เรื่องที่รอรับและกำลังซ่อมของเสานี้จะถูกยกเลิกทั้งหมด เหตุผลจะแสดงในหน้าติดตามเรื่อง</p>
+function cancelPole(pole, reportId) {
+  const report = reportId && state.data.reports.find(item => item.id === reportId && item.pole === pole && item.status < 2);
+  if (reportId && !report) return toast('ไม่พบเรื่องที่ยกเลิกได้ กรุณาโหลดงานล่าสุด');
+  const title = report ? 'ยกเลิกเรื่องนี้' : 'ยกเลิกทุกเรื่องที่ยังเปิด';
+  const affected = report
+    ? `<p><strong>${esc(report.symptom)}</strong><br>แจ้งเมื่อ ${date(report.at)}</p><p>การยกเลิกมีผลเฉพาะเรื่องที่เลือก</p>`
+    : '<p>เรื่องที่รอรับและกำลังซ่อมของเสานี้จะถูกยกเลิกทั้งหมด</p>';
+  const target = dialog(`<h2 id="dialog-title">${title} · เสา ${esc(pole)}</h2>
+    ${affected}
+    <p>เหตุผลจะแสดงในหน้าติดตามเรื่อง</p>
     <form><div class="field"><label for="cancel-note">เหตุผลที่ยกเลิก</label>
     <textarea class="input" id="cancel-note" name="note" required maxlength="500" rows="3"></textarea></div>
     <div class="field-error" data-error role="alert"></div>
@@ -394,7 +401,7 @@ function cancelPole(pole) {
   form.addEventListener('submit', event => submitStaffForm(event, async currentForm => {
     const note = control(currentForm, 'note').value.trim();
     if (!note) throw new Error('กรุณากรอกเหตุผลที่ยกเลิก');
-    await action('/api/admin/cancel', { pole, note }, 'ยกเลิกเรื่องของเสาแล้ว');
+    await action('/api/admin/cancel', { pole, note, reportId }, report ? 'ยกเลิกเรื่องที่เลือกแล้ว' : 'ยกเลิกเรื่องของเสาแล้ว');
   }, formError));
 }
 function jobs() {

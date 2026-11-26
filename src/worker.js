@@ -166,9 +166,10 @@ async function throttle(request, env, scope, limit, windowMs) {
 function publicReport(r) {
   return {
     id: r.id, pole: r.pole, symptom: r.symptom, status: r.status, at: r.created_at,
-    startedAt: r.started_at || null, doneAt: r.completed_at || null, note: r.job_note || r.public_note || '',
-    hasBefore: !!r.before_photo_key, hasAfter: !!r.after_photo_key,
-    cause: r.cause || '', causeDetail: r.cause_detail || ''
+    startedAt: r.started_at || null, doneAt: r.status === 3 ? null : r.completed_at || null,
+    note: r.status === 3 ? r.public_note || '' : r.job_note || r.public_note || '',
+    hasBefore: r.status !== 3 && !!r.before_photo_key, hasAfter: r.status !== 3 && !!r.after_photo_key,
+    cause: r.status === 3 ? '' : r.cause || '', causeDetail: r.status === 3 ? '' : r.cause_detail || ''
   };
 }
 const PUBLIC_REPORT_SQL = `SELECT r.*,j.started_at,j.completed_at,j.after_photo_key,j.public_note AS job_note,j.cause,j.cause_detail
@@ -713,6 +714,25 @@ async function cancelReports(request, env, data) {
   const pole = poleNumber(data.pole);
   const note = clean(data.note, 500);
   if (!note) throw new HttpError(400, 'NOTE_REQUIRED', 'กรอกเหตุผลที่จะแสดงสาธารณะ');
+  if (data.reportId !== undefined) {
+    const reportId = data.reportId;
+    if (typeof reportId !== 'string' || !/^[a-f0-9]{32}$/.test(reportId)) {
+      throw new HttpError(400, 'INVALID_SELECTION', 'เลือกเรื่องแจ้งที่ต้องการยกเลิก');
+    }
+    const report = await one(env.DB, 'SELECT job_id FROM reports WHERE id=? AND pole=? AND status<2', reportId, pole);
+    if (!report) throw new HttpError(409, 'STATUS_CHANGED', 'เรื่องแจ้งนี้ยกเลิกไม่ได้แล้ว กรุณาโหลดข้อมูลล่าสุด');
+    const check = id();
+    await commitWork(env, user, pole, data.workRevision, [
+      env.DB.prepare(`INSERT INTO work_mutation_checks(operation_id,valid)
+        VALUES(?, EXISTS(SELECT 1 FROM reports WHERE id=? AND pole=? AND status<2))`).bind(check, reportId, pole),
+      env.DB.prepare('UPDATE reports SET status=3,public_note=? WHERE id=? AND pole=? AND status<2').bind(note, reportId, pole),
+      env.DB.prepare(`UPDATE jobs SET status=3,public_note=? WHERE id=? AND pole=? AND status=1
+        AND NOT EXISTS(SELECT 1 FROM reports WHERE job_id=jobs.id AND status=1)`).bind(note, report.job_id, pole),
+      env.DB.prepare('DELETE FROM work_mutation_checks WHERE operation_id=?').bind(check)
+    ]);
+    await audit(env.DB, user.username, 'cancel_report', reportId);
+    return true;
+  }
   await commitWork(env, user, pole, data.workRevision, [
     env.DB.prepare('UPDATE reports SET status=3,public_note=? WHERE pole=? AND status<2').bind(note, pole),
     env.DB.prepare('UPDATE jobs SET status=3,public_note=? WHERE pole=? AND status=1').bind(note, pole)
