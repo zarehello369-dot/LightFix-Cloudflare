@@ -169,3 +169,15 @@
   .chat-thread-head .chat-profile-shortcut{width:32px;height:32px}
   .chat-people-title .button{padding:6px 8px}
 }
+
+/* Use the workspace scale in chat headers, names and timestamps. */
+:is(.chat-people-title,.chat-peer-name,.chat-placeholder,.chat-profile-title) h2 {
+  font-size: var(--type-section);
+  line-height: var(--leading-title);
+}
+.chat-person strong,.chat-bubble p { font-size: var(--type-body); }
+:is(.chat-person small,.chat-contact-detail,.chat-role,.chat-presence-note,
+.chat-peer-name p,.chat-day time,.chat-message-meta,.chat-system-log time) {
+  font-size: var(--type-detail);
+  line-height: var(--leading-detail);
+}

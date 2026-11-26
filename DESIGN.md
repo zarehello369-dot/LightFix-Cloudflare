@@ -166,10 +166,10 @@ The shared color system uses four visual anchors: deep teal, action yellow, a pa
 
 **Wordmark:** User-approved lowercase `lightfix`, self-hosted Nunito variable at 750 weight, with white `light` and gold `fix` (#f6c72c). Live HTML text remains separate from the inline SVG gold outline bulb and lightning bolt; 1.8–1.95rem on phones and 2.2rem from 900px. **Interface:** Self-hosted IBM Plex Sans Thai (PlexThai), with Noto Sans Thai and sans-serif fallbacks.
 
-Preload the regular and bold Thai faces and the Nunito wordmark. Thai font faces use `font-display: optional`; the Nunito wordmark uses `font-display: block`. Slow first visits retain readable Thai fallback text instead of swapping metrics after the page is already being read.
+Preload the regular and bold Thai faces and the Nunito wordmark. Thai font faces use `font-display: swap` so text renders while the fonts load and settles on the same typeface across visits. The Nunito wordmark uses `font-display: block`.
 
-- **Display:** Bold page titles, 2.1rem with a 1.3 line height; public reporting uses 2rem on phones and 2.5rem from 900px.
-- **Headline:** Bold section titles around 1.25–1.4rem; staff titles respond to context.
+- **Display:** Bold page titles in a shared fluid range from 1.625rem to 2rem, with a 1.35 line height.
+- **Headline:** Section titles use 1.25rem. Record titles use 1.25rem on phones and 1.5rem on wider screens. Supporting text uses 0.875rem.
 - **Body:** 16px / 1.6; introductory copy stays near 58ch on the report surface.
 - **Label:** Bold, approximately .96rem. Pole numbers and metric counts are prominent; counts use tabular numerals.
 

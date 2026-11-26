@@ -23,7 +23,7 @@ export function overviewCard(group, { active = false, viewerId = '', viewerName 
     <div class="overview-report-copy">
       <h3>${esc(report.symptom || 'ไม่ระบุอาการ')}</h3>
       <p class="overview-report-time">แจ้งเมื่อ ${date(report.at)}</p>
-      <p>${reporterContact(report)} · ${beforePhoto(report)}</p>
+      <p class="overview-report-meta"><span>${reporterContact(report)}</span>${beforePhoto(report)}</p>
     </div>
   </li>`).join('');
   const viewWork = `<button type="button" class="button outline" data-open-pole="${esc(group.pole)}">ดูงานของเสานี้</button>`;
