@@ -82,10 +82,28 @@ export function showError(target, error) {
   target.innerHTML = `<div class="error-box" role="alert">${esc(error.message || error)} <button type="button" class="button small outline">ลองใหม่</button></div>`;
   target.querySelector('button')?.addEventListener('click', () => location.reload());
 }
+export const MAX_REPAIR_PHOTO_MB = 6;
+const MAX_COMPRESSED_PHOTO_BYTES = 1_500_000;
+
+function encodedPhotoBytes(data) {
+  const encodedLength = data.length - data.indexOf(',') - 1;
+  const padding = data.endsWith('==') ? 2 : data.endsWith('=') ? 1 : 0;
+  return encodedLength * 3 / 4 - padding;
+}
+
+export function repairPhotoSize(data) {
+  const bytes = encodedPhotoBytes(data);
+  if (bytes < 1000) return `${bytes} B`;
+  if (bytes < 1_000_000) return `${Math.round(bytes / 1000)} KB`;
+  return `${(bytes / 1_000_000).toFixed(2)} MB`;
+}
+
 export async function photoData(file) {
   if (!file) return '';
-  if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) throw new Error('เปิดรูปนี้ไม่ได้ กรุณาเลือกรูป JPG, PNG หรือถ่ายรูปใหม่');
-  if (file.size > 25_000_000) throw new Error('รูปใหญ่เกิน 25 MB กรุณาเลือกรูปที่เล็กลง');
+  if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) throw new Error('เปิดรูปนี้ไม่ได้ กรุณาเลือกรูป JPG, PNG หรือ WebP');
+  if (file.size > MAX_REPAIR_PHOTO_MB * 1_000_000) {
+    throw new Error(`รูปใหญ่เกิน ${MAX_REPAIR_PHOTO_MB} MB กรุณาเลือกรูปที่เล็กลงหรือถ่ายใหม่`);
+  }
   const source = URL.createObjectURL(file);
   try {
     const image = new Image(); image.src = source; await image.decode();
@@ -95,7 +113,7 @@ export async function photoData(file) {
     const context = canvas.getContext('2d'); context.fillStyle = '#fff'; context.fillRect(0, 0, canvas.width, canvas.height); context.drawImage(image, 0, 0, canvas.width, canvas.height);
     for (const quality of [.85, .7, .5]) {
       const result = canvas.toDataURL('image/jpeg', quality);
-      if (result.length * .75 <= 1_500_000) return result;
+      if (result.startsWith('data:image/jpeg;base64,') && encodedPhotoBytes(result) <= MAX_COMPRESSED_PHOTO_BYTES) return result;
     }
     throw new Error('ย่อรูปไม่สำเร็จ กรุณาถ่ายใหม่หรือเลือกรูปอื่น');
   } catch (error) { throw new Error(error.message?.includes('กรุณา') ? error.message : 'อ่านรูปไม่ได้ กรุณาถ่ายใหม่หรือเลือกรูปอื่น'); }
