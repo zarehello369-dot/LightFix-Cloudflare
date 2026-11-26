@@ -305,38 +305,74 @@ function bindWorkActions() {
 function reportResults(rows,d) {
   const status=state.reportStatus||'open', groups=groupQueueReports(rows,d.jobs,d.users||[],d.poles,status).sort((a,b)=>Number(b.urgent)-Number(a.urgent)||a.firstAt-b.firstAt);
   const pending=rows.filter(report=>report.status===0).length, active=rows.filter(report=>report.status===1).length;
-  return groups.length?`<p class="queue-counts muted" role="status">${new Set(groups.map(group=>group.pole)).size} เสา · ${rows.length} เรื่องแจ้ง${status==='open'?` · รอรับ ${pending} เรื่อง · กำลังซ่อม ${active} เรื่อง`:''}</p><div class="work-grid queue-grid">${groups.map(group=>group.reports[0].status===2?completedPoleCard(group):queuePoleCard(group)).join('')}</div>`:`<div class="empty"><p>ไม่พบเรื่องแจ้ง${state.reportQuery?`สำหรับ “${esc(state.reportQuery)}”`:''} ในตัวกรอง ${esc(({open:'เรื่องที่ต้องดำเนินการ','0':'รอรับเรื่อง','1':'กำลังซ่อม','2':'ซ่อมเสร็จ','3':'ยกเลิก',all:'ทุกสถานะ'})[state.reportStatus||'open'])}</p><button type="button" class="button outline small" data-clear-report-filters>ล้างตัวกรอง</button></div>`;
+  return groups.length?`<p class="queue-counts muted" role="status">${new Set(groups.map(group=>group.pole)).size} เสา · ${rows.length} เรื่องแจ้ง${status==='open'?` · รอรับ ${pending} เรื่อง · กำลังซ่อม ${active} เรื่อง`:''}</p><div class="work-grid queue-grid">${groups.map(queuePoleCard).join('')}</div>`:`<div class="empty"><p>ไม่พบเรื่องแจ้ง${state.reportQuery?`สำหรับ “${esc(state.reportQuery)}”`:''} ในตัวกรอง ${esc(({open:'เรื่องที่ต้องดำเนินการ','0':'รอรับเรื่อง','1':'กำลังซ่อม','2':'ซ่อมเสร็จ','3':'ยกเลิก',all:'ทุกสถานะ'})[state.reportStatus||'open'])}</p><button type="button" class="button outline small" data-clear-report-filters>ล้างตัวกรอง</button></div>`;
 }
 function queuePoleCard(group) {
+  const { jobs, users, user }=state.data;
   const admin=state.role==='admin', pole=esc(group.pole), count=group.reports.length;
+  const job=group.job, status=job?1:group.reports[0]?.status??0;
+  const [statusText,statusClass]=[
+    ['รอรับเรื่อง','is-waiting'], ['กำลังซ่อม','is-working'],
+    ['ซ่อมเสร็จ','is-complete'], ['ยกเลิก','is-cancelled']
+  ][status]||['ไม่ทราบสถานะ',''];
   const pending=group.reports.filter(report=>report.status===0);
-  const job=group.job, activeJob=state.data.jobs.find(item=>item.pole===group.pole&&item.status===1);
+  const activeJob=jobs.find(item=>item.pole===group.pole&&item.status===1);
   const ownerId=activeJob?.assigned_user_id||activeJob?.technician_id;
-  const canReceive=!admin&&pending.length&&group.reports.every(report=>report.status===0)&&(!activeJob||ownerId===state.data.user.id);
-  const symptoms=[...new Set(group.reports.map(report=>report.symptom))];
-  const dangerous=symptoms.filter(symptom=>/สายไฟ|เสาหรือโคมชำรุด/.test(symptom));
-  const status=job?1:group.open[0]?.status??group.reports[0]?.status??0;
-  const completedJob=state.data.jobs.find(item=>item.id===group.reports.find(report=>report.jobId)?.jobId);
-  const completedOwner=completedJob?.technician_name||state.data.users?.find(user=>user.id===(completedJob?.assigned_user_id||completedJob?.technician_id))?.display_name;
-  const owner=group.assignedName||(group.assignedId===state.data.user.id?state.data.user.name:group.assignedId?'มอบหมายแล้ว':status===2?completedOwner||'ไม่ระบุช่าง':'ยังไม่มอบหมาย');
-  const statusText=({0:'รอรับเรื่อง',1:'กำลังซ่อม',2:'ซ่อมเสร็จ',3:'ยกเลิก'})[status]||'ไม่ทราบสถานะ';
-  const rows=group.reports.map(report=>`<li class="queue-inline-report"><div class="queue-inline-report-text"><h3>${esc(report.symptom)}</h3><p class="muted">${date(report.at)}</p><p class="muted">${esc(report.contactValue||'ไม่ระบุตัวตน')} · ${report.hasBefore?'มีรูปก่อนซ่อม':'ไม่มีรูปก่อนซ่อม'}</p>${report.hasBefore?`<a class="queue-inline-photo" href="/media/${encodeURIComponent(report.id)}/before" target="_blank" rel="noopener">${uiIcon('image',18)} ดูรูปก่อนซ่อม</a>`:''}</div>${canReceive&&pending.length>1&&report.status===0?`<button type="button" class="button outline queue-receive" data-start-pole="${pole}" data-start-report="${esc(report.id)}" aria-label="รับเรื่อง ${esc(report.symptom)} ของเสา ${pole}">รับงานนี้</button>`:admin&&report.status<2?cancelWorkButton(group.pole, report):!admin?badge(report.status):''}</li>`).join('');
-  const actions=[];
-  if (admin && (group.open.length || job)) {
-    actions.push(cancelWorkButton(group.pole));
-  }
+  const canReceive=!admin&&pending.length>0&&pending.length===count&&(!activeJob||ownerId===user.id);
+  const dangerous=[...new Set(group.open.map(report=>report.symptom))].filter(symptom=>/สายไฟ|เสาหรือโคมชำรุด/.test(symptom));
+  const owner=group.assignedName||(group.assignedId===user.id?user.name:group.assignedId?'มอบหมายแล้ว':'ยังไม่มอบหมาย');
+  const showOwner=status<2&&(admin||state.tab==='mywork');
+  const overdue=group.dueAt<Date.now();
+  const instructions=job?.instructions||group.open[0]?.instructions;
 
-  if(!admin&&job) actions.push(`<button class="button primary" data-finish="${esc(job.id)}">ปิดงานซ่อม</button>`,`<button class="button outline" data-note="${esc(job.id)}">บันทึกความคืบหน้า</button>`);
-  return `<article class="panel queue-pole-card" data-work-pole="${pole}"><div class="queue-inline-head"><div><h2 class="number">${pole} <small>×${count}</small></h2><p class="muted">${esc(group.location||'ยังไม่ระบุตำแหน่ง')}</p></div><span class="queue-status ${status===1?'is-working':status===0?'is-waiting':status===3?'is-cancelled':'is-complete'}">${statusText} · ${count} เรื่องแจ้ง</span></div>${group.urgent&&group.open.length?`<div class="queue-inline-danger">${uiIcon('warning',22)}<strong>เสี่ยงอันตราย: ${esc(dangerous.join(' · ')||'ตรวจสอบอาการแจ้ง')}</strong></div>`:''}<details class="staff-card-details"><summary>ดูรูปและรายละเอียด ${count} เรื่อง</summary>${(admin||state.tab==='mywork')&&status!==3?`<p class="queue-inline-owner muted">ผู้รับผิดชอบ: ${esc(owner)}</p>`:''}${group.dueAt?`<p class="small ${group.dueAt<Date.now()?'overdue':'muted'}">${group.dueAt<Date.now()?'เกินกำหนด':'กำหนดเสร็จ'} ${date(group.dueAt)}</p>`:''}${job?.instructions||group.open[0]?.instructions?`<p class="queue-inline-instruction">รายละเอียดงาน: ${esc(job?.instructions||group.open[0]?.instructions)}</p>`:''}${job?.public_note?`<p class="queue-inline-instruction"><strong>บันทึกล่าสุด:</strong> ${esc(job.public_note)}</p>`:''}${rows?`<ul class="queue-inline-list">${rows}</ul>`:'<p class="muted">ไม่มีเรื่องแจ้งในงานนี้</p>'}${actions.length?`<div class="queue-inline-actions">${actions.join('')}</div>`:''}</details>${canReceive&&pending.length===1?`<div class="queue-inline-actions"><button type="button" class="button primary" data-start-pole="${pole}" data-start-report="${esc(pending[0].id)}">รับงานนี้</button></div>`:canReceive?`<div class="queue-inline-actions"><button type="button" class="button primary" data-start-pole="${pole}">รับทั้ง ${pending.length} เรื่อง</button></div>`:''}</article>`;
-}
-function completedPoleCard(group) {
-  const pole=esc(group.pole), count=group.reports.length;
   const rows=group.reports.map(report=>{
-    const job=state.data.jobs.find(item=>item.id===report.jobId);
-    const owner=job?.technician_name||state.data.users?.find(user=>user.id===(job?.assigned_user_id||job?.technician_id))?.display_name||'ไม่ระบุช่าง';
-    return `<li class="queue-completed-report"><div class="queue-completed-report-head"><h3>${esc(report.symptom)}</h3><span class="badge done">ซ่อมเสร็จ</span></div><p class="muted">แจ้งเมื่อ ${date(report.at)} · ผู้รับผิดชอบ: ${esc(owner)}</p><p>${esc(report.contactValue||'ไม่ระบุตัวตน')} · ${report.hasBefore?`<a href="/media/${encodeURIComponent(report.id)}/before" target="_blank" rel="noopener">${uiIcon('image',18)} ดูรูปก่อนซ่อม</a>`:`<span class="muted">${uiIcon('image',18)} ไม่มีรูปก่อนซ่อม</span>`}${report.hasAfter?` · <a href="/media/${encodeURIComponent(report.id)}/after" target="_blank" rel="noopener">${uiIcon('image',18)} ดูรูปหลังซ่อม</a>`:''}</p></li>`;
+    const completed=report.status===2;
+    const reportJob=completed?jobs.find(item=>item.id===report.jobId):null;
+    const reporterOwner=reportJob?.technician_name||users?.find(item=>item.id===(reportJob?.assigned_user_id||reportJob?.technician_id))?.display_name||'ไม่ระบุช่าง';
+    let control='';
+    if(canReceive&&count>1) {
+      control=`<button type="button" class="button outline queue-receive" data-start-pole="${pole}" data-start-report="${esc(report.id)}" aria-label="รับเรื่อง ${esc(report.symptom)} ของเสา ${pole}">รับงานนี้</button>`;
+    } else if(admin&&report.status<2) {
+      control=cancelWorkButton(group.pole,report);
+    } else if(completed||!admin) {
+      control=badge(report.status);
+    }
+
+    return `<li class="staff-record-body">
+      <div class="queue-report-head"><h3>${esc(report.symptom)}</h3>${control}</div>
+      <p class="muted">แจ้งเมื่อ ${date(report.at)}${completed?` · ผู้รับผิดชอบ: ${esc(reporterOwner)}`:''}</p>
+      <p class="record-photo-links"><span>${esc(report.contactValue||'ไม่ระบุตัวตน')}</span> · ${repairPhoto('before',report.hasBefore?report.id:null)}${report.hasAfter?` · ${repairPhoto('after',report.id)}`:''}</p>
+    </li>`;
   }).join('');
-  return `<article class="panel queue-completed-card" data-work-pole="${pole}"><div class="queue-completed-head"><div><h2 class="number">${pole} <small>×${count}</small></h2><p class="muted">${esc(group.location||'ยังไม่ระบุตำแหน่ง')}</p></div><span class="queue-status is-complete">ซ่อมเสร็จ · ${count} เรื่องแจ้ง</span></div><details class="staff-card-details"><summary>ดูรูปและรายละเอียด ${count} เรื่อง</summary><ul>${rows}</ul></details></article>`;
+
+  const actions=[];
+  if(admin&&(group.open.length||job)) actions.push(cancelWorkButton(group.pole));
+  if(!admin&&job) actions.push(`<button class="button primary" data-finish="${esc(job.id)}">ปิดงานซ่อม</button>`,`<button class="button outline" data-note="${esc(job.id)}">บันทึกความคืบหน้า</button>`);
+
+  return `<article class="panel staff-record-card" data-work-pole="${pole}">
+    <header class="staff-record-head">
+      <div><h2 class="number">${pole} <small>×${count}</small></h2><p class="muted">${esc(group.location||'ยังไม่ระบุตำแหน่ง')}</p></div>
+      <span class="queue-status ${statusClass}">${statusText} · ${count} เรื่องแจ้ง</span>
+    </header>
+    ${group.urgent&&group.open.length?`<div class="queue-inline-danger">${uiIcon('warning',22)}<strong>เสี่ยงอันตราย: ${esc(dangerous.join(' · ')||'ตรวจสอบอาการแจ้ง')}</strong></div>`:''}
+    <details class="staff-card-details">
+      <summary>ดูรูปและรายละเอียด ${count} เรื่อง</summary>
+      ${showOwner?`<p class="queue-inline-owner muted">ผู้รับผิดชอบ: ${esc(owner)}</p>`:''}
+      ${group.dueAt?`<p class="small ${overdue?'overdue':'muted'}">${overdue?'เกินกำหนด':'กำหนดเสร็จ'} ${date(group.dueAt)}</p>`:''}
+      ${instructions?`<p class="queue-inline-instruction">รายละเอียดงาน: ${esc(instructions)}</p>`:''}
+      ${job?.public_note?`<p class="queue-inline-instruction"><strong>บันทึกล่าสุด:</strong> ${esc(job.public_note)}</p>`:''}
+      ${rows?`<ul>${rows}</ul>`:'<p class="muted">ไม่มีเรื่องแจ้งในงานนี้</p>'}
+      ${actions.length?`<div class="queue-inline-actions">${actions.join('')}</div>`:''}
+    </details>
+    ${canReceive?`<div class="queue-inline-actions"><button type="button" class="button primary" data-start-pole="${pole}" ${count===1?`data-start-report="${esc(pending[0].id)}"`:''}>${count===1?'รับงานนี้':`รับทั้ง ${count} เรื่อง`}</button></div>`:''}
+  </article>`;
+}
+function repairPhoto(kind, reportId) {
+  const phase=kind==='before'?'ก่อนซ่อม':'หลังซ่อม';
+  const icon=uiIcon('image',18);
+  return reportId
+    ? `<a href="/media/${encodeURIComponent(reportId)}/${kind}" target="_blank" rel="noopener">${icon} ดูรูป${phase}</a>`
+    : `<span class="muted">${icon} ไม่มีรูป${phase}</span>`;
 }
 function activeCards(jobs) {
   const groups=jobs.map(jobGroup).sort((a,b)=>Number(b.urgent)-Number(a.urgent)||(a.dueAt||Infinity)-(b.dueAt||Infinity)||a.firstAt-b.firstAt);
@@ -424,6 +460,28 @@ function finishJob(jobId) {
   },formError));
 }
 
+function poleRepairHistoryCard(job) {
+  const completed=job.status===2;
+  return `<article class="staff-record-card">
+    <header class="staff-record-head">
+      <div>
+        <h4>${completed&&job.completed_at?`ซ่อมเสร็จ ${date(job.completed_at)}`:`เริ่มซ่อม ${date(job.started_at)}`}</h4>
+        <p>ผู้รับผิดชอบ: ${esc(job.technician_name||'ไม่ระบุช่าง')}</p>
+      </div>
+      ${completed?'':badge(job.status)}
+    </header>
+    <details class="staff-card-details">
+      <summary>ดูรูปและรายละเอียดการซ่อม</summary>
+      <div class="staff-record-body">
+        ${completed&&job.completed_at?`<p class="muted">เริ่มซ่อม ${date(job.started_at)}</p>`:''}
+        <p><strong>สาเหตุ:</strong> ${esc(job.cause||'ยังไม่บันทึก')} ${esc(job.cause_detail)}</p>
+        ${job.public_note?`<p class="pole-note">${esc(job.public_note)}</p>`:''}
+        <p class="record-photo-links">${repairPhoto('before',job.before_report_id)} · ${repairPhoto('after',job.has_after?job.report_id:null)}</p>
+      </div>
+    </details>
+  </article>`;
+}
+
 function poles() {
   const rows = state.data.poles;
   let listPage = 1, selected = '', detailTab = 'summary', requestVersion = 0, detailData, listScroll = 0;
@@ -438,7 +496,7 @@ function poles() {
     listPage = Math.min(listPage, Math.max(1,Math.ceil(filtered.length/50)));
     $('#pole-count').textContent = `${filtered.length} เสา${filter ? ` จากทั้งหมด ${rows.length} เสา` : ''}`;
     reader.remove();
-    $('#pole-rows').innerHTML = filtered.slice((listPage-1)*50,listPage*50).map(p => `<article class="panel queue-completed-card pole-list-card"><button type="button" class="pole-row ${selected === p.pole ? 'selected' : ''}" data-pole-detail="${esc(p.pole)}" aria-label="ดูรายละเอียดเสา ${esc(p.pole)}" aria-expanded="${selected === p.pole}" ${selected === p.pole ? 'aria-controls="pole-reader"' : ''}><span class="pole-row-identity"><strong class="number">${esc(p.pole)}</strong><span>${esc(p.location || 'ไม่ระบุตำแหน่ง')}</span>${p.active ? '' : '<small>ปิดใช้งาน</small>'}</span><span class="pole-row-counts"><span class="pole-count-open">ค้าง <b>${p.open_count}</b> เรื่อง</span><span class="pole-count-done">ซ่อมแล้ว <b>${p.repair_count}</b> ครั้ง</span></span><span class="pole-chevron" aria-hidden="true">${uiIcon('arrowRight',22)}</span></button></article>`).join('') || '<p class="empty">ไม่พบเสาที่ค้นหา ลองเปลี่ยนคำค้น</p>';
+    $('#pole-rows').innerHTML = filtered.slice((listPage-1)*50,listPage*50).map(p => `<article class="panel staff-record-card pole-list-card"><button type="button" class="pole-row ${selected === p.pole ? 'selected' : ''}" data-pole-detail="${esc(p.pole)}" aria-label="ดูรายละเอียดเสา ${esc(p.pole)}" aria-expanded="${selected === p.pole}" ${selected === p.pole ? 'aria-controls="pole-reader"' : ''}><span class="pole-row-identity"><strong class="number">${esc(p.pole)}</strong><span>${esc(p.location || 'ไม่ระบุตำแหน่ง')}</span>${p.active ? '' : '<small>ปิดใช้งาน</small>'}</span><span class="pole-row-counts"><span class="pole-count-open">ค้าง <b>${p.open_count}</b> เรื่อง</span><span class="pole-count-done">ซ่อมแล้ว <b>${p.repair_count}</b> ครั้ง</span></span><span class="pole-chevron" aria-hidden="true">${uiIcon('arrowRight',22)}</span></button></article>`).join('') || '<p class="empty">ไม่พบเสาที่ค้นหา ลองเปลี่ยนคำค้น</p>';
     const selectedButton = Array.from(root.querySelectorAll('[data-pole-detail]')).find(button => button.dataset.poleDetail === selected);
     reader.hidden = !selectedButton;
     (selectedButton?.closest('.pole-list-card') || root).append(reader);
@@ -458,15 +516,14 @@ function poles() {
     if(detailTab==='summary') body=`<dl class="pole-summary-counts"><div><dt>ซ่อมเสร็จ</dt><dd>${j.completed} ครั้ง</dd></div><div><dt>เรื่องค้าง</dt><dd>${r.waiting+r.working} เรื่อง</dd></div></dl>
       <section><h3>อาการที่แจ้งบ่อย</h3>${rank(d.symptoms,'เรื่อง')}</section><dl class="pole-summary-lines"><div><dt>ซ่อมล่าสุด</dt><dd>${j.last_completed_at?date(j.last_completed_at):'ยังไม่มีประวัติ'}</dd></div><div><dt>แจ้งล่าสุด</dt><dd>${r.last_at?date(r.last_at):'ยังไม่มีเรื่องแจ้ง'}</dd></div><div><dt>เวลาซ่อมเฉลี่ย</dt><dd>${duration}<small>จากเริ่มงานถึงบันทึกซ่อมเสร็จ</small></dd></div><div><dt>เรื่องค้างแยกสถานะ</dt><dd class="pole-status-counts"><span class="badge waiting">รอรับ ${r.waiting}</span><span class="badge working">กำลังซ่อม ${r.working}</span></dd></div></dl>
       <details class="pole-disclosure"><summary>สาเหตุที่ซ่อมพบบ่อย</summary>${rank(d.causes,'ครั้ง')}</details><details class="pole-disclosure"><summary>ทะเบียนและพิกัด</summary><dl class="pole-registry"><div><dt>สถานะทะเบียน</dt><dd>${p.active?'เปิดใช้งาน':'ปิดใช้งาน'}</dd></div><div><dt>รุ่นโคม / ติดตั้ง</dt><dd>${esc(p.model||'ไม่ระบุรุ่น')} / ${esc(p.installed_at||'ไม่ระบุวันติดตั้ง')}</dd></div><div><dt>พิกัด</dt><dd>${p.lat!=null&&p.lng!=null?`${esc(p.lat)}, ${esc(p.lng)}`:'ยังไม่ระบุพิกัด'}</dd></div><div><dt>หมายเหตุ</dt><dd>${esc(p.notes||'ไม่มีหมายเหตุ')}</dd></div></dl></details>`;
-    else if(detailTab==='repairs') body=`<h3>ประวัติงานซ่อม · ${j.total} งาน</h3>${d.jobs.length?d.jobs.map(job=>`<article class="pole-history-item"><div class="inline"><strong>${job.status===2?'ซ่อมเสร็จ':job.status===1?'กำลังซ่อม':'ยกเลิกงาน'}</strong><span>${esc(job.technician_name||'ไม่ระบุช่าง')}</span></div><details class="staff-card-details"><summary>ดูรูปและรายละเอียดการซ่อม</summary><p class="small">เริ่ม ${date(job.started_at)}${job.completed_at?` · เสร็จ ${date(job.completed_at)}`:''}</p><p><strong>สาเหตุ:</strong> ${esc(job.cause||'ยังไม่บันทึก')} ${esc(job.cause_detail)}</p>${job.public_note?`<p class="pole-note">${esc(job.public_note)}</p>`:''}<div class="actions">${job.before_report_id?`<a class="button outline small" href="/media/${esc(job.before_report_id)}/before" target="_blank" rel="noopener">รูปก่อนซ่อม ${uiIcon('external',16)}</a>`:''}${job.has_after&&job.report_id?`<a class="button outline small" href="/media/${esc(job.report_id)}/after" target="_blank" rel="noopener">รูปหลังซ่อม ${uiIcon('external',16)}</a>`:''}</div></details></article>`).join(''):'<p class="empty">ยังไม่มีงานซ่อมในหน้านี้</p>'}`;
+    else if(detailTab==='repairs') body=`<h3>ประวัติงานซ่อม · ${j.total} งาน</h3>${d.jobs.length?`<div class="staff-card-list pole-repair-list">${d.jobs.map(poleRepairHistoryCard).join('')}</div>`:'<p class="empty">ยังไม่มีงานซ่อมในหน้านี้</p>'}`;
     else body=`<h3>เรื่องแจ้ง · ${r.total} เรื่อง</h3><p class="small muted">รวมเรื่องที่ยกเลิก ${r.canceled||0} เรื่อง</p>${d.complaints.length?d.complaints.map(report=>`<article class="pole-history-item"><div class="inline">${badge(report.status)}<span class="small">${date(report.created_at)}</span></div><details class="staff-card-details"><summary>ดูรายละเอียดเรื่องแจ้ง</summary><p>${esc(report.symptom)}</p><a href="/track?id=${esc(report.id)}" target="_blank" rel="noopener">ดูรายละเอียดเรื่อง ${uiIcon('external',16)}</a></details></article>`).join(''):'<p class="empty">ยังไม่มีเรื่องแจ้งในหน้านี้</p>'}`;
     const total=detailTab==='repairs'?j.total:r.total;
-    reader.innerHTML=`<button type="button" class="button ghost small pole-back" data-pole-close>${uiIcon('arrowLeft',18)} พับรายละเอียดเสา</button><div class="pole-reader-heading"><div><h2 tabindex="-1" id="pole-reader-title">เสา ${esc(p.pole)}</h2><p>${esc(p.location||'ไม่ระบุตำแหน่ง')}</p></div>${state.role==='admin'?'<button type="button" class="button outline small" data-edit-pole>แก้ไขทะเบียน</button>':''}</div>
+    reader.innerHTML=`<div class="pole-reader-heading"><div><h2 tabindex="-1" id="pole-reader-title">เสา ${esc(p.pole)}</h2><p>${esc(p.location||'ไม่ระบุตำแหน่ง')}</p></div>${state.role==='admin'?'<button type="button" class="button outline small" data-edit-pole>แก้ไขทะเบียน</button>':''}</div>
       <div class="pole-reader-tabs" role="group" aria-label="หมวดข้อมูลเสา">${[['summary','สรุป'],['repairs','ประวัติซ่อม'],['reports','เรื่องแจ้ง']].map(([key,label])=>`<button type="button" data-pole-tab="${key}" aria-pressed="${detailTab===key}">${label}</button>`).join('')}</div>
       <p class="small muted">สถิติจากข้อมูลที่เก็บในระบบ เรื่องแจ้งหลายเรื่องอาจรวมเป็นงานซ่อมเดียว</p><div class="pole-tab-content">${body}</div>
       ${detailTab!=='summary'&&total>d.pageSize?`<div class="pole-pagination"><button class="button outline small" data-page="${d.page-1}" ${d.page===1?'disabled':''}>ก่อนหน้า</button><span>หน้า ${d.page} / ${Math.ceil(total/d.pageSize)}</span><button class="button outline small" data-page="${d.page+1}" ${d.page*d.pageSize>=total?'disabled':''}>ถัดไป</button></div>`:''}
       ${state.role==='admin'&&!p.total_report_count&&!p.job_count&&!r.total&&!j.total?'<details class="pole-disclosure pole-danger"><summary>จัดการเสาที่ไม่มีประวัติ</summary><button class="button danger small" data-delete-pole>ลบเสา</button></details>':''}`;
-    reader.querySelector('[data-pole-close]').addEventListener('click',close);
     reader.querySelector('[data-edit-pole]')?.addEventListener('click',()=>poleForm(p));
     reader.querySelector('[data-delete-pole]')?.addEventListener('click',()=>deletePole(p));
     reader.querySelectorAll('[data-pole-tab]').forEach(b=>b.addEventListener('click',()=>{detailTab=b.dataset.poleTab;if(detailData.page!==1)load(1);else{render();reader.querySelector(`[data-pole-tab="${detailTab}"]`).focus({preventScroll:true});}}));
@@ -544,9 +601,9 @@ function users() {
   if (state.role !== 'admin') return;
   const d = state.data;
   const pending = d.registrations.filter(r => r.status === 'pending');
-  const userRows = d.users.map(u => `<article class="panel queue-completed-card" data-search="${esc(`${u.username} ${u.display_name}`.toLowerCase())}"><header class="queue-completed-head"><div><h2>${esc(u.username)}</h2>${u.display_name && u.display_name !== u.username ? `<span class="small muted">${esc(u.display_name)}</span>` : ''}</div>${u.active ? '<span class="status-note">ใช้งานได้</span>' : '<span class="danger-note">ยังไม่เปิดใช้</span>'}</header><div class="account-card-body"><p>บทบาท: ${u.role === 'admin' ? 'ผู้ดูแล' : 'ช่าง'}</p><div class="actions"><button class="button outline small" data-edit-user="${esc(u.id)}">แก้ไข</button>${u.id !== d.user.id ? `<button class="button ghost small" data-reset="${esc(u.id)}">ตั้งรหัสใหม่</button>${u.report_count || u.job_count ? '<span class="small muted">มีประวัติงาน · ปิดใช้ในหน้าแก้ไข</span>' : `<button class="button danger small" data-delete-user="${esc(u.id)}">ลบบัญชี</button>`}` : '<span class="small muted">บัญชีที่กำลังใช้</span>'}</div></div></article>`).join('');
+  const userRows = d.users.map(u => `<article class="panel staff-record-card" data-search="${esc(`${u.username} ${u.display_name}`.toLowerCase())}"><header class="staff-record-head"><div><h2>${esc(u.username)}</h2>${u.display_name && u.display_name !== u.username ? `<span class="small muted">${esc(u.display_name)}</span>` : ''}</div>${u.active ? '<span class="status-note">ใช้งานได้</span>' : '<span class="danger-note">ยังไม่เปิดใช้</span>'}</header><div class="account-card-body"><p>บทบาท: ${u.role === 'admin' ? 'ผู้ดูแล' : 'ช่าง'}</p><div class="actions"><button class="button outline small" data-edit-user="${esc(u.id)}">แก้ไข</button>${u.id !== d.user.id ? `<button class="button ghost small" data-reset="${esc(u.id)}">ตั้งรหัสใหม่</button>${u.report_count || u.job_count ? '<span class="small muted">มีประวัติงาน · ปิดใช้ในหน้าแก้ไข</span>' : `<button class="button danger small" data-delete-user="${esc(u.id)}">ลบบัญชี</button>`}` : '<span class="small muted">บัญชีที่กำลังใช้</span>'}</div></div></article>`).join('');
   content(`<h1>บัญชีผู้ใช้</h1><p class="muted">จัดการบทบาท การเปิดใช้งาน และรหัสผ่านของแต่ละบัญชี</p>
-    <section class="staff-section"><h2>คำขอสมัคร ${pending.length} รายการ</h2>${pending.length ? `<div class="staff-card-list">${pending.map(r => `<article class="panel queue-completed-card"><header class="queue-completed-head"><div><h3>${esc(r.username)}</h3><p>${esc(r.display_name)}</p></div><span class="badge wait">รออนุมัติ</span></header><div class="account-card-body"><p>${esc(r.requested_role)} · ติดต่อ: ${esc(r.contact)} · ${date(r.requested_at)}</p><div class="actions"><button class="button primary small" data-approve="${esc(r.id)}">อนุมัติ</button><button class="button outline small" data-reject="${esc(r.id)}">ปฏิเสธ</button></div></div></article>`).join('')}</div>` : '<div class="empty">ไม่มีคำขอใหม่</div>'}</section>
+    <section class="staff-section"><h2>คำขอสมัคร ${pending.length} รายการ</h2>${pending.length ? `<div class="staff-card-list">${pending.map(r => `<article class="panel staff-record-card"><header class="staff-record-head"><div><h3>${esc(r.username)}</h3><p>${esc(r.display_name)}</p></div><span class="badge wait">รออนุมัติ</span></header><div class="account-card-body"><p>${esc(r.requested_role)} · ติดต่อ: ${esc(r.contact)} · ${date(r.requested_at)}</p><div class="actions"><button class="button primary small" data-approve="${esc(r.id)}">อนุมัติ</button><button class="button outline small" data-reject="${esc(r.id)}">ปฏิเสธ</button></div></div></article>`).join('')}</div>` : '<div class="empty">ไม่มีคำขอใหม่</div>'}</section>
     <section class="staff-section"><div class="section-head"><h2>บัญชีทั้งหมด</h2><button class="button primary" id="new-user" type="button">เพิ่มบัญชี</button></div><p class="small muted">บัญชีที่มีประวัติงานจะลบไม่ได้ ให้ปิดใช้งานแทนเพื่อเก็บชื่อผู้รับงานไว้</p><div class="toolbar"><label class="eyeless" for="user-filter">ค้นหาบัญชี</label><input class="input" id="user-filter" type="search" placeholder="ค้นหาชื่อผู้ใช้หรือชื่อที่แสดง"><span class="small muted" id="user-count" role="status">${d.users.length} บัญชี</span></div><div class="staff-card-list" id="user-rows">${userRows}</div><button class="button ghost" id="self-password" style="margin-top:16px">เปลี่ยนรหัสผ่านของฉัน</button></section>`);
   document.querySelectorAll('[data-approve]').forEach(b => b.addEventListener('click', () => review(b.dataset.approve, 'approved')));
   document.querySelectorAll('[data-reject]').forEach(b => b.addEventListener('click', () => review(b.dataset.reject, 'rejected')));
@@ -599,7 +656,7 @@ function messages() {
 
 function history() {
   const rows = state.data.jobs.filter(j => j.status === 2);
-  content(`<h1>ประวัติซ่อม</h1><p class="muted">งานที่ซ่อมเสร็จในระบบใหม่นี้</p>${rows.length ? `<div class="repair-history-list">${rows.map(j => `<article class="repair-history-card"><header class="queue-completed-head"><div><h2 class="number">${esc(j.pole)}</h2><time>${date(j.completed_at)}</time></div><span class="badge done">ซ่อมเสร็จ</span></header><details class="staff-card-details"><summary>ดูรายละเอียดการซ่อม</summary><dl><div><dt>สาเหตุ</dt><dd>${esc(j.cause || 'ยังไม่ระบุสาเหตุ')} ${esc(j.cause_detail)}</dd></div><div><dt>บันทึก</dt><dd>${esc(j.public_note || 'ไม่มีบันทึก')}</dd></div></dl>${state.role === 'admin' ? `<div class="actions"><button class="button outline" data-edit-history="${esc(j.id)}">แก้ไข</button></div>` : ''}</details></article>`).join('')}</div>` : '<div class="empty">ยังไม่มีประวัติซ่อมในระบบใหม่</div>'}`);
+  content(`<h1>ประวัติซ่อม</h1><p class="muted">งานที่ซ่อมเสร็จในระบบใหม่นี้</p>${rows.length ? `<div class="repair-history-list">${rows.map(j => `<article class="repair-history-card"><header class="staff-record-head"><div><h2 class="number">${esc(j.pole)}</h2><time>${date(j.completed_at)}</time></div><span class="badge done">ซ่อมเสร็จ</span></header><details class="staff-card-details"><summary>ดูรายละเอียดการซ่อม</summary><dl><div><dt>สาเหตุ</dt><dd>${esc(j.cause || 'ยังไม่ระบุสาเหตุ')} ${esc(j.cause_detail)}</dd></div><div><dt>บันทึก</dt><dd>${esc(j.public_note || 'ไม่มีบันทึก')}</dd></div></dl>${state.role === 'admin' ? `<div class="actions"><button class="button outline" data-edit-history="${esc(j.id)}">แก้ไข</button></div>` : ''}</details></article>`).join('')}</div>` : '<div class="empty">ยังไม่มีประวัติซ่อมในระบบใหม่</div>'}`);
   document.querySelectorAll('[data-edit-history]').forEach(b => b.addEventListener('click', () => editHistory(rows.find(j => j.id === b.dataset.editHistory))));
 }
 function editHistory(j) {

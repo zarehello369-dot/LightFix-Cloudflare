@@ -214,8 +214,8 @@ async function staffPoleDetail(request, env, value, pageValue) {
     all(env.DB, `SELECT cause AS label,COUNT(*) AS count FROM jobs WHERE pole=? AND status=2 AND cause<>''
       GROUP BY cause ORDER BY count DESC,cause LIMIT 5`, pole),
     all(env.DB, `SELECT j.id,j.status,j.started_at,j.completed_at,j.cause,j.cause_detail,j.public_note,
-      u.display_name AS technician_name,(SELECT r.id FROM reports r WHERE r.job_id=j.id ORDER BY r.created_at LIMIT 1) AS report_id,
-      (SELECT r.id FROM reports r WHERE r.job_id=j.id AND r.before_photo_key IS NOT NULL ORDER BY r.created_at LIMIT 1) AS before_report_id,
+      u.display_name AS technician_name,(SELECT r.id FROM reports r WHERE r.job_id=j.id AND r.status<>3 ORDER BY r.created_at LIMIT 1) AS report_id,
+      (SELECT r.id FROM reports r WHERE r.job_id=j.id AND r.status<>3 AND r.before_photo_key IS NOT NULL ORDER BY r.created_at LIMIT 1) AS before_report_id,
       CASE WHEN j.after_photo_key IS NOT NULL THEN 1 ELSE 0 END AS has_after
       FROM jobs j LEFT JOIN users u ON u.id=j.technician_id WHERE j.pole=? ORDER BY j.started_at DESC,j.id LIMIT 20 OFFSET ?`, pole, offset),
     all(env.DB, `SELECT id,symptom,status,created_at,job_id,CASE WHEN before_photo_key IS NOT NULL THEN 1 ELSE 0 END AS has_before
