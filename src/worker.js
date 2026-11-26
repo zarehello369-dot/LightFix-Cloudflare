@@ -1,6 +1,9 @@
 import { chatRoute } from './chat.js';
 import { receiveLineWebhook, lineStatus, selectLineGroup, pushLineText, notifyLineNewReport } from './line.js';
 const COOKIE = 'lf_session';
+const DEVICE_COOKIE = 'lf_login_device';
+const LOGIN_FAILURE_LIMIT = 9;
+const LOGIN_LOCK_MS = 24 * 60 * 60 * 1000;
 const SESSION_MS = 8 * 60 * 60 * 1000;
 const PASSWORD_ITERATIONS = 100000;
 const MAX_PHOTO_BYTES = 1_500_000;
@@ -284,30 +287,65 @@ async function media(env, reportId, kind) {
   });
 }
 
+function loginDevice(request) {
+  const token = cookieValue(request, DEVICE_COOKIE);
+  return /^[a-f0-9]{32}$/.test(token) ? token : '';
+}
+
+async function loginDeviceKey(request, env) {
+  const device = loginDevice(request);
+  const source = device ? 'browser:' + device : 'network:' + (request.headers.get('CF-Connecting-IP') || 'local');
+  return sha256(JSON.stringify([clean(env.RATE_SALT, 150), 'login-device', source]));
+}
+
+function loginLocked(until) {
+  const retry = new Intl.DateTimeFormat('th-TH', {
+    dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Bangkok'
+  }).format(until);
+  return new HttpError(429, 'LOGIN_LOCKED', `ล็อกการเข้าสู่ระบบ 24 ชั่วโมง ลองใหม่ได้หลัง ${retry} น. (เวลาไทย)`);
+}
+
+async function checkLoginLock(env, key) {
+  const lock = await one(env.DB, 'SELECT resets_at FROM rate_limits WHERE key=? AND hits>=? AND resets_at>?', key, LOGIN_FAILURE_LIMIT, now());
+  if (lock) throw loginLocked(lock.resets_at);
+}
+
+async function rejectLogin(env, key) {
+  const time = now();
+  const attempt = await one(env.DB, `INSERT INTO rate_limits(key,hits,resets_at) VALUES(?,1,?)
+    ON CONFLICT(key) DO UPDATE SET
+      hits=CASE WHEN resets_at<=? THEN 1 WHEN hits<? THEN hits+1 ELSE hits END,
+      resets_at=CASE WHEN resets_at<=? OR hits=? THEN excluded.resets_at ELSE resets_at END
+    RETURNING hits,resets_at`,
+    key, time + LOGIN_LOCK_MS, time, LOGIN_FAILURE_LIMIT, time, LOGIN_FAILURE_LIMIT - 1);
+  if (attempt.hits >= LOGIN_FAILURE_LIMIT) throw loginLocked(attempt.resets_at);
+  throw new HttpError(401, 'BAD_LOGIN', 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง');
+}
+
 async function login(request, env, data, expectedRole) {
+  const key = await loginDeviceKey(request, env);
+  await checkLoginLock(env, key);
+  await throttle(request, env, 'login', 30, 900_000);
   const username = clean(data.username, 80).toLowerCase();
   const password = String(data.password || '');
   const role = clean(data.role, 20);
-  if (!/^[a-z0-9._-]{3,40}$/.test(username) || role !== expectedRole || !password) throw new HttpError(401, 'BAD_LOGIN', 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง');
-  const attempt = await one(env.DB, 'SELECT attempts,window_start FROM login_attempts WHERE username=?', username);
-  if (attempt && attempt.attempts >= 8 && attempt.window_start > now() - 600_000) throw new HttpError(429, 'LOGIN_LOCKED', 'ลองใหม่อีกครั้งใน 10 นาที');
+  if (!/^[a-z0-9._-]{3,40}$/.test(username) || role !== expectedRole || !password) return rejectLogin(env, key);
   const user = await one(env.DB, 'SELECT * FROM users WHERE username=? AND role=?', username, role);
   const dummySalt = bytesToBase64(crypto.getRandomValues(new Uint8Array(16)));
   const usable = !!user?.active && Number.isInteger(user.iterations) && user.iterations > 0 && user.iterations <= PASSWORD_ITERATIONS;
   const actualHash = await passwordHash(password, usable ? user.salt : dummySalt, usable ? user.iterations : PASSWORD_ITERATIONS);
   const valid = usable && equalHex(actualHash, user.password_hash);
-  if (!valid) {
-    await run(env.DB, `INSERT INTO login_attempts(username,window_start,attempts) VALUES(?,?,1)
-      ON CONFLICT(username) DO UPDATE SET window_start=CASE WHEN window_start<? THEN excluded.window_start ELSE window_start END,
-      attempts=CASE WHEN window_start<? THEN 1 ELSE attempts+1 END`, username, now(), now() - 600_000, now() - 600_000);
-    throw new HttpError(401, 'BAD_LOGIN', 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง');
-  }
-  await run(env.DB, 'DELETE FROM login_attempts WHERE username=?', username);
+  if (!valid) return rejectLogin(env, key);
   const token = hex(crypto.getRandomValues(new Uint8Array(32)));
   const session = await run(env.DB, `INSERT INTO sessions(token_hash,user_id,expires_at,created_at)
-    SELECT ?,id,?,? FROM users WHERE id=? AND active=1 AND role=? AND password_hash=? AND salt=?`,
-    await sha256(token), now() + SESSION_MS, now(), user.id, role, user.password_hash, user.salt);
-  if (!session.meta.changes) throw new HttpError(401, 'BAD_LOGIN', 'ข้อมูลบัญชีเปลี่ยนแปลง กรุณาเข้าสู่ระบบใหม่');
+    SELECT ?,id,?,? FROM users WHERE id=? AND active=1 AND role=? AND password_hash=? AND salt=?
+    AND NOT EXISTS (SELECT 1 FROM rate_limits WHERE key=? AND hits>=? AND resets_at>?)`,
+    await sha256(token), now() + SESSION_MS, now(), user.id, role, user.password_hash, user.salt, key, LOGIN_FAILURE_LIMIT, now());
+  if (!session.meta.changes) {
+    await checkLoginLock(env, key);
+    throw new HttpError(401, 'BAD_LOGIN', 'ข้อมูลบัญชีเปลี่ยนแปลง กรุณาเข้าสู่ระบบใหม่');
+  }
+  await run(env.DB, 'DELETE FROM rate_limits WHERE key=? AND (hits<? OR resets_at<=?)', key, LOGIN_FAILURE_LIMIT, now());
   await audit(env.DB, username, 'login', user.id);
   return ok({ user: { id: user.id, username, name: user.display_name, role, mustChangePassword: !!user.must_change_password } }, 200, { 'set-cookie': sessionCookie(token, SESSION_MS / 1000) });
 }
@@ -727,7 +765,6 @@ export default {
         return ok(created,201);
       }
       if (request.method === 'POST' && (url.pathname === '/api/auth/login' || url.pathname === '/api/admin/auth/login')) {
-        await throttle(request, env, 'login', 30, 900_000);
         return await login(request, env, await body(request), url.pathname.startsWith('/api/admin/') ? 'admin' : 'technician');
       }
       if (request.method === 'POST' && (url.pathname === '/api/auth/logout' || url.pathname === '/api/admin/auth/logout')) return await logout(request, env);
@@ -737,7 +774,19 @@ export default {
         return ok(await register(env, await body(request), url.pathname.startsWith('/api/admin/') ? 'admin' : 'technician'), 201);
       }
       if (request.method === 'GET' && (url.pathname === '/api/auth/me' || url.pathname === '/api/admin/auth/me')) {
-        const u = await actor(request, env, false, true);
+        let u;
+        try {
+          u = await actor(request, env, false, true);
+        } catch (error) {
+          if (error.code !== 'LOGIN_REQUIRED') throw error;
+          if (loginDevice(request)) {
+            await checkLoginLock(env, await loginDeviceKey(request, env));
+            throw error;
+          }
+          const response = fail(error);
+          response.headers.append('set-cookie', `${DEVICE_COOKIE}=${id()}; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=2592000`);
+          return response;
+        }
         if (u.role !== (url.pathname.startsWith('/api/admin/') ? 'admin' : 'technician')) throw new HttpError(403, 'FORBIDDEN', 'ไม่มีสิทธิ์ใช้ทางเข้านี้');
         return ok({ id: u.id, username: u.username, name: u.display_name, role: u.role, mustChangePassword: !!u.must_change_password });
       }

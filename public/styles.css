@@ -1024,6 +1024,8 @@ body[data-view=tracking] .site-footer .shell>span:last-child{display:none}
 .overview-card-head h3 small { color: var(--muted); font-size: .66em; }
 .staff-card-details > summary:before { flex: none; }
 .staff-card-details[open] { padding-bottom: 8px; }
+.account-card-body { border-top: 1px solid var(--line); padding-top: 12px; }
+.account-card-body > p { margin: 0 0 12px; overflow-wrap: anywhere; }
 :is(.overview-card-actions,.queue-inline-actions) .button {
   flex: 0 1 auto;
   width: auto;

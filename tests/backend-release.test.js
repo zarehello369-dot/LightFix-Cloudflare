@@ -2,12 +2,44 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { fixture } from './helpers/chat-fixture.js';
-import { internals } from '../src/worker.js';
+import worker, { internals } from '../src/worker.js';
 
 const admin='a'.repeat(32),tech='b'.repeat(32),token='2'.repeat(64),reportId='c'.repeat(32);
 const png='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aX1cAAAAASUVORK5CYII=';
 const report=(pole,requestId,photo)=>({pole,symptom:'ไฟไม่ติด',contactType:'none',requestId,photo});
 const offer=request=>request(`/api/chat/${tech}/offers`,'POST',{requestKey:crypto.randomUUID(),pole:'T0002',workRevision:0});
+
+test('the ninth failed login locks the browser across both roles for 24 hours', async () => {
+  const { DB, sqlite } = fixture();
+  const env = { DB, RATE_SALT: 'local-test-only' };
+  const password = 'correct-test-password';
+  const salt = Buffer.from('0123456789abcdef').toString('base64');
+  sqlite.prepare('UPDATE users SET password_hash=?,salt=? WHERE id=?')
+    .run(await internals.passwordHash(password, salt), salt, tech);
+  const send = (path, cookie = '', data) => worker.fetch(new Request('https://lightfix.example' + path, {
+    headers: { cookie, 'CF-Connecting-IP': '192.0.2.10' },
+    ...(data ? { method: 'POST', body: JSON.stringify(data) } : {})
+  }), env);
+  const me = '/api/auth/me';
+  const login = '/api/auth/login';
+  const openBrowser = async () => (await send(me)).headers.get('set-cookie').split(';')[0];
+  const browser = await openBrowser();
+  const otherBrowser = await openBrowser();
+  const valid = { username: 'technician', role: 'technician', password };
+  const invalid = { ...valid, password: 'wrong' };
+  for (let i = 0; i < 8; i++) assert.equal((await send(login, browser, invalid)).status, 401);
+  const before = Date.now();
+  const ninth = await send('/api/admin/auth/login', browser, { ...invalid, username: 'other-admin', role: 'admin' });
+  assert.equal(ninth.status, 429);
+  assert.equal((await ninth.json()).error, 'LOGIN_LOCKED');
+  const locked = sqlite.prepare('SELECT resets_at FROM rate_limits WHERE hits=9 ORDER BY resets_at DESC LIMIT 1').get();
+  assert.ok(locked.resets_at >= before + 86_400_000 && locked.resets_at <= Date.now() + 86_400_000);
+  assert.equal((await send(me, browser)).status, 429);
+  assert.equal((await send(login, browser, valid)).status, 429);
+  assert.equal((await send(login, otherBrowser, valid)).status, 200);
+  sqlite.prepare('UPDATE rate_limits SET resets_at=? WHERE hits=9 AND resets_at=?').run(Date.now()-1, locked.resets_at);
+  assert.equal((await send(login, browser, valid)).status, 200);
+});
 
 test('password changes revoke other sessions and preserve the current session',async()=>{
   const {request,sqlite}=fixture(),other='3'.repeat(64);
