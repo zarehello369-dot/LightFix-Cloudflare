@@ -177,7 +177,7 @@ Preload the regular and bold Thai faces and the Nunito wordmark. Thai font faces
 
 ## Layout
 
-The shared shell is at most 1200px wide, with 20px side gutters below 900px and 28px above. The header is 64px tall on phones and 76px on desktop; its menu control remains present at both sizes. Staff work uses the existing desktop rail from 900px. Page content generally starts 30px below the header.
+The shared shell is at most 1600px wide, with 20px side gutters below 900px and 24–32px on desktop. Staff lists use full-width expandable cards. The public board and recent tracking history use one linked card per row. Tracking details and receipts use their extra width for repair details and next steps. Authentication forms retain a compact reading width. The header is 64px tall on phones and 76px on desktop; its menu control remains present at both sizes. Staff work uses the existing desktop rail from 900px. Page content generally starts 30px below the header.
 
 Public reporting stays a single-column four-section form on phones, with two-column ordinary symptom choices, full-width hazardous/other options, two photo-source buttons and a full-width yellow submit action. Four 6px completeness bars sit under the introduction. From 900px, a sticky white report overview sits beside the form, replacing the inline mobile summary; help sits at the upper right.
 

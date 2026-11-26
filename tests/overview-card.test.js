@@ -5,13 +5,11 @@ import { overviewCard } from '../public/overview-card.js';
 const report = (id, symptom, status = 0) => ({id, pole:'T0005', status, symptom, at:Date.parse('2026-11-17T13:07:00+07:00'), contactType:'name', contactValue:'ติดตามผ่านลิงก์', hasBefore:false});
 const group = reports => ({pole:'T0005', reports, location:'', urgent:true, assignedName:'', assignedId:''});
 
-test('overview card exposes each waiting report and a bulk action for two reports', () => {
+test('waiting cards let staff view the queue without taking or assigning a job', () => {
   const html=overviewCard(group([report('r1','ไฟติด ๆ ดับ ๆ'),report('r2','เสาหรือโคมชำรุด')]));
-  assert.equal((html.match(/data-start-report=/g)||[]).length,2);
-  assert.match(html,/data-start-pole="T0005"/);
-  assert.match(html,/รับทั้ง 2 เรื่อง/);
+  assert.doesNotMatch(html,/data-start-report|data-start-pole|data-assign-pole/);
+  assert.match(html,/data-open-pole="T0005">ดูงานของเสานี้/);
   assert.match(html,/เสี่ยงอันตราย: เสาหรือโคมชำรุด/);
-  assert.match(html,/data-assign-pole="T0005"/);
 });
 
 test('working card retains the job link without receive actions', () => {

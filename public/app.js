@@ -191,16 +191,31 @@ async function submitReport(event) {
   }
 }
 
+function publicReportCards(rows, { community = false, compact = true } = {}) {
+  return `<div class="record-list public-record-list">
+    ${rows.map(row => {
+      const detail = community
+        ? `${esc(row.symptom)} · ${date(row.at)}`
+        : `ส่งเมื่อ ${date(row.at)}${compact ? '' : ` · เลขเรื่อง ${esc(row.id)}`}`;
+      return `<a class="record" href="${trackingPath(row.id)}">
+        <strong class="record-title number">${esc(row.pole)}</strong>
+        <span class="record-detail">${detail}</span>
+        ${community ? badge(row.status) : `<span class="record-arrow" aria-hidden="true">${uiIcon('arrowRight',18)}</span>`}
+      </a>`;
+    }).join('')}
+  </div>`;
+}
+
 async function boardPage() {
   document.title = 'ความคืบหน้าการซ่อม · LightFix';
-  shell(`<section class="shell page"><h1 class="page-title">งานซ่อมในชุมชน</h1><p class="lead">ดูเรื่องแจ้งไฟถนนและสถานะล่าสุด ข้อมูลผู้แจ้งจะไม่แสดงที่นี่</p><div class="toolbar"><label class="eyeless" for="board-pole">กรองด้วยหมายเลขเสา</label><input id="board-pole" class="input" placeholder="ค้นหาเสา เช่น T0001"><button class="button outline" id="board-search">${uiIcon('search',18)}ค้นหา</button><button class="button ghost" id="board-clear">แสดงทั้งหมด</button></div><div id="board-list" class="record-list"><p class="loading" role="status">กำลังโหลดรายการ…</p></div></section>`, 'board');
+  shell(`<section class="shell page"><h1 class="page-title">งานซ่อมในชุมชน</h1><p class="lead">ดูเรื่องแจ้งไฟถนนและสถานะล่าสุด ข้อมูลผู้แจ้งจะไม่แสดงที่นี่</p><div class="toolbar"><label class="eyeless" for="board-pole">กรองด้วยหมายเลขเสา</label><input id="board-pole" class="input" placeholder="ค้นหาเสา เช่น T0001"><button class="button outline" id="board-search">${uiIcon('search',18)}ค้นหา</button><button class="button ghost" id="board-clear">แสดงทั้งหมด</button></div><div id="board-list" aria-live="polite"><p class="loading" role="status">กำลังโหลดรายการ…</p></div></section>`, 'board');
   const list = $('#board-list');
   const requests = createLatestRequest();
   async function load() {
     const pole = getPole($('#board-pole').value);
     list.innerHTML = '<p class="loading" role="status">กำลังโหลดรายการ…</p>';
     await requests.run(() => api(`/api/reports${pole ? `?pole=${encodeURIComponent(pole)}` : ''}`), rows => {
-      list.innerHTML = rows.length ? rows.map(r => `<a class="record" href="/track?id=${esc(r.id)}"><span class="record-title number">${esc(r.pole)}</span><span class="record-detail">${esc(r.symptom)} · ${date(r.at)}</span>${badge(r.status)}</a>`).join('') : '<div class="empty">ยังไม่มีเรื่องแจ้งในรายการนี้ <a href="/">แจ้งไฟเสีย</a></div>';
+      list.innerHTML = rows.length ? publicReportCards(rows, { community: true }) : '<div class="empty">ยังไม่มีเรื่องแจ้งในรายการนี้ <a href="/">แจ้งไฟเสีย</a></div>';
     }, error => showError(list, error));
   }
   $('#board-search').addEventListener('click', load);
@@ -238,7 +253,7 @@ function renderRecentReports(target, hideEmpty = false, compact = false) {
   const rows = readRecentReports();
   if (!rows.length && hideEmpty) { target.hidden = true; return; }
   target.hidden = false;
-  target.innerHTML = `<div class="section-head"><h2 class="section-heading">เรื่องล่าสุดในอุปกรณ์นี้</h2>${rows.length ? `<button class="button outline small" id="clear-recent" type="button">${compact ? 'ล้างประวัติ' : 'ล้างประวัติในอุปกรณ์นี้'}</button>` : ''}</div><p class="small muted">${compact ? 'เก็บเลขเรื่องในเครื่องนี้ไม่เกิน 30 วัน' : 'เก็บเฉพาะเลขเรื่อง หมายเลขเสา และเวลาที่ส่ง ไม่เกิน 10 เรื่อง ภายใน 30 วัน ไม่เก็บข้อมูลติดต่อหรือรูปในประวัตินี้ การล้างประวัติไม่ยกเลิกเรื่องแจ้ง'}</p>${rows.length ? `<div class="record-list">${rows.map(row => `<a class="record" href="${trackingPath(row.id)}"><strong class="record-title number">${esc(row.pole)}</strong>${compact ? `<span class="record-arrow" aria-hidden="true">${uiIcon('arrowRight',18)}</span>` : '<span>ดูสถานะ</span>'}<span class="record-detail">ส่งเมื่อ ${date(row.at)}${compact ? '' : ` · เลขเรื่อง ${esc(row.id)}`}</span></a>`).join('')}</div>` : '<p class="empty">ยังไม่มีเรื่องที่บันทึกไว้ในเบราว์เซอร์นี้ หากส่งจากเครื่องอื่น ให้เปิดลิงก์ติดตามที่เก็บไว้</p>'}<p class="small muted">${compact ? 'การล้างประวัติไม่ยกเลิกเรื่องแจ้ง' : 'หากใช้เครื่องร่วมกับผู้อื่น ให้ล้างประวัติหลังใช้งาน'}</p>`;
+  target.innerHTML = `<div class="section-head"><h2 class="section-heading">เรื่องล่าสุดในอุปกรณ์นี้</h2>${rows.length ? `<button class="button outline small" id="clear-recent" type="button">${compact ? 'ล้างประวัติ' : 'ล้างประวัติในอุปกรณ์นี้'}</button>` : ''}</div><p class="small muted">${compact ? 'เก็บเลขเรื่องในเครื่องนี้ไม่เกิน 30 วัน' : 'เก็บเฉพาะเลขเรื่อง หมายเลขเสา และเวลาที่ส่ง ไม่เกิน 10 เรื่อง ภายใน 30 วัน ไม่เก็บข้อมูลติดต่อหรือรูปในประวัตินี้ การล้างประวัติไม่ยกเลิกเรื่องแจ้ง'}</p>${rows.length ? publicReportCards(rows, { compact }) : '<p class="empty">ยังไม่มีเรื่องที่บันทึกไว้ในเบราว์เซอร์นี้ หากส่งจากเครื่องอื่น ให้เปิดลิงก์ติดตามที่เก็บไว้</p>'}<p class="small muted">${compact ? 'การล้างประวัติไม่ยกเลิกเรื่องแจ้ง' : 'หากใช้เครื่องร่วมกับผู้อื่น ให้ล้างประวัติหลังใช้งาน'}</p>`;
   $('#clear-recent')?.addEventListener('click', () => {
     if (!clearRecentReports()) { toast('ล้างประวัติไม่ได้ กรุณาตรวจการอนุญาตเก็บข้อมูลของเบราว์เซอร์'); return; }
     renderRecentReports(target, hideEmpty, compact); toast('ล้างประวัติในอุปกรณ์นี้แล้ว เรื่องแจ้งยังอยู่ในระบบ');

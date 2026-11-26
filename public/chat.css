@@ -2,7 +2,7 @@
 #staff-chat{color:var(--deep)}
 /* Preserve the page heading for assistive navigation; the reference starts at the chat. */
 #staff-chat .chat-title{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
-.chat-layout{display:grid;grid-template-columns:minmax(260px,30.6%) minmax(0,1fr);height:calc(100dvh - 140px - var(--preview-banner-height,0px) - var(--staff-chat-header-height,96px));min-height:400px;background:var(--surface);border:1px solid var(--line);border-radius:22px;overflow:hidden}
+.chat-layout{display:grid;grid-template-columns:clamp(260px,30%,350px) minmax(0,1fr);height:calc(100dvh - 140px - var(--preview-banner-height,0px) - var(--staff-chat-header-height,96px));min-height:400px;background:var(--surface);border:1px solid var(--line);border-radius:22px;overflow:hidden}
 .chat-layout button,.chat-layout input,.chat-layout textarea{font:inherit}
 .chat-layout button:disabled{cursor:wait;opacity:.6}
 .chat-layout svg{width:22px;height:22px;flex:none}
@@ -96,7 +96,7 @@
 .chat-invite label{display:block;font-size:14px;font-weight:600;margin:10px 0 4px}
 .chat-invite select,.chat-invite input{width:100%;min-height:44px;font-size:16px}
 .chat-invite p{margin:8px 0}.chat-invite-error{color:var(--red);font-size:14px}
-.chat-system-log article{padding:18px 0;border-bottom:1px solid var(--line)}
+.chat-system-log article+article{margin-top:14px}
 .chat-system-log h3{font-size:18px;margin:0 0 8px}.chat-system-log p{white-space:pre-wrap;overflow-wrap:anywhere}
 .chat-system-log time{display:block;color:var(--muted);font-size:13px;margin:10px 0}
 .chat-layout :focus-visible{outline:2px solid var(--selected-line);outline-offset:3px}

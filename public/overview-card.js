@@ -25,18 +25,16 @@ export function overviewCard(group, { active = false, viewerId = '', viewerName 
       <p class="overview-report-time">แจ้งเมื่อ ${date(report.at)}</p>
       <p>${reporterContact(report)} · ${beforePhoto(report)}</p>
     </div>
-    ${active ? '' : `<button type="button" class="button outline overview-accept-one" data-start-report="${esc(report.id)}" data-start-pole="${esc(group.pole)}" aria-label="รับเรื่อง ${esc(report.symptom || 'ไม่ระบุอาการ')} ที่แจ้งเมื่อ ${date(report.at)}">รับ</button>`}
   </li>`).join('');
-  const actions = active
-    ? `<button type="button" class="button primary" data-open-pole="${esc(group.pole)}">เปิดงานเสา ${esc(group.pole)}</button>`
-    : `${reports.length > 1 && reports.length <= 3 ? `<button type="button" class="button primary" data-start-pole="${esc(group.pole)}">รับทั้ง ${reports.length} เรื่อง</button>` : ''}
-       <button type="button" class="button outline" data-assign-pole="${esc(group.pole)}">${group.assignedId ? 'เปลี่ยนผู้รับผิดชอบ' : 'มอบหมายช่าง'}</button>`;
+  const viewWork = `<button type="button" class="button outline" data-open-pole="${esc(group.pole)}">ดูงานของเสานี้</button>`;
 
   return `<article class="panel overview-card" data-work-pole="${esc(group.pole)}">
-    <div class="overview-card-head"><h3 class="number">${esc(group.pole)}</h3><span class="overview-status ${active ? 'doing' : 'waiting'}">${status} · ${countLabel(reports.length)}</span></div>
+    <div class="overview-card-head"><div><h3 class="number">${esc(group.pole)} <small>×${reports.length}</small></h3><p class="muted">${esc(group.location || 'ยังไม่ระบุตำแหน่ง')}</p></div><span class="overview-status ${active ? 'doing' : 'waiting'}">${status} · ${countLabel(reports.length)}</span></div>
     ${group.urgent ? `<p class="overview-hazard">${hazardIcon}<span>เสี่ยงอันตราย: ${esc(dangerousSymptom || 'ตรวจสอบอาการก่อนเริ่มงาน')}</span></p>` : ''}
-    <div class="overview-card-meta"><div><span>ตำแหน่ง</span><strong>${esc(group.location || 'ยังไม่ระบุตำแหน่ง')}</strong></div><p>ผู้รับผิดชอบ: ${esc(owner)}</p>${group.dueAt ? `<p class="${group.dueAt < Date.now() ? 'overdue' : ''}">${group.dueAt < Date.now() ? 'เกินกำหนด' : 'กำหนดเสร็จ'} ${date(group.dueAt)}</p>` : ''}</div>
+    <details class="staff-card-details"><summary>ดูรูปและรายละเอียด ${reports.length} เรื่อง</summary>
+    <div class="overview-card-meta"><p>ผู้รับผิดชอบ: ${esc(owner)}</p>${group.dueAt ? `<p class="${group.dueAt < Date.now() ? 'overdue' : ''}">${group.dueAt < Date.now() ? 'เกินกำหนด' : 'กำหนดเสร็จ'} ${date(group.dueAt)}</p>` : ''}</div>
     <ul class="overview-report-list" aria-label="เรื่องแจ้งของเสา ${esc(group.pole)}">${rows}</ul>
-    <div class="overview-card-actions">${actions}</div>
+    <div class="overview-card-actions">${viewWork}</div>
+    </details>
   </article>`;
 }
